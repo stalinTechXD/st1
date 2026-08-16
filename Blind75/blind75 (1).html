@@ -1,0 +1,2178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Blind 75 · Animated Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b16; --bg2:#0d1224; --panel:#111830; --panel2:#161f3d;
+  --line:rgba(130,150,210,.14); --line2:rgba(130,150,210,.28);
+  --txt:#e8edff; --muted:#8b96b8; --dim:#5a6488;
+  --aqua:#37e0c8; --amber:#ffb454; --coral:#ff6b81; --violet:#9d7cff; --green:#5ee88b;
+  --easy:#5ee88b; --med:#ffb454; --hard:#ff6b81;
+  --r:14px;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+  radial-gradient(1100px 600px at 15% -8%,rgba(55,224,200,.08),transparent 60%),
+  radial-gradient(900px 500px at 95% 0%,rgba(157,124,255,.08),transparent 55%),
+  var(--bg);
+  color:var(--txt);font-family:var(--body);line-height:1.5;-webkit-font-smoothing:antialiased}
+#app{max-width:1180px;margin:0 auto;padding:26px 22px 90px}
+h1,h2,h3{font-family:var(--disp);font-weight:600;letter-spacing:-.01em;margin:0}
+button{font-family:inherit;cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- hero ---------- */
+.hero{display:flex;align-items:center;gap:20px;padding:8px 4px 26px;flex-wrap:wrap}
+.hero-mark{font-family:var(--mono);font-weight:700;font-size:26px;color:var(--aqua);
+  background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:14px 16px;
+  box-shadow:0 0 34px rgba(55,224,200,.18) inset}
+.hero-txt{flex:1;min-width:240px}
+.hero h1{font-size:30px;line-height:1.05}
+.hero h1 span{color:var(--muted);font-weight:400}
+.tagline{color:var(--muted);margin:6px 0 0;font-size:14px}
+.hero-stats{display:flex;gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px;text-align:center;min-width:82px}
+.stat b{font-family:var(--disp);font-size:24px;display:block;line-height:1}
+.stat b#stat-streak{color:var(--amber)}
+.stat em{color:var(--dim);font-style:normal;font-size:11px;letter-spacing:.02em}
+
+/* ---------- sprint ---------- */
+.sprint{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line2);
+  border-radius:18px;padding:18px 18px 20px;margin:6px 0 26px;position:relative;overflow:hidden}
+.sprint::before{content:"";position:absolute;inset:0;background:
+  repeating-linear-gradient(90deg,transparent 0 38px,rgba(55,224,200,.03) 38px 39px);pointer-events:none}
+.sprint-head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px;position:relative}
+.sprint-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--aqua)}
+.sprint-head h2{font-size:20px}
+.sprint-head .ghost{margin-left:auto}
+.sprint-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;position:relative}
+@media(max-width:720px){.sprint-cards{grid-template-columns:1fr}}
+
+/* ---------- toolbar ---------- */
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:22px}
+.search{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line2);color:var(--txt);
+  border-radius:11px;padding:11px 15px;font-size:14px;font-family:var(--body)}
+.search:focus{outline:2px solid var(--aqua);outline-offset:1px}
+.chips-line{display:flex;gap:7px;flex-wrap:wrap}
+.fchip{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:9px;
+  padding:8px 13px;font-size:12.5px;transition:.15s}
+.fchip:hover{border-color:var(--line2);color:var(--txt)}
+.fchip.active{background:var(--panel2);color:var(--txt);border-color:var(--aqua);box-shadow:0 0 0 1px var(--aqua) inset}
+.ghost{background:transparent;border:1px solid var(--line2);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12px}
+.ghost:hover{color:var(--txt);border-color:var(--aqua)}
+
+/* ---------- categories & cards ---------- */
+.cat{margin-bottom:26px}
+.cat-head{display:flex;align-items:center;gap:12px;margin:0 2px 12px}
+.cat-head h2{font-size:16px;color:var(--txt)}
+.cat-head::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
+.cat-count{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px}
+.card{position:relative;text-align:left;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:14px 14px 12px;transition:.16s;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent;transition:.16s}
+.card:hover{border-color:var(--line2);transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.card:hover::before{background:var(--aqua)}
+.card.solved::before{background:var(--green)}
+.card.solved .card-name{color:var(--muted)}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.card-num{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.card-name{font-family:var(--disp);font-size:14.5px;font-weight:500;margin-bottom:11px;line-height:1.25}
+.card-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat{font-size:11px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:3px 7px}
+.badge-anim{font-size:10.5px;color:var(--aqua);border:1px solid rgba(55,224,200,.4);border-radius:6px;padding:3px 7px;
+  background:rgba(55,224,200,.08);font-family:var(--mono);letter-spacing:.02em}
+.star{margin-left:auto;color:var(--dim);font-size:16px;line-height:1;transition:.15s;padding:2px}
+.star:hover{color:var(--amber);transform:scale(1.2)}
+.star.starred{color:var(--amber);text-shadow:0 0 10px rgba(255,180,84,.6)}
+.card.compact .card-name{font-size:15px}
+.mh-diff{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:2px 7px;border-radius:6px;font-weight:600}
+.d-easy{color:var(--easy);background:rgba(94,232,139,.12)}
+.d-med{color:var(--med);background:rgba(255,180,84,.12)}
+.d-hard{color:var(--hard);background:rgba(255,107,129,.12)}
+.empty-state{text-align:center;color:var(--dim);padding:60px 0;font-family:var(--mono)}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(4,6,14,.72);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal.open{display:flex;animation:fade .18s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal-card{width:min(1080px,100%);max-height:92vh;background:var(--bg2);border:1px solid var(--line2);
+  border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+.modal-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.mh-left{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.mh-left h3{font-size:18px}
+.mh-pat{font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+.mh-right{margin-left:auto;display:flex;gap:8px}
+.icon-btn{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:9px;
+  width:34px;height:34px;display:grid;place-items:center;font-size:14px;transition:.15s}
+.icon-btn:hover{color:var(--txt);border-color:var(--line2)}
+.icon-btn svg{width:16px;height:16px;fill:currentColor}
+.icon-btn.on{color:var(--amber);border-color:var(--amber)}
+#m-solve.on{color:var(--green);border-color:var(--green)}
+.modal-body{display:grid;grid-template-columns:1.32fr 1fr;gap:0;overflow:hidden;min-height:0}
+@media(max-width:860px){.modal-body{grid-template-columns:1fr;overflow:auto}}
+
+/* stage col */
+.stage-col{padding:18px;border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;overflow:auto}
+.viz-mount{min-height:220px;display:flex;flex-direction:column;justify-content:center;gap:16px;overflow:auto;padding:6px 2px}
+.narration{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--aqua);
+  border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--txt);min-height:52px;font-family:var(--mono);line-height:1.55}
+.controls{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.ctl{background:var(--panel);border:1px solid var(--line2);color:var(--txt);border-radius:10px;
+  width:38px;height:38px;display:grid;place-items:center;transition:.15s}
+.ctl svg{width:18px;height:18px;fill:currentColor}
+.ctl:hover{border-color:var(--aqua);color:var(--aqua)}
+.ctl.play{background:var(--aqua);color:#04121; border-color:var(--aqua);width:46px;height:46px}
+.ctl.play svg{fill:#061018;width:20px;height:20px}
+.ctl.play:hover{filter:brightness(1.1);color:#061018}
+.frame-count{font-family:var(--mono);font-size:12px;color:var(--dim);margin-left:4px}
+.speed{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.speed input{width:80px;accent-color:var(--aqua)}
+.speed b{color:var(--txt)}
+.progress{height:4px;background:var(--panel);border-radius:4px;margin-top:12px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--aqua),var(--violet));transition:width .25s}
+.no-anim,.note-soft{color:var(--dim);font-family:var(--mono);font-size:13px;text-align:center;padding:30px 10px}
+.note-soft{text-align:left;padding:12px 0 0;color:var(--muted)}
+
+/* info col */
+.info-col{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.tabs{display:flex;gap:2px;padding:14px 16px 0;border-bottom:1px solid var(--line)}
+.tab{background:transparent;border:none;color:var(--muted);padding:9px 14px;font-size:13px;border-bottom:2px solid transparent;transition:.15s}
+.tab:hover{color:var(--txt)}
+.tab.active{color:var(--aqua);border-bottom-color:var(--aqua)}
+.tab-body{padding:16px 18px;overflow:auto}
+.tab-body.hidden{display:none}
+.idea{font-size:14.5px;line-height:1.65;color:var(--txt);margin:0 0 10px}
+.comp{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.comp-k{font-size:11px;color:var(--dim);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
+.comp-v{font-family:var(--mono);font-size:15px;color:var(--aqua)}
+.code-block{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:#070a15;border:1px solid var(--line);
+  border-radius:10px;padding:10px 4px;overflow:auto;max-height:52vh}
+.ln{display:flex;gap:12px;padding:0 12px;white-space:pre;border-radius:5px;transition:background .2s}
+.ln .lno{color:#3a4266;width:20px;text-align:right;user-select:none;flex-shrink:0}
+.ln code{color:#cdd6f4;background:none}
+.ln.hl{background:rgba(55,224,200,.14);box-shadow:-3px 0 0 var(--aqua) inset}
+.ln.hl code{color:#fff}
+
+/* ---------- ROWS viz ---------- */
+.rows-wrap{display:flex;flex-direction:column;gap:22px}
+.viz-row{display:flex;align-items:center;gap:14px;transition:opacity .3s}
+.row-label{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:64px;text-align:right;flex-shrink:0}
+.track{position:relative;padding-top:2px}
+.cells{display:flex;gap:10px;flex-wrap:nowrap}
+.viz-row.bars .cells{align-items:flex-end}
+.cell{width:46px;height:46px;flex-shrink:0;border-radius:9px;background:var(--panel);border:1px solid var(--line2);
+  display:flex;align-items:center;justify-content:center;position:relative;
+  transition:transform .28s cubic-bezier(.34,1.4,.5,1),background .25s,border-color .25s,box-shadow .25s,opacity .25s}
+.cell .cv{font-family:var(--mono);font-size:14px;color:var(--txt);z-index:2}
+.cell.hidden{opacity:0;transform:scale(.2);width:0;margin:0;pointer-events:none}
+.cell.bar{width:46px;height:150px;background:transparent;border:none;align-items:flex-end;flex-direction:column;justify-content:flex-end}
+.cell.bar .barfill{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:8px 8px 3px 3px;
+  transition:height .35s cubic-bezier(.34,1.2,.5,1),background .25s,border-color .25s}
+.cell.bar .cv{position:static;margin-top:5px;color:var(--muted);font-size:12px}
+/* states */
+.cl-active{background:rgba(55,224,200,.16);border-color:var(--aqua);box-shadow:0 0 16px rgba(55,224,200,.35)}
+.cl-active .barfill{background:rgba(55,224,200,.22);border-color:var(--aqua)}
+.cl-compare{background:rgba(255,180,84,.14);border-color:var(--amber)}
+.cl-compare .barfill{background:rgba(255,180,84,.2);border-color:var(--amber)}
+.cl-found{background:rgba(94,232,139,.18);border-color:var(--green);box-shadow:0 0 16px rgba(94,232,139,.4)}
+.cl-found .barfill{background:rgba(94,232,139,.24);border-color:var(--green)}
+.cl-store{background:rgba(157,124,255,.16);border-color:var(--violet)}
+.cl-store .barfill{background:rgba(157,124,255,.22);border-color:var(--violet)}
+.cl-bad{background:rgba(255,107,129,.18);border-color:var(--coral);box-shadow:0 0 14px rgba(255,107,129,.4)}
+.cl-bad .barfill{background:rgba(255,107,129,.22);border-color:var(--coral)}
+.cl-dim{opacity:.32}
+.cl-visited{background:rgba(157,124,255,.09);border-color:rgba(157,124,255,.35)}
+.cl-done{opacity:.5}
+.cl-water{opacity:.28}
+.band{position:absolute;top:-1px;height:48px;background:rgba(55,224,200,.09);border:1px dashed rgba(55,224,200,.5);
+  border-radius:9px;z-index:0;transition:left .3s,width .3s,opacity .2s;pointer-events:none}
+.viz-row.bars .band{height:150px}
+.ptr-layer{position:absolute;left:0;top:0;height:0}
+.ptr{position:absolute;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;
+  font-family:var(--mono);font-size:10.5px;font-weight:700;transition:left .3s cubic-bezier(.34,1.3,.5,1),opacity .2s;pointer-events:none}
+.ptr span{background:currentColor;color:#08101f;padding:1px 6px;border-radius:5px;line-height:1.4}
+.ptr i{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor}
+
+/* extra: vars + panels */
+.extra{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.vars{display:flex;gap:8px;flex-wrap:wrap}
+.var{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:5px 9px;display:flex;gap:7px;align-items:baseline}
+.var em{color:var(--dim);font-style:normal}
+.var b{color:var(--aqua)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.panel-label{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px;text-transform:uppercase}
+.panel-chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;
+  padding:4px 8px;display:flex;gap:5px;align-items:baseline;transition:.2s}
+.chip b{color:var(--txt)}.chip i{color:var(--aqua);font-style:normal}
+.chip.chip-hi{border-color:var(--green);background:rgba(94,232,139,.12);box-shadow:0 0 10px rgba(94,232,139,.3)}
+.chip.empty{color:var(--dim);border-style:dashed}
+
+/* ---------- TREE viz ---------- */
+.tree-stage{position:relative;margin:0 auto}
+.tree-svg{position:absolute;left:0;top:0;overflow:visible}
+.edge{stroke:var(--line2);stroke-width:2;transition:stroke .25s}
+.edge-path{stroke:var(--aqua);stroke-width:2.5}
+.tnode{position:absolute;left:0;top:0;width:44px;height:44px;border-radius:50%;background:var(--panel);
+  border:2px solid var(--line2);display:grid;place-items:center;font-family:var(--mono);font-size:14px;color:var(--txt);
+  transition:transform .45s cubic-bezier(.34,1.25,.5,1),background .25s,border-color .25s,box-shadow .25s,opacity .3s}
+.tnode.st-path{border-color:var(--aqua);background:rgba(55,224,200,.16);box-shadow:0 0 18px rgba(55,224,200,.4)}
+.tnode.st-visited{border-color:var(--violet);background:rgba(157,124,255,.14)}
+.tnode.st-bad{border-color:var(--coral);background:rgba(255,107,129,.18);box-shadow:0 0 16px rgba(255,107,129,.45)}
+
+/* ---------- GRID viz ---------- */
+.grid{display:grid;gap:5px;margin:0 auto;justify-content:center}
+.gcell{width:52px;height:52px;border-radius:8px;background:var(--panel);border:1px solid var(--line2);
+  display:grid;place-items:center;font-family:var(--mono);font-size:14px;color:var(--txt);
+  transition:background .25s,border-color .25s,box-shadow .25s,transform .2s}
+.gcell.cl-land{background:rgba(94,232,139,.14);border-color:rgba(94,232,139,.5);color:var(--green)}
+.gcell.cl-water{background:var(--bg2);color:var(--dim)}
+.gcell.cl-visited{background:rgba(157,124,255,.14);border-color:rgba(157,124,255,.4);color:var(--violet)}
+.gcell.cl-store{background:rgba(55,224,200,.2);border-color:var(--aqua);color:#fff;box-shadow:0 0 16px rgba(55,224,200,.4)}
+.gcell.cl-compare{background:rgba(255,180,84,.16);border-color:var(--amber)}
+.gcell.cl-idle{}
+.gcell.gptr{box-shadow:0 0 0 2px var(--aqua),0 0 18px rgba(55,224,200,.5);transform:scale(1.06)}
+
+/* ---------- LIST viz ---------- */
+.list-stage{position:relative;margin:0 auto}
+.list-svg{position:absolute;left:0;top:0;overflow:visible}
+.llink{stroke:var(--line2);stroke-width:2;fill:none}
+.llink.back{stroke:var(--violet);stroke-width:2.5}
+.llink.cyc{stroke:var(--coral);stroke-width:2.5;stroke-dasharray:5 4}
+.lnode{position:absolute;width:48px;height:48px;border-radius:50%;background:var(--panel);border:2px solid var(--line2);
+  display:grid;place-items:center;font-family:var(--mono);font-size:15px;color:var(--txt);z-index:2;transition:.25s}
+.lnode.lactive{border-color:var(--pc,var(--aqua));box-shadow:0 0 16px color-mix(in srgb,var(--pc,#37e0c8) 55%,transparent)}
+.ltag{position:absolute;top:-24px;font-family:var(--mono);font-size:10px;font-weight:700;background:currentColor;padding:1px 5px;border-radius:4px}
+.ltag{color:#08101f}
+.lp-fast .ltag,.lp-slow .ltag{top:auto;bottom:-24px}
+
+/* ---------- MERGE LIST viz ---------- */
+.mlwrap{display:flex;flex-direction:column;gap:16px}
+.mlrow{display:flex;align-items:center;gap:12px}
+.mlrow .row-label{min-width:56px}
+.mlnodes{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mlnode{min-width:38px;height:38px;padding:0 8px;border-radius:9px;background:var(--panel);border:1px solid var(--line2);
+  display:grid;place-items:center;font-family:var(--mono);font-size:14px;transition:.25s}
+.mlnode.mlactive{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 16%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--ac) 45%,transparent)}
+.mlnode.mlout{border-color:var(--green);background:rgba(94,232,139,.12);color:var(--green)}
+.mlarrow{color:var(--dim);font-size:12px}
+.mlrow.out{padding-top:12px;border-top:1px dashed var(--line)}
+
+/* ---------- INTERVALS viz ---------- */
+.iv-stage{margin:0 auto;position:relative}
+.iv-track-label{font-family:var(--mono);font-size:11px;color:var(--muted);margin:6px 0 4px}
+.iv-track{position:relative;height:34px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;margin-bottom:2px}
+.iv-track.merged{background:rgba(94,232,139,.05)}
+.iv-bar{position:absolute;top:4px;height:26px;border-radius:6px;display:grid;place-items:center;
+  font-family:var(--mono);font-size:11px;color:#08101f;font-weight:600;background:var(--muted);transition:.3s}
+.iv-bar.st-idle{background:var(--panel2);color:var(--muted);border:1px solid var(--line2)}
+.iv-bar.st-active{background:var(--aqua);box-shadow:0 0 14px rgba(55,224,200,.5)}
+.iv-bar.st-merged{background:var(--green)}
+.iv-axis{position:relative;height:16px;margin:2px 0 10px}
+.iv-axis span{position:absolute;font-family:var(--mono);font-size:9px;color:var(--dim);transform:translateX(-50%)}
+
+/* scrollbars */
+::-webkit-scrollbar{height:9px;width:9px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ============================================================
+   BLIND 75 — DATA + ANIMATION FRAME BUILDERS
+   Each animated problem has build() -> { frames:[...], kind }
+   Frame schema by kind:
+     rows:      { rows:[{label,arr,cls,ptr,win,type}], panels:[{label,kind,data,hi}], vars:{}, note, line }
+     tree:      { nodes:[{id,val,x,y,state}], edges:[{a,b,state}], panels, vars, note, line }
+     grid:      { grid:[[..]], cls:[[..]], ptr:{r,c}, panels, vars, note, line }
+     list:      { nodes:[{id,val}], links:[{from,to,state}], ptr:{name:id}, out:[ids], note, line }
+     intervals: { items:[{s,e,state}], merged:[{s,e}], min, max, vars, note, line }
+   ============================================================ */
+
+const CATS = [
+  ["Arrays & Hashing", "arr"], ["Two Pointers", "two"], ["Sliding Window", "win"],
+  ["Stack", "stk"], ["Binary Search", "bs"], ["Linked List", "ll"], ["Trees", "tree"],
+  ["Heap / Priority Queue", "heap"], ["Backtracking", "bt"], ["Tries", "trie"],
+  ["Graphs", "graph"], ["Advanced Graphs", "agraph"], ["1-D Dynamic Programming", "dp1"],
+  ["2-D Dynamic Programming", "dp2"], ["Greedy", "greedy"], ["Intervals", "iv"],
+  ["Math & Geometry", "math"], ["Bit Manipulation", "bit"]
+];
+
+/* ---------- tiny helpers for builders ---------- */
+const cp = o => JSON.parse(JSON.stringify(o));
+function treeLayout(root){ // root nested {val,left,right,id}
+  let nodes=[], edges=[], xi=0;
+  (function walk(n,d){
+    if(!n) return;
+    walk(n.left,d+1);
+    n._x = xi++; n._y = d;
+    nodes.push(n);
+    if(n.left)  edges.push([n.id,n.left.id]);
+    if(n.right) edges.push([n.id,n.right.id]);
+    walk(n.right,d+1);
+  })(root,0);
+  const XS=64, YS=78, PADX=34, PADY=30;
+  const N = nodes.map(n=>({id:n.id,val:n.val,x:PADX+n._x*XS,y:PADY+n._y*YS,state:n.state||'idle'}));
+  const idx = {}; N.forEach(n=>idx[n.id]=n);
+  const E = edges.map(([a,b])=>({a,b,state:(idx[a]&&idx[a].state==='path'&&idx[b]&&idx[b].state==='path')?'path':'idle'}));
+  return {nodes:N, edges:E};
+}
+function snap(root, note, vars, panels, line){
+  const {nodes,edges}=treeLayout(root);
+  return {nodes,edges,note,vars:vars||{},panels:panels||[],line:line};
+}
+function mkTree(){ // sample tree  4 / 2,7 / 1,3,6,9
+  let id=0; const N=(v,l,r)=>({val:v,left:l,right:r,id:id++,state:'idle'});
+  return N(4, N(2, N(1), N(3)), N(7, N(6), N(9)));
+}
+
+/* ============================================================
+   ANIMATION BUILDERS
+   ============================================================ */
+const ANIM = {};
+
+/* ---- Two Sum ---- */
+ANIM.twoSum = () => {
+  const a=[3,2,4,6], t=6, seen={}, fr=[];
+  fr.push({rows:[{label:'nums',arr:a}],panels:[{label:'seen  val→idx',kind:'map',data:{}}],vars:{target:t},
+    note:'Find two indices summing to '+t+'. Keep a hashmap of values already seen for O(1) look-back.',line:1});
+  for(let i=0;i<a.length;i++){
+    const need=t-a[i];
+    fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'active'},ptr:{i}}],panels:[{label:'seen',kind:'map',data:cp(seen)}],
+      vars:{'nums[i]':a[i],need},note:`i=${i}. need = ${t} − ${a[i]} = ${need}. Is ${need} in the map?`,line:3});
+    if(need in seen){
+      fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'found',[seen[need]]:'found'},ptr:{i,j:seen[need]}}],
+        panels:[{label:'seen',kind:'map',data:cp(seen),hi:String(need)}],vars:{answer:`[${seen[need]}, ${i}]`},
+        note:`Yes! ${need} was seen at index ${seen[need]}. Return [${seen[need]}, ${i}].`,line:4});break;
+    }
+    seen[a[i]]=i;
+    fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'store'},ptr:{i}}],panels:[{label:'seen',kind:'map',data:cp(seen),hi:String(a[i])}],
+      vars:{target:t},note:`Not there. Store ${a[i]}→${i}, continue.`,line:6});
+  }
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Contains Duplicate ---- */
+ANIM.containsDup = () => {
+  const a=[1,4,2,4,5], seen=new Set(), fr=[];
+  fr.push({rows:[{label:'nums',arr:a}],panels:[{label:'seen',kind:'set',data:[]}],note:'Walk once, adding to a set. If a value is already inside, it is a duplicate.',line:1});
+  for(let i=0;i<a.length;i++){
+    if(seen.has(a[i])){
+      fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'bad'},ptr:{i}}],panels:[{label:'seen',kind:'set',data:[...seen],hi:String(a[i])}],
+        vars:{result:'true'},note:`${a[i]} already in set → duplicate found. Return true.`,line:4});break;
+    }
+    seen.add(a[i]);
+    fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'store'},ptr:{i}}],panels:[{label:'seen',kind:'set',data:[...seen],hi:String(a[i])}],
+      note:`${a[i]} is new → add to set.`,line:6});
+  }
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Valid Anagram ---- */
+ANIM.anagram = () => {
+  const s="cat", t="act", cnt={}, fr=[];
+  for(const c of s) cnt[c]=(cnt[c]||0)+1;
+  fr.push({rows:[{label:'s',arr:[...s]},{label:'t',arr:[...t]}],panels:[{label:'count(s)',kind:'map',data:cp(cnt)}],
+    note:'Count every letter of s. Then subtract using t — all counts must return to zero.',line:2});
+  const c2=cp(cnt);
+  for(let i=0;i<t.length;i++){
+    c2[t[i]]=(c2[t[i]]||0)-1;
+    fr.push({rows:[{label:'s',arr:[...s]},{label:'t',arr:[...t],cls:{[i]:'active'},ptr:{i}}],
+      panels:[{label:'count',kind:'map',data:cp(c2),hi:t[i]}],note:`Subtract '${t[i]}'. count['${t[i]}'] = ${c2[t[i]]}.`,line:4});
+  }
+  fr.push({rows:[{label:'s',arr:[...s]},{label:'t',arr:[...t]}],panels:[{label:'count',kind:'map',data:cp(c2)}],
+    vars:{result:'true'},note:'All counts are 0 → t is an anagram of s.',line:5});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Product Except Self ---- */
+ANIM.productSelf = () => {
+  const a=[2,3,4,5], n=a.length, res=Array(n).fill(1), fr=[];
+  fr.push({rows:[{label:'nums',arr:a},{label:'answer',arr:cp(res)}],note:'No division. answer[i] = product of everything to the LEFT × everything to the RIGHT. Two sweeps.',line:1});
+  let pre=1;
+  for(let i=0;i<n;i++){res[i]=pre; fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'active'},ptr:{i}},{label:'answer',arr:cp(res),cls:{[i]:'store'}}],vars:{'prefix':pre},note:`Left pass: answer[${i}] = product of items before it = ${pre}.`,line:4}); pre*=a[i];}
+  let post=1;
+  for(let i=n-1;i>=0;i--){res[i]*=post; fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'active'},ptr:{i}},{label:'answer',arr:cp(res),cls:{[i]:'found'}}],vars:{'suffix':post},note:`Right pass: multiply answer[${i}] by product after it = ${post}.`,line:8}); post*=a[i];}
+  fr.push({rows:[{label:'nums',arr:a},{label:'answer',arr:cp(res),cls:Object.fromEntries(res.map((_,i)=>[i,'found']))}],note:'Done — each slot holds the product of all others.',line:9});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Valid Palindrome ---- */
+ANIM.palindrome = () => {
+  const raw="Race, car!"; const s=[...raw.toLowerCase()].filter(c=>/[a-z0-9]/.test(c)).join('');
+  const a=[...s], fr=[]; let l=0,r=a.length-1;
+  fr.push({rows:[{label:'clean',arr:a}],note:'Strip non-alphanumerics, lowercase. Two pointers close in from both ends comparing letters.',line:2});
+  while(l<r){
+    const ok=a[l]===a[r];
+    fr.push({rows:[{label:'clean',arr:a,cls:{[l]:ok?'found':'bad',[r]:ok?'found':'bad'},ptr:{l,r}}],
+      note:`Compare '${a[l]}' vs '${a[r]}' → ${ok?'match':'mismatch → not a palindrome'}.`,line:4});
+    if(!ok)return {kind:'rows',frames:fr};
+    l++;r--;
+  }
+  fr.push({rows:[{label:'clean',arr:a,cls:Object.fromEntries(a.map((_,i)=>[i,'found']))}],vars:{result:'true'},note:'Pointers crossed with no mismatch → palindrome!',line:6});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- 3Sum ---- */
+ANIM.threeSum = () => {
+  const a=[-4,-1,-1,0,1,2].slice().sort((x,y)=>x-y), fr=[], out=[];
+  fr.push({rows:[{label:'sorted',arr:a}],note:'Sort first. Fix index i, then two-pointer (l,r) hunt for a pair summing to −nums[i].',line:1});
+  for(let i=0;i<a.length-2;i++){
+    if(i>0&&a[i]===a[i-1])continue;
+    let l=i+1,r=a.length-1;
+    while(l<r){
+      const s=a[i]+a[l]+a[r];
+      fr.push({rows:[{label:'sorted',arr:a,cls:{[i]:'active',[l]:'compare',[r]:'compare'},ptr:{i,l,r}}],
+        vars:{sum:s},note:`sum = ${a[i]}+${a[l]}+${a[r]} = ${s}. ${s<0?'too small → l→':s>0?'too big → r←':'zero → record!'}`,line:5});
+      if(s<0)l++; else if(s>0)r--; else{out.push([a[i],a[l],a[r]]);
+        fr.push({rows:[{label:'sorted',arr:a,cls:{[i]:'found',[l]:'found',[r]:'found'},ptr:{i,l,r}}],vars:{triplets:JSON.stringify(out)},note:`Found [${a[i]}, ${a[l]}, ${a[r]}]. Skip duplicates, keep scanning.`,line:9});
+        l++;r--; while(l<r&&a[l]===a[l-1])l++;}
+    }
+  }
+  fr.push({rows:[{label:'sorted',arr:a}],vars:{answer:JSON.stringify(out)},note:'All unique triplets collected.',line:12});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Container With Most Water (bars) ---- */
+ANIM.container = () => {
+  const h=[1,8,6,2,5,4,8,3,7], fr=[]; let l=0,r=h.length-1,best=0,bl=0,br=0;
+  fr.push({rows:[{label:'height',arr:h,type:'bars'}],note:'Area = width × min(height). Start wide; always move the SHORTER wall inward — it can only help.',line:1});
+  while(l<r){
+    const area=(r-l)*Math.min(h[l],h[r]);
+    if(area>best){best=area;bl=l;br=r;}
+    fr.push({rows:[{label:'height',arr:h,type:'bars',cls:{[l]:'active',[r]:'active',[bl]:'found',[br]:'found'},win:[l,r],ptr:{l,r}}],
+      vars:{width:r-l,area,best},note:`(${l},${r}): area = ${r-l} × min(${h[l]},${h[r]}) = ${area}. best=${best}. Move ${h[l]<h[r]?'left':'right'} wall.`,line:4});
+    if(h[l]<h[r])l++; else r--;
+  }
+  fr.push({rows:[{label:'height',arr:h,type:'bars',cls:{[bl]:'found',[br]:'found'},win:[bl,br]}],vars:{maxArea:best},note:`Maximum area = ${best}.`,line:8});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Best Time to Buy & Sell (bars) ---- */
+ANIM.bestTime = () => {
+  const p=[7,1,5,3,6,4], fr=[]; let minP=Infinity, best=0, buy=0;
+  fr.push({rows:[{label:'price',arr:p,type:'bars'}],note:'One pass. Track the lowest price so far (best day to have bought) and the best profit if we sold today.',line:1});
+  for(let i=0;i<p.length;i++){
+    if(p[i]<minP){minP=p[i];buy=i;}
+    const prof=p[i]-minP; if(prof>best)best=prof;
+    fr.push({rows:[{label:'price',arr:p,type:'bars',cls:{[buy]:'store',[i]:'active'},ptr:{buy,i}}],
+      vars:{minPrice:minP,'todayProfit':prof,maxProfit:best},note:`Day ${i}: buy@${minP}, sell@${p[i]} → ${prof}. maxProfit=${best}.`,line:4});
+  }
+  fr.push({rows:[{label:'price',arr:p,type:'bars',cls:{[buy]:'found'}}],vars:{maxProfit:best},note:`Best achievable profit = ${best}.`,line:6});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Longest Substring Without Repeating ---- */
+ANIM.longestSub = () => {
+  const s="abcabcbb", a=[...s], fr=[]; let l=0,best=0,bw=[0,0]; const inW=new Set();
+  fr.push({rows:[{label:'s',arr:a}],panels:[{label:'window set',kind:'set',data:[]}],note:'Sliding window. Grow the right edge; when a repeat appears, shrink from the left until it is gone.',line:1});
+  for(let r=0;r<a.length;r++){
+    while(inW.has(a[r])){inW.delete(a[l]);
+      fr.push({rows:[{label:'s',arr:a,cls:{[l]:'bad'},win:[l,r],ptr:{l,r}}],panels:[{label:'window',kind:'set',data:[...inW]}],note:`Repeat '${a[r]}'. Drop left char '${a[l]}', l→${l+1}.`,line:5});
+      l++;}
+    inW.add(a[r]);
+    if(r-l+1>best){best=r-l+1;bw=[l,r];}
+    fr.push({rows:[{label:'s',arr:a,cls:{[r]:'active'},win:[l,r],ptr:{l,r}}],panels:[{label:'window',kind:'set',data:[...inW],hi:a[r]}],
+      vars:{'window':s.slice(l,r+1),len:r-l+1,best},note:`Add '${a[r]}'. window="${s.slice(l,r+1)}" (len ${r-l+1}). best=${best}.`,line:7});
+  }
+  fr.push({rows:[{label:'s',arr:a,cls:Object.fromEntries(a.map((_,i)=>[i,i>=bw[0]&&i<=bw[1]?'found':'idle'])),win:bw}],vars:{answer:best},note:`Longest unique substring length = ${best}.`,line:8});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Valid Parentheses (stack) ---- */
+ANIM.parens = () => {
+  const s="([{}])", a=[...s], fr=[], st=[]; const match={')':'(',']':'[','}':'{'};
+  fr.push({rows:[{label:'input',arr:a},{label:'stack',arr:[]}],note:'Push opens. On a close, the top of the stack must be its matching open, then pop.',line:2});
+  for(let i=0;i<a.length;i++){
+    const c=a[i];
+    if(c==='('||c==='['||c==='{'){st.push(c);
+      fr.push({rows:[{label:'input',arr:a,cls:{[i]:'active'},ptr:{i}},{label:'stack',arr:cp(st),cls:{[st.length-1]:'store'}}],note:`'${c}' is an opener → push.`,line:4});
+    } else {
+      const ok=st.length&&st[st.length-1]===match[c];
+      fr.push({rows:[{label:'input',arr:a,cls:{[i]:ok?'found':'bad'},ptr:{i}},{label:'stack',arr:cp(st),cls:{[st.length-1]:ok?'found':'bad'}}],note:`'${c}' closes. Top is '${st[st.length-1]||'∅'}' → ${ok?'match, pop':'mismatch → invalid'}.`,line:7});
+      if(!ok)return {kind:'rows',frames:fr}; st.pop();
+    }
+  }
+  fr.push({rows:[{label:'input',arr:a},{label:'stack',arr:[]}],vars:{result:st.length===0?'true':'false'},note:'End reached with empty stack → valid.',line:8});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Search in Rotated Sorted Array ---- */
+ANIM.searchRotated = () => {
+  const a=[4,5,6,7,0,1,2], target=0, fr=[]; let l=0,r=a.length-1;
+  fr.push({rows:[{label:'nums',arr:a}],vars:{target},note:'Binary search. One half is always sorted — decide which, then check if target lies inside it.',line:1});
+  while(l<=r){
+    const m=(l+r)>>1;
+    fr.push({rows:[{label:'nums',arr:a,cls:{[m]:'active'},win:[l,r],ptr:{l,mid:m,r}}],vars:{'nums[mid]':a[m]},note:`mid=${m}, nums[mid]=${a[m]}.`,line:4});
+    if(a[m]===target){fr.push({rows:[{label:'nums',arr:a,cls:{[m]:'found'},ptr:{mid:m}}],vars:{index:m},note:`Found target at index ${m}.`,line:5});return {kind:'rows',frames:fr};}
+    if(a[l]<=a[m]){ // left sorted
+      if(a[l]<=target&&target<a[m]){r=m-1; fr.push({rows:[{label:'nums',arr:a,win:[l,r],cls:{[m]:'dim'}}],note:`Left half [${a[l]}..${a[m]}] is sorted & holds target → go left.`,line:7});}
+      else{l=m+1; fr.push({rows:[{label:'nums',arr:a,win:[l,r],cls:{[m]:'dim'}}],note:`Left half sorted but target not in it → go right.`,line:8});}
+    } else {
+      if(a[m]<target&&target<=a[r]){l=m+1; fr.push({rows:[{label:'nums',arr:a,win:[l,r],cls:{[m]:'dim'}}],note:`Right half sorted & holds target → go right.`,line:10});}
+      else{r=m-1; fr.push({rows:[{label:'nums',arr:a,win:[l,r],cls:{[m]:'dim'}}],note:`Right half sorted but target not in it → go left.`,line:11});}
+    }
+  }
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Climbing Stairs (dp) ---- */
+ANIM.climb = () => {
+  const n=6, dp=Array(n+1).fill(0); dp[0]=1;dp[1]=1; const fr=[];
+  fr.push({rows:[{label:'ways',arr:cp(dp)}],note:'ways[i] = ways[i−1] + ways[i−2] — reach step i from one below or two below. It is Fibonacci.',line:1});
+  for(let i=2;i<=n;i++){dp[i]=dp[i-1]+dp[i-2];
+    fr.push({rows:[{label:'ways',arr:cp(dp),cls:{[i]:'store',[i-1]:'compare',[i-2]:'compare'},ptr:{i}}],note:`ways[${i}] = ways[${i-1}] + ways[${i-2}] = ${dp[i-1]} + ${dp[i-2]} = ${dp[i]}.`,line:3});}
+  fr.push({rows:[{label:'ways',arr:cp(dp),cls:{[n]:'found'}}],vars:{answer:dp[n]},note:`Distinct ways to climb ${n} stairs = ${dp[n]}.`,line:4});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- House Robber (dp) ---- */
+ANIM.robber = () => {
+  const a=[2,7,9,3,1]; let prev=0,cur=0; const fr=[]; const dp=[];
+  fr.push({rows:[{label:'houses',arr:a}],note:'Cannot rob adjacent houses. At each house: best = max(skip it, rob it + best two back).',line:1});
+  for(let i=0;i<a.length;i++){const t=Math.max(cur,prev+a[i]); dp.push(t);
+    fr.push({rows:[{label:'houses',arr:a,cls:{[i]:'active'},ptr:{i}},{label:'best',arr:cp(dp),cls:{[dp.length-1]:'store'}}],
+      vars:{skip:cur,'rob':prev+a[i],best:t},note:`House ${i} (${a[i]}): max(skip=${cur}, rob=${prev}+${a[i]}=${prev+a[i]}) = ${t}.`,line:4}); prev=cur;cur=t;}
+  fr.push({rows:[{label:'houses',arr:a},{label:'best',arr:cp(dp),cls:{[dp.length-1]:'found'}}],vars:{maxLoot:cur},note:`Most money without robbing adjacent = ${cur}.`,line:5});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Coin Change (dp) ---- */
+ANIM.coin = () => {
+  const coins=[1,3,4], amt=6, INF=99; const dp=Array(amt+1).fill(INF); dp[0]=0; const fr=[];
+  const show=d=>d.map(x=>x===INF?'∞':x);
+  fr.push({rows:[{label:'coins',arr:coins},{label:'minCoins',arr:show(dp)}],note:'dp[x] = fewest coins to make x. For each amount, try every coin: dp[x] = min(dp[x], dp[x−coin]+1).',line:2});
+  for(let x=1;x<=amt;x++){
+    for(const c of coins){ if(x-c>=0 && dp[x-c]+1<dp[x]){dp[x]=dp[x-c]+1;
+      fr.push({rows:[{label:'coins',arr:coins,cls:{[coins.indexOf(c)]:'active'}},{label:'minCoins',arr:show(dp),cls:{[x]:'store',[x-c]:'compare'},ptr:{x}}],
+        vars:{amount:x,coin:c},note:`Make ${x} using coin ${c}: dp[${x}] = dp[${x-c}]+1 = ${dp[x]}.`,line:5});}}
+  }
+  fr.push({rows:[{label:'coins',arr:coins},{label:'minCoins',arr:show(dp),cls:{[amt]:'found'}}],vars:{answer:dp[amt]},note:`Fewest coins to make ${amt} = ${dp[amt]}.`,line:6});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Maximum Subarray (Kadane) ---- */
+ANIM.kadane = () => {
+  const a=[-2,1,-3,4,-1,2,1,-5,4], fr=[]; let cur=a[0],best=a[0];
+  fr.push({rows:[{label:'nums',arr:a}],note:'Kadane: at each element decide — extend the running sum, or start fresh here. Track the best seen.',line:1});
+  for(let i=1;i<a.length;i++){const restart=a[i]>cur+a[i]; cur=Math.max(a[i],cur+a[i]); best=Math.max(best,cur);
+    fr.push({rows:[{label:'nums',arr:a,cls:{[i]:restart?'store':'active'},ptr:{i}}],vars:{running:cur,best},
+      note:`i=${i}: ${restart?`start new at ${a[i]}`:`extend → ${cur}`}. best=${best}.`,line:4});}
+  fr.push({rows:[{label:'nums',arr:a}],vars:{maxSum:best},note:`Largest contiguous subarray sum = ${best}.`,line:5});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Jump Game (greedy) ---- */
+ANIM.jump = () => {
+  const a=[2,3,1,1,4], fr=[]; let reach=0;
+  fr.push({rows:[{label:'nums',arr:a}],note:'Greedy. Track the farthest index reachable. If you ever stand beyond it, you are stuck.',line:1});
+  for(let i=0;i<a.length;i++){
+    if(i>reach){fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'bad'},ptr:{i}}],vars:{reach},note:`i=${i} > reach=${reach} → cannot proceed. Return false.`,line:3});return {kind:'rows',frames:fr};}
+    reach=Math.max(reach,i+a[i]);
+    fr.push({rows:[{label:'nums',arr:a,cls:{[i]:'active',[Math.min(reach,a.length-1)]:'compare'},ptr:{i}}],vars:{reach},note:`At ${i} (jump ${a[i]}) → reach = max(${reach}). ${reach>=a.length-1?'Last index covered!':''}`,line:5});
+    if(reach>=a.length-1)break;
+  }
+  fr.push({rows:[{label:'nums',arr:a,cls:{[a.length-1]:'found'}}],vars:{result:'true'},note:'Last index is reachable → true.',line:6});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Counting Bits (dp + binary) ---- */
+ANIM.countBits = () => {
+  const n=8, dp=Array(n+1).fill(0), fr=[];
+  const bin=x=>x.toString(2).padStart(4,'0');
+  fr.push({rows:[{label:'i',arr:Array.from({length:n+1},(_,i)=>i)},{label:'bits(i)',arr:cp(dp)}],note:'dp[i] = dp[i>>1] + (i&1). Dropping the last bit is a number we already solved; add back the bit we removed.',line:1});
+  for(let i=1;i<=n;i++){dp[i]=dp[i>>1]+(i&1);
+    fr.push({rows:[{label:'i',arr:Array.from({length:n+1},(_,k)=>k),cls:{[i]:'active',[i>>1]:'compare'},ptr:{i}},{label:'bits',arr:cp(dp),cls:{[i]:'store'}}],
+      vars:{binary:bin(i),'dp[i>>1]':dp[i>>1],'i&1':i&1},note:`i=${i} (${bin(i)}): dp[${i>>1}] + ${i&1} = ${dp[i]}.`,line:3});}
+  fr.push({rows:[{label:'i',arr:Array.from({length:n+1},(_,i)=>i)},{label:'bits',arr:cp(dp),cls:Object.fromEntries(dp.map((_,i)=>[i,'found']))}],note:'Set-bit count for every number up to n, each in O(1).',line:4});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Combination Sum (backtracking path) ---- */
+ANIM.combSum = () => {
+  const cand=[2,3,6,7], target=7, fr=[], out=[]; const path=[];
+  fr.push({rows:[{label:'candidates',arr:cand},{label:'path',arr:[]}],vars:{target},note:'Backtracking. Try each candidate, subtract from target, recurse. Reuse allowed → keep the same start index.',line:1});
+  (function bt(start,rem){
+    fr.push({rows:[{label:'candidates',arr:cand,cls:Object.fromEntries(cand.map((_,k)=>[k,k<start?'dim':'idle']))},{label:'path',arr:cp(path)}],vars:{remaining:rem},
+      note:rem===0?`remaining 0 → record combination [${path.join(', ')}].`:`remaining=${rem}. Try candidates from index ${start}.`,line:3});
+    if(rem===0){out.push(cp(path)); fr[fr.length-1].note=`Found [${path.join(', ')}]! Back up and try alternatives.`; return;}
+    for(let i=start;i<cand.length;i++){
+      if(cand[i]>rem){fr.push({rows:[{label:'candidates',arr:cand,cls:{[i]:'bad'}},{label:'path',arr:cp(path)}],vars:{remaining:rem},note:`${cand[i]} > ${rem} → prune this branch.`,line:5});continue;}
+      path.push(cand[i]);
+      fr.push({rows:[{label:'candidates',arr:cand,cls:{[i]:'store'}},{label:'path',arr:cp(path)}],vars:{remaining:rem-cand[i]},note:`Choose ${cand[i]} → path=[${path.join(', ')}].`,line:6});
+      bt(i,rem-cand[i]);
+      path.pop();
+    }
+  })(0,target);
+  fr.push({rows:[{label:'candidates',arr:cand},{label:'path',arr:[]}],vars:{combinations:JSON.stringify(out)},note:`All combinations summing to ${target}: ${JSON.stringify(out)}.`,line:8});
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Find Median from Data Stream (two heaps) ---- */
+ANIM.median = () => {
+  const stream=[5,15,1,3,8], fr=[]; let lo=[],hi=[]; // lo=maxheap(neg logic), hi=minheap
+  const balance=()=>{ lo.sort((a,b)=>b-a); hi.sort((a,b)=>a-b);
+    if(lo.length>hi.length+1)hi.unshift(lo.shift());
+    if(hi.length>lo.length)lo.push(hi.shift());
+    lo.sort((a,b)=>b-a); hi.sort((a,b)=>a-b); };
+  const med=()=>lo.length>hi.length?lo[0]:((lo[0]+hi[0])/2);
+  fr.push({rows:[{label:'low  (max-heap)',arr:[]},{label:'high (min-heap)',arr:[]}],note:'Two heaps: a max-heap for the smaller half, a min-heap for the larger. Median sits at the top(s).',line:2});
+  for(const x of stream){
+    if(lo.length===0||x<=lo[0])lo.push(x); else hi.push(x); balance();
+    fr.push({rows:[{label:'low  (max-heap)',arr:cp(lo),cls:{0:'active'}},{label:'high (min-heap)',arr:cp(hi),cls:{0:'active'}}],
+      vars:{'add':x,median:med()},note:`Insert ${x}, rebalance so sizes differ by ≤1. Median = ${med()}.`,line:6});
+  }
+  return {kind:'rows',frames:fr};
+};
+
+/* ---- Merge Intervals ---- */
+ANIM.mergeIv = () => {
+  const iv=[[1,3],[2,6],[8,10],[15,18]].sort((a,b)=>a[0]-b[0]); const fr=[], out=[]; const mx=20;
+  fr.push({items:iv.map(([s,e])=>({s,e,state:'idle'})),merged:[],max:mx,note:'Sort by start. Walk through; if an interval overlaps the last merged one, extend it, else start a new block.',line:1});
+  for(const [s,e] of iv){
+    if(out.length&&s<=out[out.length-1][1]){out[out.length-1][1]=Math.max(out[out.length-1][1],e);
+      fr.push({items:iv.map(([a,b])=>({s:a,e:b,state:(a===s&&b===e)?'active':'idle'})),merged:cp(out),max:mx,note:`[${s},${e}] overlaps → extend to [${out[out.length-1][0]},${out[out.length-1][1]}].`,line:5});
+    } else {out.push([s,e]);
+      fr.push({items:iv.map(([a,b])=>({s:a,e:b,state:(a===s&&b===e)?'active':'idle'})),merged:cp(out),max:mx,note:`[${s},${e}] is separate → new merged block.`,line:7});}
+  }
+  fr.push({items:iv.map(([s,e])=>({s,e,state:'idle'})),merged:cp(out),max:mx,vars:{result:JSON.stringify(out)},note:`Merged result: ${JSON.stringify(out)}.`,line:8});
+  return {kind:'intervals',frames:fr};
+};
+
+/* ---- Reverse Linked List ---- */
+ANIM.reverseLL = () => {
+  const vals=[1,2,3,4], nodes=vals.map((v,i)=>({id:i,val:v})); const fr=[];
+  let next={}; for(let i=0;i<vals.length-1;i++)next[i]=i+1; next[vals.length-1]=null;
+  const links=()=>Object.entries(next).filter(([a,b])=>b!==null).map(([a,b])=>({from:+a,to:b,state:'idle'}));
+  fr.push({nodes,links:links(),ptr:{},note:'Three pointers: prev, cur, and a saved next. Flip each arrow to point backward, then slide forward.',line:1});
+  let prev=null,cur=0;
+  while(cur!==null){const nx=next[cur];
+    fr.push({nodes,links:links(),ptr:{prev:prev,cur:cur,next:nx},note:`Save next (${nx===null?'null':vals[nx]}). About to flip ${vals[cur]}'s arrow toward ${prev===null?'null':vals[prev]}.`,line:4});
+    next[cur]=prev;
+    fr.push({nodes,links:links(),ptr:{prev:cur,cur:nx},note:`Flipped. Advance prev→${vals[cur]}, cur→${nx===null?'null':vals[nx]}.`,line:6});
+    prev=cur;cur=nx;
+  }
+  fr.push({nodes,links:links(),ptr:{head:prev},note:'List fully reversed — new head is the old tail.',line:8});
+  return {kind:'list',frames:fr};
+};
+
+/* ---- Merge Two Sorted Lists ---- */
+ANIM.mergeLL = () => {
+  const A=[1,2,4], B=[1,3,4]; const fr=[];
+  const na=A.map((v,i)=>({id:'a'+i,val:v})), nb=B.map((v,i)=>({id:'b'+i,val:v}));
+  let i=0,j=0, out=[];
+  const links=(arr,pfx)=>arr.slice(0,-1).map((_,k)=>({from:pfx+k,to:pfx+(k+1),state:'idle'}));
+  fr.push({nodes:[...na,...nb],rows2:true,listA:na,listB:nb,out:[],ptr:{i:'a0',j:'b0'},note:'Two sorted lists. Compare the front nodes; splice the smaller onto the tail; advance that pointer.',line:2});
+  while(i<A.length&&j<B.length){
+    if(A[i]<=B[j]){out.push('a'+i);
+      fr.push({listA:na,listB:nb,out:cp(out),ptr:{i:i<A.length?'a'+i:null,j:'b'+j},note:`${A[i]} ≤ ${B[j]} → take ${A[i]} from A.`,line:4}); i++;}
+    else{out.push('b'+j);
+      fr.push({listA:na,listB:nb,out:cp(out),ptr:{i:'a'+i,j:j<B.length?'b'+j:null},note:`${B[j]} < ${A[i]} → take ${B[j]} from B.`,line:6}); j++;}
+  }
+  while(i<A.length){out.push('a'+i);i++;} while(j<B.length){out.push('b'+j);j++;}
+  fr.push({listA:na,listB:nb,out:cp(out),ptr:{},note:'One list emptied → append the rest of the other. Done.',line:8});
+  return {kind:'mergelist',frames:fr};
+};
+
+/* ---- Linked List Cycle (Floyd) ---- */
+ANIM.cycle = () => {
+  const vals=[3,2,0,-4], nodes=vals.map((v,i)=>({id:i,val:v})); const fr=[];
+  const CYC=1; // tail links back to index 1
+  const nxt=i=>i===vals.length-1?CYC:i+1;
+  const links=()=>vals.map((_,i)=>({from:i,to:nxt(i),state:i===vals.length-1?'cycle':'idle'}));
+  fr.push({nodes,links:links(),ptr:{},note:"Floyd's tortoise & hare. Slow moves 1, fast moves 2. If there is a loop, fast eventually laps and meets slow.",line:1});
+  let slow=0,fast=0,step=0;
+  while(step<6){slow=nxt(slow); fast=nxt(nxt(fast)); step++;
+    fr.push({nodes,links:links(),ptr:{slow,fast},note:`Step ${step}: slow→${vals[slow]}, fast→${vals[fast]}.`,line:4});
+    if(slow===fast){fr.push({nodes,links:links(),ptr:{slow,fast,meet:slow},note:`slow == fast at ${vals[slow]} → a cycle exists! Return true.`,line:6});break;}
+  }
+  return {kind:'list',frames:fr};
+};
+
+/* ---- Invert Binary Tree ---- */
+ANIM.invert = () => {
+  const root=mkTree(); const fr=[];
+  fr.push(snap(root,'Mirror the tree: at every node, swap its left and right children. A simple DFS does it.',{}, [],1));
+  (function dfs(n){ if(!n)return;
+    n.state='path';
+    fr.push(snap(root,`Visit ${n.val}: swap its two subtrees.`,{},[],3));
+    const t=n.left; n.left=n.right; n.right=t;
+    fr.push(snap(root,`${n.val}'s children swapped.`,{},[],4));
+    n.state='visited';
+    dfs(n.left); dfs(n.right);
+  })(root);
+  fr.push(snap(root,'Every node swapped → the tree is fully mirrored.',{}, [],6));
+  return {kind:'tree',frames:fr};
+};
+
+/* ---- Maximum Depth ---- */
+ANIM.maxDepth = () => {
+  const root=mkTree(); const fr=[]; let best=0;
+  fr.push(snap(root,'Depth = 1 + max(depth(left), depth(right)). Recurse to the leaves and bubble the max back up.',{},[],1));
+  (function dfs(n,d){ if(!n)return 0; n.state='path';
+    fr.push(snap(root,`Descend to ${n.val} at depth ${d}.`,{depth:d},[],3));
+    const l=dfs(n.left,d+1), r=dfs(n.right,d+1); best=Math.max(best,d);
+    n.state='visited';
+    fr.push(snap(root,`Return from ${n.val}: height here = 1 + max(${l},${r}) = ${1+Math.max(l,r)}.`,{maxDepth:best},[],4));
+    return 1+Math.max(l,r);
+  })(root,1);
+  fr.push(snap(root,`Maximum depth = ${best}.`,{answer:best},[],5));
+  return {kind:'tree',frames:fr};
+};
+
+/* ---- Level Order Traversal (BFS) ---- */
+ANIM.levelOrder = () => {
+  const root=mkTree(); const fr=[]; const byId={}; (function idx(n){if(!n)return;byId[n.id]=n;idx(n.left);idx(n.right);})(root);
+  const res=[];
+  fr.push(snap(root,'BFS with a queue. Process the tree one full level at a time, left to right.',{},[],2));
+  let q=[root];
+  while(q.length){const lvl=[], nq=[];
+    q.forEach(n=>n.state='path');
+    fr.push(snap(root,`Queue holds a level: [${q.map(n=>n.val).join(', ')}].`,{queue:q.map(n=>n.val).join(' ')},[],5));
+    for(const n of q){lvl.push(n.val); if(n.left)nq.push(n.left); if(n.right)nq.push(n.right); n.state='visited';}
+    res.push(lvl);
+    fr.push(snap(root,`Recorded level [${lvl.join(', ')}]. Enqueue their children.`,{levels:JSON.stringify(res)},[],7));
+    q=nq;
+  }
+  fr.push(snap(root,`Level order = ${JSON.stringify(res)}.`,{answer:JSON.stringify(res)},[],8));
+  return {kind:'tree',frames:fr};
+};
+
+/* ---- Validate BST ---- */
+ANIM.validBST = () => {
+  const root=mkTree(); const fr=[]; let okAll=true;
+  fr.push(snap(root,'Each node must fall inside a (low, high) range. Going left tightens the high bound; going right tightens the low bound.',{},[],1));
+  (function dfs(n,lo,hi){ if(!n)return true; n.state='path';
+    const ok=(lo===null||n.val>lo)&&(hi===null||n.val<hi);
+    fr.push(snap(root,`Node ${n.val}: must be in (${lo===null?'−∞':lo}, ${hi===null?'+∞':hi}) → ${ok?'ok':'VIOLATION'}.`,{low:lo===null?'−∞':lo,high:hi===null?'+∞':hi},[],3));
+    n.state=ok?'visited':'bad'; if(!ok){okAll=false;return false;}
+    return dfs(n.left,lo,n.val)&&dfs(n.right,n.val,hi);
+  })(root,null,null);
+  fr.push(snap(root,okAll?'Every node respected its bounds → valid BST.':'A bound was violated → not a BST.',{result:okAll},[],5));
+  return {kind:'tree',frames:fr};
+};
+
+/* ---- Number of Islands (grid DFS) ---- */
+ANIM.islands = () => {
+  const g=[["1","1","0","0"],["1","0","0","1"],["0","0","1","1"],["0","0","0","1"]];
+  const R=g.length,C=g[0].length, seen=g.map(r=>r.map(()=>false)); const fr=[]; let count=0;
+  const cls=()=>g.map((row,r)=>row.map((v,c)=>v==="0"?'water':seen[r][c]?'visited':'land'));
+  fr.push({grid:g,cls:cls(),vars:{islands:0},note:"Scan every cell. On unvisited land, flood-fill (DFS) the whole island and count it once.",line:2});
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    if(g[r][c]==="1"&&!seen[r][c]){count++;
+      fr.push({grid:g,cls:cls(),ptr:{r,c},vars:{islands:count},note:`New land at (${r},${c}) → island #${count}. Flood it.`,line:5});
+      const st=[[r,c]]; seen[r][c]=true;
+      while(st.length){const [i,j]=st.pop();
+        for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const ni=i+di,nj=j+dj;
+          if(ni>=0&&ni<R&&nj>=0&&nj<C&&g[ni][nj]==="1"&&!seen[ni][nj]){seen[ni][nj]=true;st.push([ni,nj]);}}
+      }
+      fr.push({grid:g,cls:cls(),vars:{islands:count},note:`Island #${count} fully sunk (marked visited).`,line:8});
+    }
+  }
+  fr.push({grid:g,cls:cls(),vars:{answer:count},note:`Total islands = ${count}.`,line:9});
+  return {kind:'grid',frames:fr};
+};
+
+/* ---- Unique Paths (2D dp) ---- */
+ANIM.uniquePaths = () => {
+  const R=3,C=4, dp=Array.from({length:R},()=>Array(C).fill(0)); const fr=[];
+  for(let c=0;c<C;c++)dp[0][c]=1; for(let r=0;r<R;r++)dp[r][0]=1;
+  const cls=(cr,cc)=>dp.map((row,r)=>row.map((_,c)=>(r===cr&&c===cc)?'store':((r===cr-1&&c===cc)||(r===cr&&c===cc-1))?'compare':(dp[r][c]?'visited':'water')));
+  fr.push({grid:cp(dp),cls:dp.map(r=>r.map(v=>v?'visited':'water')),note:'Only move right or down. Paths to a cell = paths from above + paths from the left. Edges are all 1.',line:2});
+  for(let r=1;r<R;r++)for(let c=1;c<C;c++){dp[r][c]=dp[r-1][c]+dp[r][c-1];
+    fr.push({grid:cp(dp),cls:cls(r,c),ptr:{r,c},note:`dp[${r}][${c}] = dp[${r-1}][${c}] + dp[${r}][${c-1}] = ${dp[r-1][c]} + ${dp[r][c-1]} = ${dp[r][c]}.`,line:4});}
+  fr.push({grid:cp(dp),cls:dp.map((r,ri)=>r.map((_,ci)=>(ri===R-1&&ci===C-1)?'store':'visited')),vars:{answer:dp[R-1][C-1]},note:`Unique paths to the bottom-right = ${dp[R-1][C-1]}.`,line:5});
+  return {kind:'grid',frames:fr};
+};
+
+/* ---- Spiral Matrix ---- */
+ANIM.spiral = () => {
+  const m=[[1,2,3,4],[5,6,7,8],[9,10,11,12]]; const R=m.length,C=m[0].length; const fr=[];
+  let top=0,bot=R-1,left=0,right=C-1, res=[], seen=m.map(r=>r.map(()=>false));
+  const cls=(cr,cc)=>m.map((row,r)=>row.map((_,c)=>(r===cr&&c===cc)?'store':seen[r][c]?'visited':'idle'));
+  fr.push({grid:m,cls:m.map(r=>r.map(()=>'idle')),note:'Peel the matrix in layers: left→right on top, down the right, right→left on bottom, up the left. Shrink bounds each pass.',line:1});
+  const add=(r,c)=>{res.push(m[r][c]); seen[r][c]=true; fr.push({grid:m,cls:cls(r,c),ptr:{r,c},vars:{output:res.join(' ')},note:`Take ${m[r][c]} → [${res.join(', ')}].`,line:3});};
+  while(top<=bot&&left<=right){
+    for(let c=left;c<=right;c++)add(top,c); top++;
+    for(let r=top;r<=bot;r++)add(r,right); right--;
+    if(top<=bot)for(let c=right;c>=left;c--)add(bot,c); bot--;
+    if(left<=right)for(let r=bot;r>=top;r--)add(r,left); left++;
+  }
+  fr.push({grid:m,cls:m.map(r=>r.map(()=>'visited')),vars:{answer:res.join(' ')},note:`Spiral order = [${res.join(', ')}].`,line:6});
+  return {kind:'grid',frames:fr};
+};
+
+/* ============================================================
+   FULL 75 CATALOG  (idea = intuition, comp = complexity, code = python)
+   anim = key into ANIM for animated ones
+   ============================================================ */
+const P = (cat,name,diff,pattern,idea,comp,code,anim)=>({cat,name,diff,pattern,idea,comp,code,anim});
+
+const PROBLEMS = [
+/* Arrays & Hashing */
+P("arr","Contains Duplicate","Easy","Hash Set","Add each number to a set; a value already present is a duplicate.","O(n) / O(n)",
+`def hasDuplicate(nums):
+    seen = set()
+    for n in nums:
+        if n in seen: return True
+        seen.add(n)
+    return False`,"containsDup"),
+P("arr","Valid Anagram","Easy","Hash Map count","Count letters in s, subtract with t; all counts must end at zero.","O(n) / O(1)",
+`def isAnagram(s, t):
+    if len(s) != len(t): return False
+    cnt = {}
+    for c in s: cnt[c] = cnt.get(c,0)+1
+    for c in t:
+        cnt[c] = cnt.get(c,0)-1
+        if cnt[c] < 0: return False
+    return True`,"anagram"),
+P("arr","Two Sum","Easy","Hash Map","Store seen value→index; for each number check if its complement was already seen.","O(n) / O(n)",
+`def twoSum(nums, target):
+    seen = {}
+    for i, n in enumerate(nums):
+        if target - n in seen:
+            return [seen[target-n], i]
+        seen[n] = i`,"twoSum"),
+P("arr","Group Anagrams","Medium","Hash Map key","Use the sorted string (or a 26-letter count tuple) as a key; anagrams collide into the same bucket.","O(n·k) / O(n·k)",
+`from collections import defaultdict
+def groupAnagrams(strs):
+    res = defaultdict(list)
+    for w in strs:
+        key = tuple(sorted(w))
+        res[key].append(w)
+    return list(res.values())`),
+P("arr","Top K Frequent Elements","Medium","Bucket sort","Count frequencies, then bucket by frequency (index = count) and read buckets from the top.","O(n) / O(n)",
+`from collections import Counter
+def topKFrequent(nums, k):
+    cnt = Counter(nums)
+    buckets = [[] for _ in range(len(nums)+1)]
+    for n,c in cnt.items(): buckets[c].append(n)
+    res = []
+    for c in range(len(buckets)-1, 0, -1):
+        for n in buckets[c]:
+            res.append(n)
+            if len(res)==k: return res`),
+P("arr","Encode and Decode Strings","Medium","Length prefix","Prefix each string with its length + a delimiter, e.g. \"4#word\", so decoding is unambiguous.","O(n) / O(n)",
+`def encode(strs):
+    return ''.join(f"{len(s)}#{s}" for s in strs)
+def decode(s):
+    res, i = [], 0
+    while i < len(s):
+        j = s.index('#', i)
+        length = int(s[i:j])
+        res.append(s[j+1:j+1+length])
+        i = j+1+length
+    return res`),
+P("arr","Product of Array Except Self","Medium","Prefix / Suffix","answer[i] = product of everything left of i times everything right of i — two passes, no division.","O(n) / O(1)",
+`def productExceptSelf(nums):
+    n = len(nums); res = [1]*n
+    pre = 1
+    for i in range(n):
+        res[i] = pre; pre *= nums[i]
+    post = 1
+    for i in range(n-1,-1,-1):
+        res[i] *= post; post *= nums[i]
+    return res`,"productSelf"),
+P("arr","Longest Consecutive Sequence","Medium","Hash Set","Put all in a set. Only start counting from numbers with no left neighbour (n-1 absent) to stay O(n).","O(n) / O(n)",
+`def longestConsecutive(nums):
+    s = set(nums); best = 0
+    for n in s:
+        if n-1 not in s:
+            length = 1
+            while n+length in s: length += 1
+            best = max(best, length)
+    return best`),
+/* Two Pointers */
+P("two","Valid Palindrome","Easy","Two Pointers","Clean to alphanumerics, then converge two pointers comparing characters.","O(n) / O(1)",
+`def isPalindrome(s):
+    s = [c.lower() for c in s if c.isalnum()]
+    l, r = 0, len(s)-1
+    while l < r:
+        if s[l] != s[r]: return False
+        l += 1; r -= 1
+    return True`,"palindrome"),
+P("two","3Sum","Medium","Sort + Two Pointers","Sort. Fix one number, then two-pointer search the rest for the needed pair; skip duplicates.","O(n²) / O(1)",
+`def threeSum(nums):
+    nums.sort(); res = []
+    for i in range(len(nums)-2):
+        if i>0 and nums[i]==nums[i-1]: continue
+        l, r = i+1, len(nums)-1
+        while l < r:
+            s = nums[i]+nums[l]+nums[r]
+            if s < 0: l += 1
+            elif s > 0: r -= 1
+            else:
+                res.append([nums[i],nums[l],nums[r]])
+                l += 1
+                while l<r and nums[l]==nums[l-1]: l += 1
+    return res`,"threeSum"),
+P("two","Container With Most Water","Medium","Two Pointers","Widest container first; always move the shorter wall inward since it caps the area.","O(n) / O(1)",
+`def maxArea(height):
+    l, r = 0, len(height)-1; best = 0
+    while l < r:
+        best = max(best, (r-l)*min(height[l],height[r]))
+        if height[l] < height[r]: l += 1
+        else: r -= 1
+    return best`,"container"),
+/* Sliding Window */
+P("win","Best Time to Buy and Sell Stock","Easy","Sliding min","Track the minimum price so far; best profit is today's price minus that minimum.","O(n) / O(1)",
+`def maxProfit(prices):
+    low = float('inf'); best = 0
+    for p in prices:
+        low = min(low, p)
+        best = max(best, p - low)
+    return best`,"bestTime"),
+P("win","Longest Substring Without Repeating Characters","Medium","Sliding Window","Grow right; when a char repeats, shrink from the left until the window is unique again.","O(n) / O(k)",
+`def lengthOfLongestSubstring(s):
+    seen = set(); l = best = 0
+    for r, c in enumerate(s):
+        while c in seen:
+            seen.remove(s[l]); l += 1
+        seen.add(c)
+        best = max(best, r-l+1)
+    return best`,"longestSub"),
+P("win","Longest Repeating Character Replacement","Medium","Sliding Window","Window is valid while (length − count of its most frequent char) ≤ k replacements.","O(n) / O(1)",
+`from collections import defaultdict
+def characterReplacement(s, k):
+    cnt = defaultdict(int); l = best = maxf = 0
+    for r, c in enumerate(s):
+        cnt[c] += 1; maxf = max(maxf, cnt[c])
+        while (r-l+1) - maxf > k:
+            cnt[s[l]] -= 1; l += 1
+        best = max(best, r-l+1)
+    return best`),
+P("win","Minimum Window Substring","Hard","Sliding Window","Expand to cover all needed chars, then contract to the smallest valid window; track a 'have vs need' counter.","O(n) / O(k)",
+`from collections import Counter
+def minWindow(s, t):
+    need = Counter(t); missing = len(t)
+    l = start = 0; best = ""
+    for r, c in enumerate(s):
+        if need[c] > 0: missing -= 1
+        need[c] -= 1
+        while missing == 0:
+            if not best or r-l+1 < len(best): best = s[l:r+1]
+            need[s[l]] += 1
+            if need[s[l]] > 0: missing += 1
+            l += 1
+    return best`),
+/* Stack */
+P("stk","Valid Parentheses","Easy","Stack","Push openers; each closer must match the top of the stack, then pop. Empty at end = valid.","O(n) / O(n)",
+`def isValid(s):
+    st = []; pair = {')':'(', ']':'[', '}':'{'}
+    for c in s:
+        if c in pair:
+            if not st or st.pop() != pair[c]: return False
+        else: st.append(c)
+    return not st`,"parens"),
+/* Binary Search */
+P("bs","Find Minimum in Rotated Sorted Array","Medium","Binary Search","If mid > right, the min is to the right of mid; otherwise it is mid or to its left.","O(log n) / O(1)",
+`def findMin(nums):
+    l, r = 0, len(nums)-1
+    while l < r:
+        m = (l+r)//2
+        if nums[m] > nums[r]: l = m+1
+        else: r = m
+    return nums[l]`),
+P("bs","Search in Rotated Sorted Array","Medium","Binary Search","One half is always sorted; check whether target lies in that sorted half to pick a side.","O(log n) / O(1)",
+`def search(nums, target):
+    l, r = 0, len(nums)-1
+    while l <= r:
+        m = (l+r)//2
+        if nums[m] == target: return m
+        if nums[l] <= nums[m]:
+            if nums[l] <= target < nums[m]: r = m-1
+            else: l = m+1
+        else:
+            if nums[m] < target <= nums[r]: l = m+1
+            else: r = m-1
+    return -1`,"searchRotated"),
+/* Linked List */
+P("ll","Reverse Linked List","Easy","Pointers","Walk once, flipping each next pointer backward using prev/cur; new head is the old tail.","O(n) / O(1)",
+`def reverseList(head):
+    prev = None
+    while head:
+        nxt = head.next
+        head.next = prev
+        prev = head
+        head = nxt
+    return prev`,"reverseLL"),
+P("ll","Merge Two Sorted Lists","Easy","Two Pointers","Compare heads, splice the smaller onto a dummy tail, advance; append leftovers.","O(n+m) / O(1)",
+`def mergeTwoLists(a, b):
+    dummy = tail = ListNode()
+    while a and b:
+        if a.val <= b.val: tail.next, a = a, a.next
+        else: tail.next, b = b, b.next
+        tail = tail.next
+    tail.next = a or b
+    return dummy.next`,"mergeLL"),
+P("ll","Reorder List","Medium","Split + Reverse","Find the middle, reverse the second half, then weave the two halves alternately.","O(n) / O(1)",
+`def reorderList(head):
+    slow=fast=head
+    while fast and fast.next: slow, fast = slow.next, fast.next.next
+    prev, cur = None, slow.next; slow.next = None
+    while cur: cur.next, prev, cur = prev, cur, cur.next
+    first, second = head, prev
+    while second:
+        first.next, second.next, first, second = second, first.next, first.next, second.next`),
+P("ll","Remove Nth Node From End of List","Medium","Two Pointers","Advance a lead pointer n steps, then move both until lead hits the end; trail sits before the target.","O(n) / O(1)",
+`def removeNthFromEnd(head, n):
+    dummy = ListNode(0, head); lead = trail = dummy
+    for _ in range(n): lead = lead.next
+    while lead.next: lead, trail = lead.next, trail.next
+    trail.next = trail.next.next
+    return dummy.next`),
+P("ll","Linked List Cycle","Easy","Fast & Slow","Tortoise moves 1, hare moves 2. In a loop the hare laps and meets the tortoise.","O(n) / O(1)",
+`def hasCycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow, fast = slow.next, fast.next.next
+        if slow is fast: return True
+    return False`,"cycle"),
+P("ll","Merge k Sorted Lists","Hard","Heap / Merge","Push each list's head into a min-heap; repeatedly pop the smallest and push its next.","O(N log k) / O(k)",
+`import heapq
+def mergeKLists(lists):
+    h = [(l.val, i, l) for i,l in enumerate(lists) if l]
+    heapq.heapify(h)
+    dummy = tail = ListNode()
+    while h:
+        val, i, node = heapq.heappop(h)
+        tail.next = node; tail = node
+        if node.next: heapq.heappush(h,(node.next.val,i,node.next))
+    return dummy.next`),
+/* Trees */
+P("tree","Invert Binary Tree","Easy","DFS","At every node swap its left and right child; recurse.","O(n) / O(h)",
+`def invertTree(root):
+    if not root: return None
+    root.left, root.right = invertTree(root.right), invertTree(root.left)
+    return root`,"invert"),
+P("tree","Maximum Depth of Binary Tree","Easy","DFS","Depth = 1 + max(left depth, right depth); leaves bubble heights upward.","O(n) / O(h)",
+`def maxDepth(root):
+    if not root: return 0
+    return 1 + max(maxDepth(root.left), maxDepth(root.right))`,"maxDepth"),
+P("tree","Same Tree","Easy","DFS","Both null = same; one null or different value = different; else recurse both children.","O(n) / O(h)",
+`def isSameTree(p, q):
+    if not p and not q: return True
+    if not p or not q or p.val != q.val: return False
+    return isSameTree(p.left,q.left) and isSameTree(p.right,q.right)`),
+P("tree","Subtree of Another Tree","Easy","DFS","At each node of the big tree, test 'same tree' against the subtree root.","O(n·m) / O(h)",
+`def isSubtree(root, sub):
+    if not sub: return True
+    if not root: return False
+    if isSameTree(root, sub): return True
+    return isSubtree(root.left,sub) or isSubtree(root.right,sub)`),
+P("tree","Lowest Common Ancestor of a BST","Medium","BST walk","Use BST order: both smaller → go left, both larger → go right, else you are at the split point.","O(h) / O(1)",
+`def lowestCommonAncestor(root, p, q):
+    while root:
+        if p.val < root.val and q.val < root.val: root = root.left
+        elif p.val > root.val and q.val > root.val: root = root.right
+        else: return root`),
+P("tree","Binary Tree Level Order Traversal","Medium","BFS","Queue-based BFS, emitting one full level per outer iteration.","O(n) / O(n)",
+`from collections import deque
+def levelOrder(root):
+    res, q = [], deque([root] if root else [])
+    while q:
+        level = []
+        for _ in range(len(q)):
+            n = q.popleft(); level.append(n.val)
+            if n.left: q.append(n.left)
+            if n.right: q.append(n.right)
+        res.append(level)
+    return res`,"levelOrder"),
+P("tree","Validate Binary Search Tree","Medium","DFS bounds","Carry (low, high) bounds; left child tightens high, right child tightens low.","O(n) / O(h)",
+`def isValidBST(root, lo=float('-inf'), hi=float('inf')):
+    if not root: return True
+    if not (lo < root.val < hi): return False
+    return (isValidBST(root.left, lo, root.val) and
+            isValidBST(root.right, root.val, hi))`,"validBST"),
+P("tree","Kth Smallest Element in a BST","Medium","In-order","In-order traversal visits a BST in sorted order; stop at the kth value.","O(h+k) / O(h)",
+`def kthSmallest(root, k):
+    st, cur = [], root
+    while st or cur:
+        while cur: st.append(cur); cur = cur.left
+        cur = st.pop(); k -= 1
+        if k == 0: return cur.val
+        cur = cur.right`),
+P("tree","Construct Tree from Preorder & Inorder","Medium","Divide & Conquer","Preorder[0] is the root; its index in inorder splits left/right subtrees.","O(n) / O(n)",
+`def buildTree(preorder, inorder):
+    idx = {v:i for i,v in enumerate(inorder)}
+    self_pre = iter(preorder)
+    def build(lo, hi):
+        if lo > hi: return None
+        val = next(self_pre); node = TreeNode(val)
+        mid = idx[val]
+        node.left = build(lo, mid-1)
+        node.right = build(mid+1, hi)
+        return node
+    return build(0, len(inorder)-1)`),
+P("tree","Binary Tree Maximum Path Sum","Hard","DFS","Each node returns its best downward arm; the answer may bend through a node using both arms.","O(n) / O(h)",
+`def maxPathSum(root):
+    best = float('-inf')
+    def dfs(n):
+        nonlocal best
+        if not n: return 0
+        l = max(dfs(n.left), 0); r = max(dfs(n.right), 0)
+        best = max(best, n.val + l + r)
+        return n.val + max(l, r)
+    dfs(root); return best`),
+P("tree","Serialize and Deserialize Binary Tree","Hard","DFS preorder","Preorder with explicit null markers uniquely encodes the tree; rebuild by consuming the same order.","O(n) / O(n)",
+`def serialize(root):
+    out = []
+    def dfs(n):
+        if not n: out.append('#'); return
+        out.append(str(n.val)); dfs(n.left); dfs(n.right)
+    dfs(root); return ','.join(out)
+def deserialize(data):
+    vals = iter(data.split(','))
+    def build():
+        v = next(vals)
+        if v == '#': return None
+        n = TreeNode(int(v)); n.left = build(); n.right = build(); return n
+    return build()`),
+/* Heap */
+P("heap","Find Median from Data Stream","Hard","Two Heaps","Max-heap for the low half, min-heap for the high half, kept balanced; median sits on top.","O(log n) add / O(1) find",
+`import heapq
+class MedianFinder:
+    def __init__(self): self.lo, self.hi = [], []   # lo is max-heap (negated)
+    def addNum(self, x):
+        heapq.heappush(self.lo, -x)
+        heapq.heappush(self.hi, -heapq.heappop(self.lo))
+        if len(self.hi) > len(self.lo):
+            heapq.heappush(self.lo, -heapq.heappop(self.hi))
+    def findMedian(self):
+        if len(self.lo) > len(self.hi): return -self.lo[0]
+        return (-self.lo[0] + self.hi[0]) / 2`,"median"),
+/* Backtracking */
+P("bt","Combination Sum","Medium","Backtracking","DFS the choices; subtract each candidate from the target, allow reuse by keeping the start index.","O(2^t) / O(t)",
+`def combinationSum(candidates, target):
+    res = []
+    def bt(start, rem, path):
+        if rem == 0: res.append(path[:]); return
+        for i in range(start, len(candidates)):
+            if candidates[i] > rem: continue
+            path.append(candidates[i])
+            bt(i, rem - candidates[i], path)
+            path.pop()
+    bt(0, target, [])
+    return res`,"combSum"),
+P("bt","Word Search","Medium","Backtracking DFS","From each cell, DFS matching letters, marking cells visited and undoing on backtrack.","O(m·n·4^L) / O(L)",
+`def exist(board, word):
+    R, C = len(board), len(board[0])
+    def dfs(r, c, i):
+        if i == len(word): return True
+        if not (0<=r<R and 0<=c<C) or board[r][c] != word[i]: return False
+        tmp, board[r][c] = board[r][c], '#'
+        found = any(dfs(r+dr,c+dc,i+1) for dr,dc in ((1,0),(-1,0),(0,1),(0,-1)))
+        board[r][c] = tmp
+        return found
+    return any(dfs(r,c,0) for r in range(R) for c in range(C))`),
+/* Tries */
+P("trie","Implement Trie (Prefix Tree)","Medium","Trie","Each node maps a char to a child; a flag marks word ends. Insert/search walk char by char.","O(L) ops / O(N·L)",
+`class Trie:
+    def __init__(self): self.ch = {}; self.end = False
+    def insert(self, w):
+        node = self
+        for c in w: node = node.ch.setdefault(c, Trie())
+        node.end = True
+    def _find(self, w):
+        node = self
+        for c in w:
+            if c not in node.ch: return None
+            node = node.ch[c]
+        return node
+    def search(self, w):
+        n = self._find(w); return bool(n and n.end)
+    def startsWith(self, p): return self._find(p) is not None`),
+P("trie","Design Add and Search Words","Medium","Trie + DFS","Standard trie, but '.' in search branches into every child via DFS.","O(L) add / O(26^L) search",
+`class WordDictionary:
+    def __init__(self): self.ch={}; self.end=False
+    def addWord(self, w):
+        node=self
+        for c in w: node=node.ch.setdefault(c, WordDictionary())
+        node.end=True
+    def search(self, w):
+        def dfs(node, i):
+            if i==len(w): return node.end
+            c=w[i]
+            if c=='.':
+                return any(dfs(nx,i+1) for nx in node.ch.values())
+            return c in node.ch and dfs(node.ch[c], i+1)
+        return dfs(self, 0)`),
+P("trie","Word Search II","Hard","Trie + Backtracking","Build a trie of all words, then DFS the board following trie edges to find many words at once.","O(m·n·4^L) / O(N·L)",
+`def findWords(board, words):
+    root = {}
+    for w in words:
+        node = root
+        for c in w: node = node.setdefault(c, {})
+        node['$'] = w
+    res, R, C = set(), len(board), len(board[0])
+    def dfs(r, c, node):
+        ch = board[r][c]
+        if ch not in node: return
+        nxt = node[ch]
+        if '$' in nxt: res.add(nxt['$'])
+        board[r][c] = '#'
+        for dr,dc in ((1,0),(-1,0),(0,1),(0,-1)):
+            if 0<=r+dr<R and 0<=c+dc<C: dfs(r+dr,c+dc,nxt)
+        board[r][c] = ch
+    for r in range(R):
+        for c in range(C): dfs(r,c,root)
+    return list(res)`),
+/* Graphs */
+P("graph","Number of Islands","Medium","Grid DFS/BFS","Scan the grid; each unvisited land cell launches a flood-fill that sinks its whole island.","O(m·n) / O(m·n)",
+`def numIslands(grid):
+    R, C = len(grid), len(grid[0]); count = 0
+    def dfs(r, c):
+        if not (0<=r<R and 0<=c<C) or grid[r][c] != '1': return
+        grid[r][c] = '0'
+        for dr,dc in ((1,0),(-1,0),(0,1),(0,-1)): dfs(r+dr,c+dc)
+    for r in range(R):
+        for c in range(C):
+            if grid[r][c] == '1': count += 1; dfs(r,c)
+    return count`,"islands"),
+P("graph","Clone Graph","Medium","DFS + Map","Map original→copy; DFS, creating a clone once per node and wiring cloned neighbours.","O(V+E) / O(V)",
+`def cloneGraph(node):
+    old_to_new = {}
+    def dfs(n):
+        if n in old_to_new: return old_to_new[n]
+        copy = Node(n.val); old_to_new[n] = copy
+        for nei in n.neighbors: copy.neighbors.append(dfs(nei))
+        return copy
+    return dfs(node) if node else None`),
+P("graph","Pacific Atlantic Water Flow","Medium","Multi-source DFS","From each ocean's border, DFS uphill (non-decreasing). Cells reached by both oceans are the answer.","O(m·n) / O(m·n)",
+`def pacificAtlantic(heights):
+    R, C = len(heights), len(heights[0])
+    pac, atl = set(), set()
+    def dfs(r, c, seen, prev):
+        if (r,c) in seen or not (0<=r<R and 0<=c<C) or heights[r][c] < prev: return
+        seen.add((r,c))
+        for dr,dc in ((1,0),(-1,0),(0,1),(0,-1)): dfs(r+dr,c+dc,seen,heights[r][c])
+    for r in range(R): dfs(r,0,pac,0); dfs(r,C-1,atl,0)
+    for c in range(C): dfs(0,c,pac,0); dfs(R-1,c,atl,0)
+    return list(pac & atl)`),
+P("graph","Course Schedule","Medium","Topo Sort / Cycle","Model prerequisites as a DAG; a cycle means it is impossible. DFS with a visiting-set detects cycles.","O(V+E) / O(V+E)",
+`def canFinish(numCourses, prerequisites):
+    graph = {i: [] for i in range(numCourses)}
+    for a, b in prerequisites: graph[a].append(b)
+    state = [0]*numCourses   # 0=new 1=visiting 2=done
+    def dfs(c):
+        if state[c] == 1: return False
+        if state[c] == 2: return True
+        state[c] = 1
+        for nxt in graph[c]:
+            if not dfs(nxt): return False
+        state[c] = 2; return True
+    return all(dfs(c) for c in range(numCourses))`),
+P("graph","Graph Valid Tree","Medium","Union-Find","A tree has exactly n−1 edges and is fully connected with no cycle; union-find checks both.","O(E·α) / O(V)",
+`def validTree(n, edges):
+    if len(edges) != n-1: return False
+    parent = list(range(n))
+    def find(x):
+        while parent[x]!=x: parent[x]=parent[parent[x]]; x=parent[x]
+        return x
+    for a,b in edges:
+        ra, rb = find(a), find(b)
+        if ra == rb: return False
+        parent[ra] = rb
+    return True`),
+P("graph","Number of Connected Components","Medium","Union-Find","Union every edge; the number of distinct roots left is the component count.","O(E·α) / O(V)",
+`def countComponents(n, edges):
+    parent = list(range(n)); count = n
+    def find(x):
+        while parent[x]!=x: parent[x]=parent[parent[x]]; x=parent[x]
+        return x
+    for a,b in edges:
+        ra, rb = find(a), find(b)
+        if ra != rb: parent[ra] = rb; count -= 1
+    return count`),
+/* Advanced Graphs */
+P("agraph","Alien Dictionary","Hard","Topo Sort","Compare adjacent words to derive letter-order edges, then topologically sort the letters.","O(C) / O(1)",
+`from collections import defaultdict, deque
+def alienOrder(words):
+    adj = {c:set() for w in words for c in w}
+    indeg = {c:0 for c in adj}
+    for a, b in zip(words, words[1:]):
+        for x, y in zip(a, b):
+            if x != y:
+                if y not in adj[x]: adj[x].add(y); indeg[y]+=1
+                break
+        else:
+            if len(a) > len(b): return ""
+    q = deque([c for c in indeg if indeg[c]==0]); res = []
+    while q:
+        c = q.popleft(); res.append(c)
+        for nxt in adj[c]:
+            indeg[nxt]-=1
+            if indeg[nxt]==0: q.append(nxt)
+    return ''.join(res) if len(res)==len(adj) else ""`),
+/* 1-D DP */
+P("dp1","Climbing Stairs","Easy","DP / Fibonacci","Ways to reach step i = ways(i−1) + ways(i−2); it is Fibonacci.","O(n) / O(1)",
+`def climbStairs(n):
+    a, b = 1, 1
+    for _ in range(n): a, b = b, a+b
+    return a`,"climb"),
+P("dp1","House Robber","Medium","DP","At each house, best = max(skip it, rob it + best two houses back).","O(n) / O(1)",
+`def rob(nums):
+    prev, cur = 0, 0
+    for n in nums:
+        prev, cur = cur, max(cur, prev + n)
+    return cur`,"robber"),
+P("dp1","House Robber II","Medium","DP twice","Houses form a circle, so rob either [0..n−2] or [1..n−1] and take the better of the two lines.","O(n) / O(1)",
+`def rob(nums):
+    if len(nums) == 1: return nums[0]
+    def line(a):
+        prev = cur = 0
+        for n in a: prev, cur = cur, max(cur, prev+n)
+        return cur
+    return max(line(nums[1:]), line(nums[:-1]))`),
+P("dp1","Longest Palindromic Substring","Medium","Expand center","Expand around each of the 2n−1 centers, keeping the longest palindrome found.","O(n²) / O(1)",
+`def longestPalindrome(s):
+    res = ""
+    def expand(l, r):
+        while l>=0 and r<len(s) and s[l]==s[r]: l-=1; r+=1
+        return s[l+1:r]
+    for i in range(len(s)):
+        for cand in (expand(i,i), expand(i,i+1)):
+            if len(cand) > len(res): res = cand
+    return res`),
+P("dp1","Palindromic Substrings","Medium","Expand center","Same expand-around-center, but count every palindrome discovered.","O(n²) / O(1)",
+`def countSubstrings(s):
+    count = 0
+    def expand(l, r):
+        nonlocal count
+        while l>=0 and r<len(s) and s[l]==s[r]: count+=1; l-=1; r+=1
+    for i in range(len(s)): expand(i,i); expand(i,i+1)
+    return count`),
+P("dp1","Decode Ways","Medium","DP","dp[i] depends on whether the last 1 digit (1–9) and last 2 digits (10–26) form valid letters.","O(n) / O(1)",
+`def numDecodings(s):
+    if s[0] == '0': return 0
+    prev, cur = 1, 1
+    for i in range(1, len(s)):
+        nxt = 0
+        if s[i] != '0': nxt += cur
+        if 10 <= int(s[i-1:i+1]) <= 26: nxt += prev
+        prev, cur = cur, nxt
+    return cur`),
+P("dp1","Coin Change","Medium","DP unbounded","dp[x] = fewest coins for amount x = min over coins of dp[x−coin] + 1.","O(amt·coins) / O(amt)",
+`def coinChange(coins, amount):
+    dp = [0] + [float('inf')]*amount
+    for x in range(1, amount+1):
+        for c in coins:
+            if x-c >= 0: dp[x] = min(dp[x], dp[x-c]+1)
+    return dp[amount] if dp[amount] != float('inf') else -1`,"coin"),
+P("dp1","Maximum Product Subarray","Medium","DP min/max","Track both max and min ending here (a negative flips them), since products can swing sign.","O(n) / O(1)",
+`def maxProduct(nums):
+    res = cur_max = cur_min = nums[0]
+    for n in nums[1:]:
+        cands = (n, cur_max*n, cur_min*n)
+        cur_max, cur_min = max(cands), min(cands)
+        res = max(res, cur_max)
+    return res`),
+P("dp1","Word Break","Medium","DP","dp[i] is reachable if some dp[j] is reachable and s[j:i] is in the dictionary.","O(n²) / O(n)",
+`def wordBreak(s, wordDict):
+    words = set(wordDict)
+    dp = [True] + [False]*len(s)
+    for i in range(1, len(s)+1):
+        for j in range(i):
+            if dp[j] and s[j:i] in words:
+                dp[i] = True; break
+    return dp[-1]`),
+P("dp1","Longest Increasing Subsequence","Medium","DP / Patience","Keep a 'tails' array; binary-search where each number extends or replaces to keep it minimal.","O(n log n) / O(n)",
+`import bisect
+def lengthOfLIS(nums):
+    tails = []
+    for n in nums:
+        i = bisect.bisect_left(tails, n)
+        if i == len(tails): tails.append(n)
+        else: tails[i] = n
+    return len(tails)`),
+/* 2-D DP */
+P("dp2","Unique Paths","Medium","Grid DP","Paths to a cell = paths from above + paths from the left; first row/col are all 1.","O(m·n) / O(n)",
+`def uniquePaths(m, n):
+    row = [1]*n
+    for _ in range(m-1):
+        for c in range(1, n):
+            row[c] += row[c-1]
+    return row[-1]`,"uniquePaths"),
+P("dp2","Longest Common Subsequence","Medium","Grid DP","If chars match, dp = 1 + diagonal; else dp = max(left, up) in a 2-D table.","O(m·n) / O(m·n)",
+`def longestCommonSubsequence(a, b):
+    dp = [[0]*(len(b)+1) for _ in range(len(a)+1)]
+    for i in range(1, len(a)+1):
+        for j in range(1, len(b)+1):
+            if a[i-1] == b[j-1]: dp[i][j] = dp[i-1][j-1] + 1
+            else: dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+    return dp[-1][-1]`),
+/* Greedy */
+P("greedy","Maximum Subarray","Medium","Kadane","At each element, extend the running sum or restart at it; track the best sum seen.","O(n) / O(1)",
+`def maxSubArray(nums):
+    cur = best = nums[0]
+    for n in nums[1:]:
+        cur = max(n, cur + n)
+        best = max(best, cur)
+    return best`,"kadane"),
+P("greedy","Jump Game","Medium","Greedy reach","Track the farthest reachable index; if you ever stand past it, you are stuck.","O(n) / O(1)",
+`def canJump(nums):
+    reach = 0
+    for i, n in enumerate(nums):
+        if i > reach: return False
+        reach = max(reach, i + n)
+    return True`,"jump"),
+/* Intervals */
+P("iv","Insert Interval","Medium","Merge","Add all intervals ending before the new one, merge all overlapping, then add the rest.","O(n) / O(n)",
+`def insert(intervals, newInterval):
+    res, i, n = [], 0, len(intervals)
+    while i < n and intervals[i][1] < newInterval[0]:
+        res.append(intervals[i]); i += 1
+    while i < n and intervals[i][0] <= newInterval[1]:
+        newInterval = [min(newInterval[0], intervals[i][0]),
+                       max(newInterval[1], intervals[i][1])]; i += 1
+    res.append(newInterval)
+    return res + intervals[i:]`),
+P("iv","Merge Intervals","Medium","Sort + Merge","Sort by start; extend the last kept interval when it overlaps, else start a new one.","O(n log n) / O(n)",
+`def merge(intervals):
+    intervals.sort()
+    res = []
+    for s, e in intervals:
+        if res and s <= res[-1][1]:
+            res[-1][1] = max(res[-1][1], e)
+        else:
+            res.append([s, e])
+    return res`,"mergeIv"),
+P("iv","Non-overlapping Intervals","Medium","Greedy","Sort by end; greedily keep the interval that finishes earliest, removing those that clash.","O(n log n) / O(1)",
+`def eraseOverlapIntervals(intervals):
+    intervals.sort(key=lambda x: x[1])
+    end = float('-inf'); removed = 0
+    for s, e in intervals:
+        if s >= end: end = e
+        else: removed += 1
+    return removed`),
+P("iv","Meeting Rooms","Easy","Sort","Sort by start; if any meeting begins before the previous ends, they conflict.","O(n log n) / O(1)",
+`def canAttendMeetings(intervals):
+    intervals.sort()
+    for i in range(1, len(intervals)):
+        if intervals[i][0] < intervals[i-1][1]: return False
+    return True`),
+P("iv","Meeting Rooms II","Medium","Heap / Sweep","Min-heap of end times; reuse a room if the earliest end is free, else open a new one.","O(n log n) / O(n)",
+`import heapq
+def minMeetingRooms(intervals):
+    intervals.sort()
+    heap = []
+    for s, e in intervals:
+        if heap and heap[0] <= s: heapq.heappop(heap)
+        heapq.heappush(heap, e)
+    return len(heap)`),
+/* Math & Geometry */
+P("math","Rotate Image","Medium","Transpose + Reverse","Rotate 90° clockwise in place: transpose the matrix, then reverse each row.","O(n²) / O(1)",
+`def rotate(matrix):
+    n = len(matrix)
+    for i in range(n):
+        for j in range(i+1, n):
+            matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j]
+    for row in matrix:
+        row.reverse()`),
+P("math","Spiral Matrix","Medium","Boundary shrink","Traverse the outer ring, then shrink the top/bottom/left/right bounds inward and repeat.","O(m·n) / O(1)",
+`def spiralOrder(matrix):
+    res = []
+    top, bottom = 0, len(matrix)-1
+    left, right = 0, len(matrix[0])-1
+    while top <= bottom and left <= right:
+        for c in range(left, right+1): res.append(matrix[top][c])
+        top += 1
+        for r in range(top, bottom+1): res.append(matrix[r][right])
+        right -= 1
+        if top <= bottom:
+            for c in range(right, left-1, -1): res.append(matrix[bottom][c])
+            bottom -= 1
+        if left <= right:
+            for r in range(bottom, top-1, -1): res.append(matrix[r][left])
+            left += 1
+    return res`,"spiral"),
+P("math","Set Matrix Zeroes","Medium","In-place markers","Use the first row and column as flags to mark which rows/cols must be zeroed, in O(1) space.","O(m·n) / O(1)",
+`def setZeroes(matrix):
+    R, C = len(matrix), len(matrix[0])
+    first_col = any(matrix[r][0] == 0 for r in range(R))
+    for r in range(R):
+        for c in range(1, C):
+            if matrix[r][c] == 0: matrix[r][0] = matrix[0][c] = 0
+    for r in range(R-1, -1, -1):
+        for c in range(C-1, 0, -1):
+            if matrix[r][0] == 0 or matrix[0][c] == 0: matrix[r][c] = 0
+        if first_col: matrix[r][0] = 0`),
+/* Bit Manipulation */
+P("bit","Number of 1 Bits","Easy","Bit trick","n & (n−1) clears the lowest set bit; count how many times you can do it.","O(#bits) / O(1)",
+`def hammingWeight(n):
+    count = 0
+    while n:
+        n &= n - 1
+        count += 1
+    return count`),
+P("bit","Counting Bits","Easy","DP on bits","dp[i] = dp[i >> 1] + (i & 1): drop the last bit (already solved) and add it back.","O(n) / O(n)",
+`def countBits(n):
+    dp = [0]*(n+1)
+    for i in range(1, n+1):
+        dp[i] = dp[i >> 1] + (i & 1)
+    return dp`,"countBits"),
+P("bit","Reverse Bits","Easy","Bit shift","Shift result left, OR in the lowest bit of n, then shift n right — 32 times.","O(1) / O(1)",
+`def reverseBits(n):
+    res = 0
+    for _ in range(32):
+        res = (res << 1) | (n & 1)
+        n >>= 1
+    return res`),
+P("bit","Missing Number","Easy","XOR / Sum","XOR all indices and values; pairs cancel and the missing number survives.","O(n) / O(1)",
+`def missingNumber(nums):
+    res = len(nums)
+    for i, n in enumerate(nums):
+        res ^= i ^ n
+    return res`),
+P("bit","Sum of Two Integers","Medium","Bit add","Add without +: XOR gives the sum bits, AND<<1 gives the carry; repeat until no carry.","O(1) / O(1)",
+`def getSum(a, b):
+    mask = 0xFFFFFFFF
+    while b & mask:
+        a, b = a ^ b, (a & b) << 1
+    return a & mask if b > mask else a`),
+];
+
+/* attach anim builders */
+PROBLEMS.forEach(p=>{ if(p.anim && ANIM[p.anim]) p.build = ANIM[p.anim]; });
+
+
+/* ============================================================
+   BLIND 75 TRAINER — engine, renderers, controller, UI
+   ============================================================ */
+const CELLW = 46, GAP = 10, STEP = CELLW + GAP;
+
+/* ---------- safe storage (works when file opened locally; no-ops in sandbox) ---------- */
+const store = {
+  get(k, d){ try{ const v=localStorage.getItem('b75_'+k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('b75_'+k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---------- state ---------- */
+const state = {
+  solved: new Set(store.get('solved', [])),
+  starred: new Set(store.get('starred', [])),
+  filterCat: 'all', filterDiff: 'all', filterMode: 'all', q: '',
+  current: null
+};
+function persist(){ store.set('solved',[...state.solved]); store.set('starred',[...state.starred]); }
+
+/* ---------- pointer styling ---------- */
+const PTR = {
+  i:['#ff6b81','i'], j:['#9d7cff','j'], k:['#5ee88b','k'], l:['#37e0c8','L'], r:['#ffb454','R'],
+  L:['#37e0c8','L'], R:['#ffb454','R'], mid:['#5ee88b','mid'], x:['#37e0c8','x'], buy:['#37e0c8','buy'],
+  slow:['#37e0c8','slow'], fast:['#ff6b81','fast'], prev:['#9d7cff','prev'], cur:['#ffb454','cur'],
+  next:['#5ee88b','next'], head:['#5ee88b','head'], meet:['#ff6b81','meet']
+};
+const ptrColor = n => (PTR[n]||['#8b96b8',n])[0];
+const ptrLabel = n => (PTR[n]||['#8b96b8',n])[1];
+
+/* ---------- shared panel/vars HTML ---------- */
+function panelsHTML(frame){
+  if(!frame.panels||!frame.panels.length) return '';
+  return frame.panels.map(p=>{
+    let chips='';
+    if(p.kind==='map'){
+      const ks=Object.keys(p.data);
+      chips = ks.length? ks.map(k=>`<span class="chip ${String(k)===String(p.hi)?'chip-hi':''}"><b>${k}</b><i>${p.data[k]}</i></span>`).join('') : '<span class="chip empty">∅</span>';
+    } else { // set / list
+      const arr = Array.isArray(p.data)?p.data:[];
+      chips = arr.length? arr.map(v=>`<span class="chip ${String(v)===String(p.hi)?'chip-hi':''}">${v}</span>`).join('') : '<span class="chip empty">∅</span>';
+    }
+    return `<div class="panel"><div class="panel-label">${p.label}</div><div class="panel-chips">${chips}</div></div>`;
+  }).join('');
+}
+function varsHTML(frame){
+  if(!frame.vars||!Object.keys(frame.vars).length) return '';
+  return '<div class="vars">'+Object.entries(frame.vars).map(([k,v])=>`<span class="var"><em>${k}</em><b>${v}</b></span>`).join('')+'</div>';
+}
+const clsMap = c => c?('cl-'+c):'';
+
+/* ============================================================
+   ROWS visualizer (arrays, strings, stacks, bars, dp)
+   ============================================================ */
+function RowsViz(){
+  let mount, meta=[], rowEls=[];
+  return {
+    setup(m, frames){
+      mount=m; mount.innerHTML=''; meta=[]; rowEls=[];
+      frames.forEach(f=>(f.rows||[]).forEach((r,i)=>{
+        if(!meta[i]) meta[i]={maxLen:0,label:'',type:'cells',maxVal:1};
+        meta[i].maxLen=Math.max(meta[i].maxLen, r.arr.length);
+        if(r.label) meta[i].label=r.label;
+        if(r.type==='bars') meta[i].type='bars';
+        r.arr.forEach(v=>{ const n=Number(v); if(!isNaN(n)) meta[i].maxVal=Math.max(meta[i].maxVal, Math.abs(n)); });
+      }));
+      const wrap=document.createElement('div'); wrap.className='rows-wrap';
+      meta.forEach((m2,i)=>{
+        const row=document.createElement('div'); row.className='viz-row'+(m2.type==='bars'?' bars':'');
+        const lab=document.createElement('div'); lab.className='row-label'; lab.textContent=m2.label||'';
+        const track=document.createElement('div'); track.className='track';
+        const band=document.createElement('div'); band.className='band'; band.style.opacity=0; track.appendChild(band);
+        const cellsEl=document.createElement('div'); cellsEl.className='cells';
+        const cells=[];
+        for(let j=0;j<m2.maxLen;j++){
+          const cell=document.createElement('div'); cell.className='cell'+(m2.type==='bars'?' bar':'');
+          if(m2.type==='bars'){ const bf=document.createElement('div'); bf.className='barfill'; cell.appendChild(bf); }
+          const cv=document.createElement('span'); cv.className='cv'; cell.appendChild(cv);
+          cellsEl.appendChild(cell); cells.push(cell);
+        }
+        track.appendChild(cellsEl);
+        const ptrLayer=document.createElement('div'); ptrLayer.className='ptr-layer';
+        track.appendChild(ptrLayer);
+        row.appendChild(lab); row.appendChild(track);
+        wrap.appendChild(row);
+        rowEls.push({row,cells,band,ptrLayer,ptrs:{}});
+      });
+      mount.appendChild(wrap);
+      const extra=document.createElement('div'); extra.className='extra';
+      mount.appendChild(extra);
+      this._extra=extra;
+    },
+    show(frame){
+      meta.forEach((m2,i)=>{
+        const re=rowEls[i]; const fr=(frame.rows||[])[i];
+        if(!fr){ re.row.style.opacity=.15; return; }
+        re.row.style.opacity=1;
+        const cls=fr.cls||{};
+        re.cells.forEach((cell,j)=>{
+          if(j<fr.arr.length){
+            cell.style.display=''; cell.classList.remove('hidden');
+            const val=fr.arr[j];
+            cell.querySelector('.cv').textContent=val;
+            cell.className='cell'+(m2.type==='bars'?' bar':'')+' '+clsMap(cls[j]);
+            if(m2.type==='bars'){
+              const n=Number(val)||0; const h=Math.max(6, Math.round(Math.abs(n)/m2.maxVal*128));
+              cell.querySelector('.barfill').style.height=h+'px';
+            }
+          } else { cell.classList.add('hidden'); }
+        });
+        // window band
+        if(fr.win){ const [a,b]=fr.win; re.band.style.opacity=1; re.band.style.left=(a*STEP-2)+'px'; re.band.style.width=((b-a+1)*STEP-GAP+4)+'px'; }
+        else re.band.style.opacity=0;
+        // pointers
+        const want=fr.ptr||{};
+        Object.keys(re.ptrs).forEach(name=>{ if(!(name in want)){ re.ptrs[name].style.opacity=0; } });
+        Object.entries(want).forEach(([name,idx],order)=>{
+          let chip=re.ptrs[name];
+          if(!chip){ chip=document.createElement('div'); chip.className='ptr'; chip.innerHTML=`<span>${ptrLabel(name)}</span><i></i>`;
+            chip.style.color=ptrColor(name); re.ptrLayer.appendChild(chip); re.ptrs[name]=chip; }
+          chip.style.opacity=1;
+          chip.style.left=(idx*STEP+CELLW/2)+'px';
+          chip.style.top=(order%2?'-46px':'-26px');
+        });
+      });
+      this._extra.innerHTML = varsHTML(frame)+panelsHTML(frame);
+    },
+    clear(){ if(mount) mount.innerHTML=''; }
+  };
+}
+
+/* ============================================================
+   TREE visualizer
+   ============================================================ */
+function TreeViz(){
+  let mount, nodeEls={}, svg, maxX=0, maxY=0;
+  return {
+    setup(m, frames){
+      mount=m; mount.innerHTML=''; nodeEls={}; maxX=0; maxY=0;
+      frames.forEach(f=>f.nodes.forEach(n=>{ maxX=Math.max(maxX,n.x); maxY=Math.max(maxY,n.y); }));
+      const stage=document.createElement('div'); stage.className='tree-stage';
+      stage.style.width=(maxX+70)+'px'; stage.style.height=(maxY+70)+'px';
+      svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('class','tree-svg'); svg.setAttribute('width',maxX+70); svg.setAttribute('height',maxY+70);
+      stage.appendChild(svg);
+      mount.appendChild(stage); this._stage=stage;
+      const extra=document.createElement('div'); extra.className='extra'; mount.appendChild(extra); this._extra=extra;
+    },
+    show(frame){
+      const pos={}; frame.nodes.forEach(n=>pos[n.id]=n);
+      // edges
+      svg.innerHTML='';
+      frame.edges.forEach(e=>{
+        const a=pos[e.a], b=pos[e.b]; if(!a||!b) return;
+        const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+        ln.setAttribute('x1',a.x+22); ln.setAttribute('y1',a.y+22);
+        ln.setAttribute('x2',b.x+22); ln.setAttribute('y2',b.y+22);
+        ln.setAttribute('class','edge '+(e.state==='path'?'edge-path':''));
+        svg.appendChild(ln);
+      });
+      const seen=new Set();
+      frame.nodes.forEach(n=>{
+        seen.add(n.id);
+        let el=nodeEls[n.id];
+        if(!el){ el=document.createElement('div'); el.className='tnode'; el.innerHTML=`<span>${n.val}</span>`;
+          this._stage.appendChild(el); nodeEls[n.id]=el; }
+        el.style.transform=`translate(${n.x}px,${n.y}px)`;
+        el.className='tnode st-'+(n.state||'idle');
+        el.style.opacity=1;
+      });
+      Object.keys(nodeEls).forEach(id=>{ if(!seen.has(+id)&&!seen.has(id)) nodeEls[id].style.opacity=0; });
+      this._extra.innerHTML = varsHTML(frame)+panelsHTML(frame);
+    },
+    clear(){ if(mount) mount.innerHTML=''; }
+  };
+}
+
+/* ============================================================
+   GRID visualizer
+   ============================================================ */
+function GridViz(){
+  let mount, cells=[], R=0, C=0;
+  return {
+    setup(m, frames){
+      mount=m; mount.innerHTML=''; cells=[];
+      const g=frames[0].grid; R=g.length; C=g[0].length;
+      const grid=document.createElement('div'); grid.className='grid'; grid.style.gridTemplateColumns=`repeat(${C}, 52px)`;
+      for(let r=0;r<R;r++){ cells[r]=[]; for(let c=0;c<C;c++){ const cell=document.createElement('div'); cell.className='gcell'; grid.appendChild(cell); cells[r][c]=cell; } }
+      mount.appendChild(grid);
+      const extra=document.createElement('div'); extra.className='extra'; mount.appendChild(extra); this._extra=extra;
+    },
+    show(frame){
+      for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+        const cell=cells[r][c];
+        cell.textContent = frame.grid[r][c];
+        const st = frame.cls && frame.cls[r] ? frame.cls[r][c] : '';
+        const ptr = frame.ptr && frame.ptr.r===r && frame.ptr.c===c;
+        cell.className='gcell '+clsMap(st)+(ptr?' gptr':'');
+      }
+      this._extra.innerHTML = varsHTML(frame)+panelsHTML(frame);
+    },
+    clear(){ if(mount) mount.innerHTML=''; }
+  };
+}
+
+/* ============================================================
+   LIST visualizer (reverse / cycle)
+   ============================================================ */
+function ListViz(){
+  let mount, stage, svg, nodeEls={}, order=[], STEPX=112, RAD=24, y=70;
+  return {
+    setup(m, frames){
+      mount=m; mount.innerHTML=''; nodeEls={};
+      order=frames[0].nodes.map(n=>n.id);
+      const W=order.length*STEPX+60, H=190;
+      stage=document.createElement('div'); stage.className='list-stage'; stage.style.width=W+'px'; stage.style.height=H+'px';
+      svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width',W); svg.setAttribute('height',H); svg.setAttribute('class','list-svg');
+      const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+      defs.innerHTML='<marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#8b96b8"/></marker>'+
+                     '<marker id="arrowc" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ff6b81"/></marker>';
+      svg.appendChild(defs); stage.appendChild(svg);
+      frames[0].nodes.forEach((n,idx)=>{
+        const el=document.createElement('div'); el.className='lnode'; el.innerHTML=`<span>${n.val}</span>`;
+        el.style.left=(30+idx*STEPX)+'px'; el.style.top=(y-RAD)+'px';
+        stage.appendChild(el); nodeEls[n.id]=el;
+      });
+      mount.appendChild(stage);
+      const extra=document.createElement('div'); extra.className='extra'; mount.appendChild(extra); this._extra=extra;
+      this._px = id => 30 + order.indexOf(id)*STEPX + RAD;
+    },
+    show(frame){
+      // reset node classes
+      Object.values(nodeEls).forEach(e=>e.className='lnode');
+      // links
+      while(svg.childNodes.length>1) svg.removeChild(svg.lastChild);
+      (frame.links||[]).forEach(lk=>{
+        const x1=this._px(lk.from), x2=this._px(lk.to);
+        const cyc = lk.state==='cycle';
+        const back = order.indexOf(lk.to) < order.indexOf(lk.from);
+        const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        if(cyc || back){
+          const dir = cyc? 1 : -1; const cy = y + dir*58;
+          path.setAttribute('d',`M ${x1} ${y+dir*RAD*0.2} Q ${(x1+x2)/2} ${cy} ${x2} ${y+dir*RAD*0.2}`);
+          path.setAttribute('marker-end', cyc?'url(#arrowc)':'url(#arrow)');
+          path.setAttribute('class', cyc?'llink cyc':'llink back');
+        } else {
+          path.setAttribute('d',`M ${x1+RAD+2} ${y} L ${x2-RAD-8} ${y}`);
+          path.setAttribute('marker-end','url(#arrow)'); path.setAttribute('class','llink');
+        }
+        svg.appendChild(path);
+      });
+      // pointers
+      Object.entries(frame.ptr||{}).forEach(([name,id])=>{
+        if(id==null) return; const el=nodeEls[id]; if(!el) return;
+        el.classList.add('lp-'+name); el.classList.add('lactive');
+        el.style.setProperty('--pc', ptrColor(name));
+        let tag=el.querySelector('.ltag-'+name);
+        if(!tag){ tag=document.createElement('div'); tag.className='ltag ltag-'+name; tag.textContent=ptrLabel(name); tag.style.color=ptrColor(name); el.appendChild(tag); }
+      });
+      // hide stale tags
+      Object.values(nodeEls).forEach(el=>{
+        [...el.querySelectorAll('.ltag')].forEach(t=>{
+          const nm=[...t.classList].find(c=>c.startsWith('ltag-'))?.slice(5);
+          if(nm && !(frame.ptr&&nm in frame.ptr && frame.ptr[nm]!=null && nodeEls[frame.ptr[nm]]===el)) t.remove();
+        });
+      });
+      this._extra.innerHTML = varsHTML(frame);
+    },
+    clear(){ if(mount) mount.innerHTML=''; }
+  };
+}
+
+/* ============================================================
+   MERGE-LIST visualizer (merge two sorted lists)
+   ============================================================ */
+function MergeListViz(){
+  let mount;
+  return {
+    setup(m, frames){ mount=m; mount.innerHTML=''; this._extra=document.createElement('div'); this._extra.className='extra';
+      this._wrap=document.createElement('div'); this._wrap.className='mlwrap'; mount.appendChild(this._wrap); mount.appendChild(this._extra);
+      this._frames=frames; },
+    show(frame){
+      const A=frame.listA||[], B=frame.listB||[], out=frame.out||[];
+      const idMap={}; [...A,...B].forEach(n=>idMap[n.id]=n.val);
+      const rowHTML=(label,nodes,activeId,color)=>`<div class="mlrow"><div class="row-label">${label}</div><div class="mlnodes">${
+        nodes.map(n=>`<div class="mlnode ${n.id===activeId?'mlactive':''}" ${n.id===activeId?`style="--ac:${color}"`:''}>${n.val}</div>`).join('<span class="mlarrow">→</span>')||'<span class="chip empty">∅</span>'}</div></div>`;
+      const outHTML=`<div class="mlrow out"><div class="row-label">output</div><div class="mlnodes">${
+        out.map(id=>`<div class="mlnode mlout">${idMap[id]}</div>`).join('<span class="mlarrow">→</span>')||'<span class="chip empty">building…</span>'}</div></div>`;
+      this._wrap.innerHTML = rowHTML('list A',A,frame.ptr&&frame.ptr.i,'#37e0c8')+rowHTML('list B',B,frame.ptr&&frame.ptr.j,'#ffb454')+outHTML;
+      this._extra.innerHTML = varsHTML(frame);
+    },
+    clear(){ if(mount) mount.innerHTML=''; }
+  };
+}
+
+/* ============================================================
+   INTERVALS visualizer
+   ============================================================ */
+function IntervalViz(){
+  let mount, W=560;
+  return {
+    setup(m, frames){ mount=m; mount.innerHTML=''; this._max=frames[0].max||20;
+      this._stage=document.createElement('div'); this._stage.className='iv-stage'; mount.appendChild(this._stage);
+      this._extra=document.createElement('div'); this._extra.className='extra'; mount.appendChild(this._extra); },
+    show(frame){
+      const max=frame.max||this._max; const px=u=>Math.round(u/max*W);
+      let html='<div class="iv-track-label">input (sorted by start)</div><div class="iv-track">';
+      frame.items.forEach(it=>{ html+=`<div class="iv-bar st-${it.state}" style="left:${px(it.s)}px;width:${Math.max(14,px(it.e)-px(it.s))}px">${it.s},${it.e}</div>`; });
+      html+='</div><div class="iv-axis">'+Array.from({length:Math.floor(max/5)+1},(_,k)=>`<span style="left:${px(k*5)}px">${k*5}</span>`).join('')+'</div>';
+      html+='<div class="iv-track-label">merged</div><div class="iv-track merged">';
+      (frame.merged||[]).forEach(it=>{ html+=`<div class="iv-bar st-merged" style="left:${px(it[0])}px;width:${Math.max(14,px(it[1])-px(it[0]))}px">${it[0]},${it[1]}</div>`; });
+      html+='</div>';
+      this._stage.style.width=(W+20)+'px'; this._stage.innerHTML=html;
+      this._extra.innerHTML = varsHTML(frame);
+    },
+    clear(){ if(mount) mount.innerHTML=''; }
+  };
+}
+
+const RENDERERS = { rows:RowsViz, list:ListViz, mergelist:MergeListViz, tree:TreeViz, grid:GridViz, intervals:IntervalViz };
+
+/* ============================================================
+   STAGE CONTROLLER (playback)
+   ============================================================ */
+const Stage = {
+  frames:[], idx:0, playing:false, timer:null, speed:1, viz:null,
+  open(problem){
+    state.current=problem;
+    const built=problem.build();
+    this.frames=built.frames; this.idx=0; this.speed=1; this.playing=false;
+    const mount=document.getElementById('viz-mount');
+    if(this.viz) this.viz.clear();
+    this.viz=RENDERERS[built.kind](); this.viz.setup(mount, this.frames);
+    this.render(); this.updateBar();
+  },
+  render(){
+    const f=this.frames[this.idx];
+    this.viz.show(f);
+    document.getElementById('narration').textContent = f.note||'';
+    // code line highlight
+    const code=document.getElementById('code-block');
+    if(code){ [...code.querySelectorAll('.ln')].forEach(el=>el.classList.remove('hl'));
+      if(f.line!=null){ const el=code.querySelector('.ln[data-l="'+f.line+'"]'); if(el){ el.classList.add('hl'); el.scrollIntoView({block:'nearest'}); } } }
+    document.getElementById('frame-count').textContent=`${this.idx+1} / ${this.frames.length}`;
+    this.updateBar();
+  },
+  updateBar(){ const b=document.getElementById('progress-fill'); if(b) b.style.width=((this.idx+1)/this.frames.length*100)+'%'; },
+  step(d){ this.pause(); this.idx=Math.max(0,Math.min(this.frames.length-1,this.idx+d)); this.render(); },
+  restart(){ this.pause(); this.idx=0; this.render(); },
+  play(){ if(this.idx>=this.frames.length-1) this.idx=0;
+    this.playing=true; document.getElementById('btn-play').innerHTML=ICON.pause;
+    const tick=()=>{ if(!this.playing) return; if(this.idx>=this.frames.length-1){ this.pause(); return; }
+      this.idx++; this.render(); this.timer=setTimeout(tick, 1000/this.speed); };
+    this.timer=setTimeout(tick, 700/this.speed);
+  },
+  pause(){ this.playing=false; clearTimeout(this.timer); const b=document.getElementById('btn-play'); if(b) b.innerHTML=ICON.play; },
+  toggle(){ this.playing?this.pause():this.play(); }
+};
+
+/* ---------- icons ---------- */
+const ICON = {
+  play:'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  prev:'<svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>',
+  next:'<svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg>',
+  restart:'<svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>',
+  star:'<svg viewBox="0 0 24 24"><path d="M12 2l3 6.9 7.5.6-5.7 4.9 1.8 7.3L12 17.8 5.4 21.7l1.8-7.3L1.5 9.5 9 8.9z"/></svg>'
+};
+
+/* ============================================================
+   PAGE UI
+   ============================================================ */
+function diffClass(d){ return d==='Easy'?'d-easy':d==='Medium'?'d-med':'d-hard'; }
+function catName(k){ const c=CATS.find(c=>c[1]===k); return c?c[0]:k; }
+
+function codeHTML(code){
+  return code.split('\n').map((line,i)=>`<div class="ln" data-l="${i}"><span class="lno">${i}</span><code>${escapeHTML(line)||' '}</code></div>`).join('');
+}
+function escapeHTML(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* deterministic "today's sprint" of 3 */
+function todaysThree(){
+  const day=Math.floor(Date.now()/864e5);
+  let seed=day*2654435761 % 2**31; const rnd=()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+  const idxs=[...PROBLEMS.keys()]; for(let i=idxs.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [idxs[i],idxs[j]]=[idxs[j],idxs[i]]; }
+  // prefer to surface at least one animated in the trio
+  idxs.sort((a,b)=> (PROBLEMS[b].build?1:0)-(PROBLEMS[a].build?1:0) );
+  return idxs.slice(0,3);
+}
+
+function updateStreak(){
+  const today=Math.floor(Date.now()/864e5);
+  const last=store.get('lastDay',null); let streak=store.get('streak',0);
+  if(last===today){} else if(last===today-1){ streak++; } else { streak=1; }
+  store.set('lastDay',today); store.set('streak',streak);
+  return streak;
+}
+
+function buildPage(){
+  const app=document.getElementById('app');
+  const total=PROBLEMS.length, solved=state.solved.size, animated=PROBLEMS.filter(p=>p.build).length;
+  const streak=updateStreak();
+  const three=todaysThree();
+
+  app.innerHTML=`
+    <header class="hero">
+      <div class="hero-mark">&lt;/&gt;</div>
+      <div class="hero-txt">
+        <h1>Blind&nbsp;75 <span>Animated Trainer</span></h1>
+        <p class="tagline">Watch the algorithm move. Rebuild the solution from memory. Repeat daily.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><b id="stat-streak">${streak}</b><em>day streak</em></div>
+        <div class="stat"><b id="stat-solved">${solved}</b><em>/ ${total} solved</em></div>
+        <div class="stat"><b>${animated}</b><em>animated</em></div>
+      </div>
+    </header>
+
+    <section class="sprint">
+      <div class="sprint-head"><span class="sprint-kicker">Today's sprint</span><h2>3 to drill</h2>
+        <button class="ghost" id="reshuffle">shuffle 3</button></div>
+      <div class="sprint-cards" id="sprint-cards"></div>
+    </section>
+
+    <div class="toolbar">
+      <input id="search" class="search" placeholder="Search 75 problems…" />
+      <div class="chips-line" id="diff-chips">
+        <button class="fchip active" data-diff="all">All</button>
+        <button class="fchip" data-diff="Easy">Easy</button>
+        <button class="fchip" data-diff="Medium">Medium</button>
+        <button class="fchip" data-diff="Hard">Hard</button>
+      </div>
+      <div class="chips-line" id="mode-chips">
+        <button class="fchip active" data-mode="all">All</button>
+        <button class="fchip" data-mode="anim">▶ Animated</button>
+        <button class="fchip" data-mode="star">★ Starred</button>
+        <button class="fchip" data-mode="unsolved">Unsolved</button>
+      </div>
+    </div>
+
+    <main id="list"></main>
+
+    <div class="modal" id="modal" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div class="mh-left">
+            <span class="mh-diff" id="m-diff"></span>
+            <h3 id="m-title"></h3>
+            <span class="mh-pat" id="m-pat"></span>
+          </div>
+          <div class="mh-right">
+            <button class="icon-btn" id="m-star" title="Star">${ICON.star}</button>
+            <button class="icon-btn" id="m-solve" title="Mark solved">✓</button>
+            <button class="icon-btn" id="m-close" title="Close">✕</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="stage-col">
+            <div class="viz-mount" id="viz-mount"></div>
+            <div class="narration" id="narration"></div>
+            <div class="controls" id="controls">
+              <button class="ctl" id="btn-restart" title="Restart">${ICON.restart}</button>
+              <button class="ctl" id="btn-prev" title="Step back">${ICON.prev}</button>
+              <button class="ctl play" id="btn-play" title="Play/Pause">${ICON.play}</button>
+              <button class="ctl" id="btn-next" title="Step forward">${ICON.next}</button>
+              <span class="frame-count" id="frame-count"></span>
+              <label class="speed">speed
+                <input type="range" id="speed" min="0.5" max="3" step="0.5" value="1"/>
+                <b id="speed-val">1×</b>
+              </label>
+            </div>
+            <div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
+          </div>
+          <div class="info-col">
+            <div class="tabs">
+              <button class="tab active" data-tab="idea">Intuition</button>
+              <button class="tab" data-tab="code">Code</button>
+              <button class="tab" data-tab="comp">Complexity</button>
+            </div>
+            <div class="tab-body" id="tab-idea"></div>
+            <div class="tab-body hidden" id="tab-code"><div class="code-block" id="code-block"></div></div>
+            <div class="tab-body hidden" id="tab-comp"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  renderSprint(three);
+  renderList();
+  wireEvents();
+}
+
+function cardHTML(p, i, compact){
+  const num=PROBLEMS.indexOf(p)+1;
+  const anim=p.build?'<span class="badge-anim">▶ animated</span>':'';
+  const star=state.starred.has(p.name)?'starred':'';
+  const solved=state.solved.has(p.name)?'solved':'';
+  return `<button class="card ${solved} ${compact?'compact':''}" data-name="${escapeHTML(p.name)}">
+    <div class="card-top"><span class="card-num">${String(num).padStart(2,'0')}</span>
+      <span class="mh-diff ${diffClass(p.diff)}">${p.diff}</span>
+      <span class="star ${star}" data-star="${escapeHTML(p.name)}">★</span></div>
+    <div class="card-name">${p.name}</div>
+    <div class="card-foot"><span class="pat">${p.pattern}</span>${anim}</div>
+  </button>`;
+}
+
+function renderSprint(three){
+  document.getElementById('sprint-cards').innerHTML = three.map(i=>cardHTML(PROBLEMS[i],i,true)).join('');
+}
+
+function renderList(){
+  const host=document.getElementById('list');
+  const groups={};
+  PROBLEMS.forEach(p=>{
+    if(state.filterDiff!=='all' && p.diff!==state.filterDiff) return;
+    if(state.filterMode==='anim' && !p.build) return;
+    if(state.filterMode==='star' && !state.starred.has(p.name)) return;
+    if(state.filterMode==='unsolved' && state.solved.has(p.name)) return;
+    if(state.q && !p.name.toLowerCase().includes(state.q) && !p.pattern.toLowerCase().includes(state.q)) return;
+    (groups[p.cat]=groups[p.cat]||[]).push(p);
+  });
+  let html='';
+  CATS.forEach(([name,key])=>{
+    const list=groups[key]; if(!list||!list.length) return;
+    const done=list.filter(p=>state.solved.has(p.name)).length;
+    html+=`<section class="cat"><div class="cat-head"><h2>${name}</h2><span class="cat-count">${done}/${list.length}</span></div>
+      <div class="cards">${list.map(p=>cardHTML(p)).join('')}</div></section>`;
+  });
+  if(!html) html='<div class="empty-state">No problems match these filters.</div>';
+  host.innerHTML=html;
+}
+
+function openModal(p){
+  const m=document.getElementById('modal'); m.classList.add('open'); m.setAttribute('aria-hidden','false');
+  document.getElementById('m-title').textContent=p.name;
+  const d=document.getElementById('m-diff'); d.textContent=p.diff; d.className='mh-diff '+diffClass(p.diff);
+  document.getElementById('m-pat').textContent=p.pattern;
+  document.getElementById('tab-idea').innerHTML=`<p class="idea">${p.idea}</p>`+
+    (p.build?'':'<p class="note-soft">Animation for this one lands in a future sprint — trace the code below by hand for now.</p>');
+  document.getElementById('code-block').innerHTML=codeHTML(p.code);
+  document.getElementById('tab-comp').innerHTML=`<div class="comp"><span class="comp-k">Time / Space</span><span class="comp-v">${p.comp}</span></div>
+    <p class="idea">Pattern: <b>${p.pattern}</b>. Category: ${catName(p.cat)}.</p>`;
+  // reset tabs
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='idea'));
+  document.querySelectorAll('.tab-body').forEach(b=>b.classList.add('hidden'));
+  document.getElementById('tab-idea').classList.remove('hidden');
+  // star/solve state
+  syncModalBtns(p);
+  // stage
+  const mount=document.getElementById('viz-mount');
+  const ctl=document.getElementById('controls'), prog=document.querySelector('.progress');
+  if(p.build){ ctl.style.display=''; prog.style.display=''; document.getElementById('narration').style.display='';
+    Stage.open(p);
+  } else {
+    if(Stage.viz) Stage.viz.clear();
+    mount.innerHTML='<div class="no-anim">No animation yet — open <b>Code</b> and dry-run it.</div>';
+    ctl.style.display='none'; prog.style.display='none'; document.getElementById('narration').style.display='none';
+    // still auto-show code tab for non-animated
+    document.querySelector('.tab[data-tab="code"]').click();
+  }
+}
+function syncModalBtns(p){
+  document.getElementById('m-star').classList.toggle('on', state.starred.has(p.name));
+  document.getElementById('m-solve').classList.toggle('on', state.solved.has(p.name));
+}
+function closeModal(){ Stage.pause(); const m=document.getElementById('modal'); m.classList.remove('open'); m.setAttribute('aria-hidden','true'); }
+
+function wireEvents(){
+  document.getElementById('search').addEventListener('input',e=>{ state.q=e.target.value.trim().toLowerCase(); renderList(); });
+  document.getElementById('diff-chips').addEventListener('click',e=>{ const b=e.target.closest('.fchip'); if(!b) return;
+    state.filterDiff=b.dataset.diff; [...e.currentTarget.children].forEach(c=>c.classList.toggle('active',c===b)); renderList(); });
+  document.getElementById('mode-chips').addEventListener('click',e=>{ const b=e.target.closest('.fchip'); if(!b) return;
+    state.filterMode=b.dataset.mode; [...e.currentTarget.children].forEach(c=>c.classList.toggle('active',c===b)); renderList(); });
+  document.getElementById('reshuffle').addEventListener('click',()=>{
+    const idxs=[...PROBLEMS.keys()]; for(let i=idxs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idxs[i],idxs[j]]=[idxs[j],idxs[i]]; }
+    renderSprint(idxs.slice(0,3));
+  });
+
+  // card + star delegation (list + sprint)
+  document.getElementById('app').addEventListener('click',e=>{
+    const star=e.target.closest('.star');
+    if(star){ e.stopPropagation(); const name=star.dataset.star;
+      if(state.starred.has(name)) state.starred.delete(name); else state.starred.add(name);
+      persist(); star.classList.toggle('starred'); if(state.filterMode==='star') renderList(); return; }
+    const card=e.target.closest('.card');
+    if(card){ const p=PROBLEMS.find(x=>x.name===card.dataset.name); if(p) openModal(p); }
+  });
+
+  // modal controls
+  document.getElementById('m-close').addEventListener('click',closeModal);
+  document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+  document.getElementById('btn-play').addEventListener('click',()=>Stage.toggle());
+  document.getElementById('btn-next').addEventListener('click',()=>Stage.step(1));
+  document.getElementById('btn-prev').addEventListener('click',()=>Stage.step(-1));
+  document.getElementById('btn-restart').addEventListener('click',()=>Stage.restart());
+  document.getElementById('speed').addEventListener('input',e=>{ Stage.speed=+e.target.value; document.getElementById('speed-val').textContent=e.target.value+'×'; });
+
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
+    document.querySelectorAll('.tab-body').forEach(b=>b.classList.add('hidden'));
+    document.getElementById('tab-'+t.dataset.tab).classList.remove('hidden');
+  }));
+
+  document.getElementById('m-star').addEventListener('click',()=>{ const p=state.current; if(!p) return;
+    if(state.starred.has(p.name)) state.starred.delete(p.name); else state.starred.add(p.name); persist(); syncModalBtns(p); renderList(); });
+  document.getElementById('m-solve').addEventListener('click',()=>{ const p=state.current; if(!p) return;
+    if(state.solved.has(p.name)) state.solved.delete(p.name); else state.solved.add(p.name); persist(); syncModalBtns(p);
+    document.getElementById('stat-solved').textContent=state.solved.size; renderList(); });
+
+  document.addEventListener('keydown',e=>{
+    if(!document.getElementById('modal').classList.contains('open')) return;
+    if(e.key==='Escape') closeModal();
+    else if(e.key===' '){ e.preventDefault(); Stage.frames.length&&Stage.toggle(); }
+    else if(e.key==='ArrowRight') Stage.frames.length&&Stage.step(1);
+    else if(e.key==='ArrowLeft') Stage.frames.length&&Stage.step(-1);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', buildPage);
+
+</script>
+<script src="../study-controls.js"></script>
+</body>
+</html>

@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blind 75 · Pattern Dojo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E1A; --bg2:#0C1120; --panel:#121A2E; --panel2:#182142; --raise:#1E2A4E;
+  --line:#26325A; --line2:#334372;
+  --ink:#EAF0FF; --muted:#93A0C4; --faint:#5C6A93;
+  --amber:#F7B733; --teal:#2DD4BF; --coral:#FF6B6B; --violet:#A78BFA; --sky:#5AB4F0; --rose:#F472B6; --lime:#A3E635;
+  --easy:#2DD4BF; --med:#F7B733; --hard:#FF6B6B;
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --dur:.42s; --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(45,212,191,.08), transparent 55%),
+    var(--bg);
+  color:var(--ink); font-family:var(--disp);
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+button{font-family:inherit;cursor:pointer;color:inherit;border:none;background:none}
+.mono{font-family:var(--mono)}
+
+/* ---------- App shell ---------- */
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+.topbar{
+  display:flex;align-items:center;gap:18px;padding:12px 20px;
+  border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(24,33,66,.6),rgba(12,17,32,.4));
+  backdrop-filter:blur(8px);
+}
+.brand{display:flex;align-items:baseline;gap:10px;font-weight:700;letter-spacing:-.02em}
+.brand .n{color:var(--amber);font-size:20px}
+.brand .d{color:var(--ink);font-size:20px}
+.brand .sub{color:var(--faint);font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:500;transform:translateY(-1px)}
+.spacer{flex:1}
+.ring-wrap{display:flex;align-items:center;gap:10px}
+.ring-wrap .lab{font-size:11px;color:var(--muted);text-align:right;line-height:1.35}
+.ring-wrap .lab b{color:var(--ink);font-size:15px;font-family:var(--mono)}
+.kbd-hint{font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:7px;padding:5px 9px;letter-spacing:.02em}
+.kbd-hint b{color:var(--muted);font-family:var(--mono)}
+
+.body{display:grid;grid-template-columns:322px 1fr;min-height:0}
+
+/* ---------- Sidebar ---------- */
+.side{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,rgba(18,26,46,.5),rgba(10,14,26,.2))}
+.side-top{padding:12px 12px 8px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
+.search{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 11px}
+.search:focus-within{border-color:var(--line2)}
+.search input{background:none;border:none;outline:none;color:var(--ink);font-family:var(--mono);font-size:13px;width:100%}
+.search input::placeholder{color:var(--faint)}
+.search svg{flex:none;opacity:.6}
+.chips{display:flex;gap:6px}
+.chip{flex:1;font-size:11px;font-weight:600;padding:6px 4px;border-radius:8px;border:1px solid var(--line);color:var(--muted);background:var(--bg2);letter-spacing:.02em;transition:.15s}
+.chip:hover{border-color:var(--line2);color:var(--ink)}
+.chip.on{background:var(--panel2);border-color:var(--line2);color:var(--ink)}
+.chip .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.side-actions{display:flex;gap:6px}
+.mini-btn{flex:1;font-size:11px;font-weight:600;padding:7px 6px;border-radius:8px;border:1px solid var(--line);color:var(--muted);background:var(--bg2);transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.mini-btn:hover{border-color:var(--line2);color:var(--ink);background:var(--panel)}
+
+.list{overflow-y:auto;padding:6px 8px 40px;flex:1;min-height:0}
+.list::-webkit-scrollbar{width:10px}
+.list::-webkit-scrollbar-thumb{background:var(--line);border-radius:20px;border:3px solid transparent;background-clip:content-box}
+.list::-webkit-scrollbar-thumb:hover{background:var(--line2);background-clip:content-box}
+.cat{margin-top:8px}
+.cat-h{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;user-select:none}
+.cat-h:hover{background:var(--panel)}
+.cat-h .caret{transition:transform .18s;color:var(--faint);flex:none}
+.cat.closed .caret{transform:rotate(-90deg)}
+.cat-h .nm{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);flex:1}
+.cat-h .ct{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.cat.closed .items{display:none}
+.items{padding:2px 0 4px}
+.row{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;cursor:pointer;transition:background .13s}
+.row:hover{background:var(--panel)}
+.row.active{background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line2)}
+.row .rdot{width:8px;height:8px;border-radius:50%;flex:none}
+.row .rt{font-size:12.5px;color:var(--muted);flex:1;line-height:1.3;font-weight:500}
+.row.active .rt{color:var(--ink)}
+.row.done .rt{color:var(--faint)}
+.row .rstar{opacity:0;flex:none;transition:.13s}
+.row:hover .rstar,.row .rstar.on{opacity:1}
+.row .rstar.on svg{fill:var(--amber);stroke:var(--amber)}
+.row .rcheck{flex:none;width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line2);display:grid;place-items:center;transition:.15s}
+.row.done .rcheck{background:var(--teal);border-color:var(--teal)}
+.row.done .rcheck svg{opacity:1}
+.row .rcheck svg{opacity:0;transition:.15s}
+
+/* ---------- Main ---------- */
+.main{display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+.main::-webkit-scrollbar{width:10px}
+.main::-webkit-scrollbar-thumb{background:var(--line);border-radius:20px;border:3px solid transparent;background-clip:content-box}
+.pane{padding:20px 26px 30px;max-width:1080px;width:100%;margin:0 auto}
+.phead{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.phead .idx{font-family:var(--mono);font-size:12px;color:var(--faint);border:1px solid var(--line);border-radius:7px;padding:5px 9px;margin-top:4px}
+.phead .htxt{flex:1;min-width:240px}
+.phead h1{margin:0 0 8px;font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.tags{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;letter-spacing:.03em}
+.pill.diff{color:#0A0E1A}
+.pill.pat{background:var(--panel2);color:var(--violet);border:1px solid var(--line2)}
+.pill.pat b{color:var(--ink);font-weight:600}
+.lc-link{font-size:12px;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:5px 10px;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.lc-link:hover{border-color:var(--line2);color:var(--ink);background:var(--panel)}
+.hact{display:flex;gap:8px;margin-top:2px}
+.hbtn{font-size:12px;font-weight:600;padding:8px 13px;border-radius:9px;border:1px solid var(--line);color:var(--muted);background:var(--bg2);transition:.15s;display:flex;align-items:center;gap:7px}
+.hbtn:hover{border-color:var(--line2);color:var(--ink)}
+.hbtn.solved{background:var(--teal);border-color:var(--teal);color:#08221E}
+.hbtn.star.on{color:var(--amber);border-color:#5a4a1e}
+
+/* stage */
+.stage-wrap{margin-top:18px;border:1px solid var(--line);border-radius:16px;background:
+   linear-gradient(180deg,rgba(14,20,38,.9),rgba(10,14,26,.9));
+   position:relative;overflow:hidden}
+.stage-wrap::before{content:"";position:absolute;inset:0;background-image:
+   linear-gradient(rgba(38,50,90,.16) 1px,transparent 1px),
+   linear-gradient(90deg,rgba(38,50,90,.16) 1px,transparent 1px);
+   background-size:34px 34px;mask:radial-gradient(120% 100% at 50% 0%,#000 55%,transparent);pointer-events:none}
+#stage{display:block;width:100%;height:auto}
+#stage g,#stage rect,#stage text,#stage line,#stage path,#stage circle,#stage polygon{
+  transition:transform var(--dur) var(--ease),fill .3s ease,opacity .3s ease,stroke .28s ease,stroke-width .28s ease;
+}
+.pulse{animation:pulse .5s var(--ease)}
+@keyframes pulse{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
+
+.narr{display:flex;align-items:center;gap:12px;margin-top:14px;min-height:46px;
+  background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 15px}
+.narr .stepno{font-family:var(--mono);font-size:11px;color:var(--amber);border:1px solid var(--line2);border-radius:6px;padding:4px 8px;flex:none}
+.narr .txt{font-size:14px;color:var(--ink);line-height:1.45;font-weight:500}
+.narr .txt code{font-family:var(--mono);font-size:12.5px;background:var(--panel2);padding:1px 6px;border-radius:5px;color:var(--sky)}
+
+/* transport */
+.transport{display:flex;align-items:center;gap:14px;margin-top:14px}
+.tbtns{display:flex;align-items:center;gap:6px}
+.tbtn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);display:grid;place-items:center;color:var(--muted);transition:.14s}
+.tbtn:hover{border-color:var(--line2);color:var(--ink);background:var(--panel)}
+.tbtn.play{width:52px;background:var(--amber);border-color:var(--amber);color:#0A0E1A}
+.tbtn.play:hover{background:#ffc94d;color:#0A0E1A}
+.scrub{flex:1;display:flex;flex-direction:column;gap:6px}
+.track{position:relative;height:20px;display:flex;align-items:center;cursor:pointer}
+.track .rail{position:absolute;left:0;right:0;height:5px;border-radius:10px;background:var(--panel2)}
+.track .fill{position:absolute;left:0;height:5px;border-radius:10px;background:linear-gradient(90deg,var(--amber),var(--teal));transition:width .18s var(--ease)}
+.track .ticks{position:absolute;left:0;right:0;display:flex;justify-content:space-between;pointer-events:none}
+.track .tk{width:2px;height:9px;border-radius:2px;background:var(--line2)}
+.track .knob{position:absolute;width:15px;height:15px;border-radius:50%;background:var(--ink);border:3px solid var(--amber);transform:translateX(-50%);transition:left .18s var(--ease);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.sctl{display:flex;align-items:center;gap:10px}
+.speed{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:3px}
+.speed button{font-size:11px;font-weight:600;padding:5px 8px;border-radius:6px;color:var(--faint);font-family:var(--mono)}
+.speed button.on{background:var(--panel2);color:var(--ink)}
+.loopbtn{width:36px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--bg2);display:grid;place-items:center;color:var(--faint)}
+.loopbtn.on{color:var(--teal);border-color:#1e4a44}
+
+/* info cards */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
+.card.code{grid-column:1 / -1}
+.card h3{margin:0 0 10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600;display:flex;align-items:center;gap:8px}
+.card h3 .bar{width:14px;height:2px;background:var(--amber);border-radius:2px}
+.card p{margin:0;font-size:14px;line-height:1.6;color:var(--muted)}
+.card p b{color:var(--ink);font-weight:600}
+.card p code,.insight code{font-family:var(--mono);font-size:12.5px;color:var(--sky);background:var(--bg2);padding:1px 6px;border-radius:5px}
+.cmplx{display:flex;gap:22px;flex-wrap:wrap}
+.cmplx .m{display:flex;flex-direction:column;gap:3px}
+.cmplx .m .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.cmplx .m .v{font-family:var(--mono);font-size:17px;color:var(--teal);font-weight:500}
+.cmplx .m.sp .v{color:var(--violet)}
+pre.code{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--muted);overflow-x:auto}
+pre.code .ln{display:block;padding:0 8px;border-radius:5px;transition:background .2s,color .2s}
+pre.code .ln .g{color:var(--faint)}
+pre.code .ln.hl{background:rgba(247,183,51,.12);color:var(--ink);box-shadow:inset 2px 0 0 var(--amber)}
+pre.code .kw{color:var(--violet)} pre.code .fn{color:var(--sky)} pre.code .st{color:var(--teal)} pre.code .cm{color:var(--faint);font-style:italic}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;padding:0 2px}
+.legend .lg{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted)}
+.legend .lg i{width:13px;height:13px;border-radius:4px;display:inline-block;border:1px solid rgba(255,255,255,.15)}
+
+.empty{padding:60px;text-align:center;color:var(--faint)}
+
+@media (max-width:900px){
+  .body{grid-template-columns:1fr}
+  .side{position:fixed;inset:52px 0 0 0;z-index:30;width:100%;transform:translateX(-100%);transition:transform .25s;background:var(--bg)}
+  .side.open{transform:none}
+  .cards{grid-template-columns:1fr}
+  .menu-btn{display:grid!important}
+}
+.menu-btn{display:none;width:38px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--bg2);place-items:center;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Toggle problem list">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="brand">
+      <span class="n">Blind</span><span class="d">75</span>
+      <span class="sub">Pattern Dojo</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="kbd-hint"><b>Space</b> play · <b>←→</b> step · <b>J/K</b> problem · <b>R</b> random</div>
+    <div class="ring-wrap">
+      <div class="lab">Revised today<br><b id="ringLab">0/75</b></div>
+      <svg width="42" height="42" viewBox="0 0 42 42">
+        <circle cx="21" cy="21" r="17" fill="none" stroke="var(--line)" stroke-width="4"/>
+        <circle id="ring" cx="21" cy="21" r="17" fill="none" stroke="var(--teal)" stroke-width="4"
+          stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="106.8"
+          transform="rotate(-90 21 21)" style="transition:stroke-dashoffset .5s var(--ease)"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="body">
+    <aside class="side" id="side">
+      <div class="side-top">
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search" placeholder="search problems…" spellcheck="false">
+        </div>
+        <div class="chips" id="chips">
+          <button class="chip on" data-f="all">All</button>
+          <button class="chip" data-f="Easy"><span class="dot" style="background:var(--easy)"></span>Easy</button>
+          <button class="chip" data-f="Medium"><span class="dot" style="background:var(--med)"></span>Med</button>
+          <button class="chip" data-f="Hard"><span class="dot" style="background:var(--hard)"></span>Hard</button>
+        </div>
+        <div class="side-actions">
+          <button class="mini-btn" id="randBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>Random</button>
+          <button class="mini-btn" id="starFilter"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 21.5 12 17.5 5.5 21.5 7 14.5 2 9.5 9 9"/></svg>Starred</button>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+    </aside>
+
+    <main class="main" id="main">
+      <div class="pane" id="pane"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SVG helpers
+   ===================================================================== */
+const SVGNS="http://www.w3.org/2000/svg";
+function E(tag,attrs,kids){
+  const e=document.createElementNS(SVGNS,tag);
+  if(attrs)for(const k in attrs){ if(k==="text")e.textContent=attrs[k]; else e.setAttribute(k,attrs[k]); }
+  if(kids)kids.forEach(c=>c&&e.appendChild(c));
+  return e;
+}
+const C={amber:'var(--amber)',teal:'var(--teal)',coral:'var(--coral)',violet:'var(--violet)',sky:'var(--sky)',rose:'var(--rose)',lime:'var(--lime)',ink:'var(--ink)',muted:'var(--muted)',faint:'var(--faint)',line:'var(--line)',line2:'var(--line2)',panel:'var(--panel)',panel2:'var(--panel2)'};
+function col(x){return C[x]||x;}
+const VB={w:900,h:440};
+function stageSVG(){
+  const s=document.getElementById('stage');
+  s.setAttribute('viewBox',`0 0 ${VB.w} ${VB.h}`);
+  s.innerHTML='';
+  return s;
+}
+
+/* =====================================================================
+   Renderers.  Each: build(svg, base) -> refs ;  update(refs, frame)
+   A "frame" = { st:{...state...}, note, code }
+   ===================================================================== */
+
+/* ---- shared: state class -> fill/stroke for a cell ---- */
+function cellSkin(state){
+  // returns {fill, stroke, tcol}
+  switch(state){
+    case 'active':  return {fill:'rgba(247,183,51,.16)', stroke:col('amber'),  tcol:col('amber'),  glow:1};
+    case 'compare': return {fill:'rgba(255,107,107,.15)',stroke:col('coral'),  tcol:col('coral')};
+    case 'done':    return {fill:'rgba(45,212,191,.15)', stroke:col('teal'),   tcol:col('teal')};
+    case 'window':  return {fill:'rgba(90,180,240,.16)', stroke:col('sky'),    tcol:col('ink')};
+    case 'pick':    return {fill:'rgba(167,139,250,.18)',stroke:col('violet'), tcol:col('violet')};
+    case 'dim':     return {fill:'rgba(30,42,78,.35)',   stroke:col('line'),   tcol:col('faint')};
+    default:        return {fill:'var(--bg2)',           stroke:col('line2'),  tcol:col('ink')};
+  }
+}
+
+/* ============================ ARRAY ============================ */
+const ArrayR={
+  build(svg,base){
+    const vals=base.values, n=vals.length;
+    const cw=Math.min(72, (VB.w-140)/n - 12), gap=12, ch=cw;
+    const total=n*cw+(n-1)*gap, x0=(VB.w-total)/2, y0=150;
+    const refs={cw,gap,ch,x0,y0,n,cells:[],idxs:[],ptrs:{},window:null,kv:null,read:null};
+    // window band
+    refs.window=E('rect',{x:x0,y:y0-9,width:0,height:ch+18,rx:12,fill:'rgba(90,180,240,.09)',stroke:col('sky'),'stroke-width':1,opacity:0});
+    svg.appendChild(refs.window);
+    for(let i=0;i<n;i++){
+      const cx=x0+i*(cw+gap);
+      const g=E('g',{}); g.style.transform=`translate(${cx}px,${y0}px)`;
+      const r=E('rect',{width:cw,height:ch,rx:12,fill:'var(--bg2)',stroke:col('line2'),'stroke-width':1.5});
+      const t=E('text',{x:cw/2,y:ch/2+1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':Math.min(22,cw*0.4),'font-weight':700,fill:col('ink'),text:String(vals[i])});
+      const idx=E('text',{x:cw/2,y:-12,'text-anchor':'middle','font-family':'var(--mono)','font-size':11,fill:col('faint'),text:String(i)});
+      g.appendChild(r);g.appendChild(t);
+      svg.appendChild(g);svg.appendChild(idx);
+      refs.cells.push({g,r,t}); refs.idxs.push(idx);
+    }
+    refs.read=E('text',{x:VB.w/2,y:y0+ch+96,'text-anchor':'middle','font-family':'var(--mono)','font-size':15,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    refs._svg=svg;
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{}, vals=st.values;
+    const skins=st.cells||[];
+    for(let i=0;i<refs.n;i++){
+      const cell=refs.cells[i]; if(!cell)continue;
+      const sk=cellSkin(skins[i]||'');
+      cell.r.setAttribute('fill',sk.fill); cell.r.setAttribute('stroke',sk.stroke);
+      cell.r.setAttribute('stroke-width',sk.glow?2.5:1.5);
+      cell.r.style.filter=sk.glow?'drop-shadow(0 0 10px rgba(247,183,51,.55))':'none';
+      cell.t.setAttribute('fill',sk.tcol);
+      if(vals&&vals[i]!==undefined&&String(vals[i])!==cell.t.textContent){
+        cell.t.textContent=String(vals[i]); pulse(cell.g);
+      } else if(vals&&vals[i]!==undefined){cell.t.textContent=String(vals[i]);}
+    }
+    // window
+    if(st.window){ const[l,r]=st.window;
+      const x=refs.x0+l*(refs.cw+refs.gap)-6, w=(r-l+1)*(refs.cw+refs.gap)-refs.gap+12;
+      refs.window.setAttribute('x',x);refs.window.setAttribute('width',Math.max(0,w));refs.window.setAttribute('opacity',1);
+    } else refs.window.setAttribute('opacity',0);
+    drawPointers(refs,st.ptrs,refs.y0+refs.ch+14);
+    // readout
+    refs.read.textContent=st.read||'';
+    // kv panel
+    drawKV(refs,st.kv);
+  }
+};
+
+/* pointers under cells */
+function drawPointers(refs,ptrs,py){
+  ptrs=ptrs||{};
+  refs.ptrs=refs.ptrs||{};
+  const seen={};
+  // stack multiple pointers at same index
+  const byIndex={};
+  Object.keys(ptrs).forEach(name=>{ const at=ptrs[name]; (byIndex[at]=byIndex[at]||[]).push(name); });
+  Object.keys(ptrs).forEach(name=>{
+    seen[name]=1;
+    const at=ptrs[name];
+    const order=byIndex[at].indexOf(name);
+    let p=refs.ptrs[name];
+    const colr=ptrColor(name);
+    if(!p){
+      const g=E('g',{opacity:0});
+      const tri=E('polygon',{points:'0,-7 6,3 -6,3',fill:colr});
+      const lab=E('text',{x:0,y:20,'text-anchor':'middle','font-family':'var(--mono)','font-size':12,'font-weight':700,fill:colr,text:name});
+      g.appendChild(tri);g.appendChild(lab);
+      refs._svg.appendChild(g);
+      p=refs.ptrs[name]={g,tri,lab};
+    }
+    const cx=(at<0)?refs.x0-30:refs.x0+at*(refs.cw+refs.gap)+refs.cw/2;
+    p.g.style.transform=`translate(${cx}px,${py+order*24}px)`;
+    p.g.setAttribute('opacity',at<0?0:1);
+  });
+  Object.keys(refs.ptrs).forEach(name=>{ if(!seen[name])refs.ptrs[name].g.setAttribute('opacity',0); });
+}
+function ptrColor(name){
+  const map={i:'amber',j:'coral',k:'violet',l:'sky',r:'rose',lo:'sky',hi:'rose',left:'sky',right:'rose',
+    slow:'amber',fast:'coral',prev:'violet',curr:'amber',next:'sky',mid:'lime',p:'violet',q:'sky',
+    read:'amber',write:'teal',cur:'amber',start:'sky',end:'rose'};
+  return col(map[name]||'amber');
+}
+
+/* key-value side panel (hashmap / set) */
+function drawKV(refs,kv){
+  if(refs.kv){refs.kv.remove();refs.kv=null;}
+  if(!kv)return;
+  const g=E('g',{}); const x=VB.w-232, y=44;
+  g.appendChild(E('text',{x:x,y:y-14,'font-family':'var(--disp)','font-size':12,'font-weight':600,fill:col('faint'),text:(kv.title||'map').toUpperCase()}));
+  const entries=kv.entries||[];
+  entries.slice(0,7).forEach((en,i)=>{
+    const ey=y+i*30;
+    const box=E('rect',{x:x,y:ey,width:200,height:24,rx:7,fill:'var(--panel2)',stroke:col('line2'),'stroke-width':1,opacity:0});
+    const txt=E('text',{x:x+11,y:ey+16,'font-family':'var(--mono)','font-size':13,fill:col('ink'),
+      text:Array.isArray(en)?`${en[0]}  →  ${en[1]}`:String(en)});
+    txt.setAttribute('opacity',0);
+    g.appendChild(box);g.appendChild(txt);
+    requestAnimationFrame(()=>{box.setAttribute('opacity',1);txt.setAttribute('opacity',1);});
+    if(en&&en.hot){box.setAttribute('stroke',col('amber'));box.setAttribute('fill','rgba(247,183,51,.14)');}
+  });
+  refs._svg.appendChild(g); refs.kv=g;
+}
+
+function pulse(g){ g.classList.remove('pulse'); void g.offsetWidth; g.classList.add('pulse'); }
+
+/* ============================ GRID / MATRIX ============================ */
+const GridR={
+  build(svg,base){
+    const grid=base.grid, rows=grid.length, cols=grid[0].length;
+    const cell=Math.min(58,(VB.h-120)/rows, (VB.w-360)/cols), gap=6;
+    const total_w=cols*cell+(cols-1)*gap, total_h=rows*cell+(rows-1)*gap;
+    const x0=(VB.w-total_w)/2-40, y0=(VB.h-total_h)/2+8;
+    const refs={rows,cols,cell,gap,x0,y0,cells:[],read:null,_svg:svg,labels:base.labels};
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+      const g=E('g',{}); g.style.transform=`translate(${x0+c*(cell+gap)}px,${y0+r*(cell+gap)}px)`;
+      const rect=E('rect',{width:cell,height:cell,rx:8,fill:'var(--bg2)',stroke:col('line2'),'stroke-width':1.2});
+      const t=E('text',{x:cell/2,y:cell/2+1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':Math.min(18,cell*0.42),'font-weight':600,fill:col('ink'),text:String(grid[r][c])});
+      g.appendChild(rect);g.appendChild(t);svg.appendChild(g);
+      refs.cells.push({g,rect,t,r,c});
+    }
+    refs.read=E('text',{x:VB.w/2-40,y:y0+total_h+34,'text-anchor':'middle','font-family':'var(--mono)','font-size':15,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{}, marks=st.marks||{}, vals=st.values;
+    refs.cells.forEach(cell=>{
+      const key=cell.r+','+cell.c;
+      const sk=cellSkin(marks[key]||'');
+      cell.rect.setAttribute('fill',sk.fill);cell.rect.setAttribute('stroke',sk.stroke);
+      cell.rect.setAttribute('stroke-width',sk.glow?2.4:1.2);
+      cell.rect.style.filter=sk.glow?'drop-shadow(0 0 8px rgba(247,183,51,.5))':'none';
+      cell.t.setAttribute('fill',sk.tcol);
+      if(vals&&vals[cell.r]&&vals[cell.r][cell.c]!==undefined){
+        const nv=String(vals[cell.r][cell.c]);
+        if(nv!==cell.t.textContent){cell.t.textContent=nv;pulse(cell.g);}
+      }
+    });
+    refs.read.textContent=st.read||'';
+  }
+};
+
+/* ============================ LINKED LIST ============================ */
+const ListR={
+  build(svg,base){
+    const nodes=base.nodes, n=nodes.length;
+    const nw=62, gap=42;
+    const maxCol=Math.max(...nodes.map((nd,i)=> nd.col!=null?nd.col:i));
+    const maxRow=Math.max(0,...nodes.map(nd=> nd.row||0));
+    const total=(maxCol+1)*nw+maxCol*gap, x0=(VB.w-total)/2;
+    const rowGap=118, y0=maxRow>0?90:170;
+    const refs={nw,gap,x0,y0,nodes:[],pos:{},arrows:[],_svg:svg,read:null};
+    // labels for rows
+    if(base.rowLabels){ base.rowLabels.forEach((lb,r)=>{ if(lb) svg.appendChild(E('text',{x:x0-52,y:y0+r*rowGap+nw/2+4,'text-anchor':'end','font-family':'var(--disp)','font-size':12,'font-weight':600,fill:col('faint'),text:lb})); }); }
+    // arrow layer first
+    refs.arrowG=E('g',{}); svg.appendChild(refs.arrowG);
+    nodes.forEach((nd,i)=>{
+      const cIdx=nd.col!=null?nd.col:i, rIdx=nd.row||0;
+      const cx=x0+cIdx*(nw+gap), cy=y0+rIdx*rowGap;
+      refs.pos[nd.id]={x:cx+nw/2,y:cy+nw/2};
+      const g=E('g',{}); g.style.transform=`translate(${cx}px,${cy}px)`;
+      const r=E('rect',{width:nw,height:nw,rx:14,fill:'var(--bg2)',stroke:col('line2'),'stroke-width':1.5});
+      const t=E('text',{x:nw/2,y:nw/2+1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':20,'font-weight':700,fill:col('ink'),text:String(nd.val)});
+      g.appendChild(r);g.appendChild(t);svg.appendChild(g);
+      refs.nodes.push({g,r,t,id:nd.id});
+    });
+    refs.read=E('text',{x:VB.w/2,y:VB.h-24,'text-anchor':'middle','font-family':'var(--mono)','font-size':15,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{};
+    // node skins
+    const skins=st.marks||{};
+    refs.nodes.forEach(nd=>{
+      const sk=cellSkin(skins[nd.id]||'');
+      nd.r.setAttribute('fill',sk.fill);nd.r.setAttribute('stroke',sk.stroke);
+      nd.r.setAttribute('stroke-width',sk.glow?2.5:1.5);
+      nd.r.style.filter=sk.glow?'drop-shadow(0 0 9px rgba(247,183,51,.5))':'none';
+      nd.t.setAttribute('fill',sk.tcol);
+    });
+    // arrows (links: [[from,to],...]) ; null target -> to the right small "null"
+    refs.arrowG.innerHTML='';
+    (st.links||[]).forEach(lk=>{
+      const a=refs.pos[lk[0]]; if(!a)return;
+      let bx,by;
+      if(lk[1]===null||!refs.pos[lk[1]]){ bx=a.x+refs.nw/2+34; by=a.y; }
+      else { const b=refs.pos[lk[1]]; bx=b.x; by=b.y; }
+      const dir=lk.rev?-1:1;
+      const start={x:a.x+(bx>a.x?refs.nw/2:-refs.nw/2)*(bx>a.x?1:1),y:a.y};
+      const path=curvedArrow(a,{x:bx,y:by},refs.nw,lk.color?col(lk.color):col('faint'),lk.dashed);
+      path.forEach(p=>refs.arrowG.appendChild(p));
+    });
+    drawPointersFor(refs,st.ptrs);
+    refs.read.textContent=st.read||'';
+  }
+};
+function curvedArrow(a,b,nw,color,dashed){
+  const out=[];
+  const up=Math.abs(b.x-a.x)>nw+10;
+  const sx=a.x+(b.x>a.x?nw/2:-nw/2), ex=b.x+(b.x>a.x?-nw/2:nw/2);
+  let d;
+  if(b.y===a.y){ const lift= b.x>a.x?-46:46; d=`M ${sx} ${a.y+ (b.x>a.x?-2:2)} C ${(sx+ex)/2} ${a.y+lift}, ${(sx+ex)/2} ${a.y+lift}, ${ex} ${b.y+(b.x>a.x?-2:2)}`; }
+  else d=`M ${sx} ${a.y} L ${ex} ${b.y}`;
+  const p=document.createElementNS(SVGNS,'path');
+  p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke',color);p.setAttribute('stroke-width',2);
+  if(dashed)p.setAttribute('stroke-dasharray','5 5');
+  out.push(p);
+  // arrowhead
+  const ang=Math.atan2(b.y-a.y, ex-sx);
+  const ah=document.createElementNS(SVGNS,'polygon');
+  const hx=ex,hy=b.y;
+  ah.setAttribute('points',`${hx},${hy} ${hx-9*Math.cos(ang-.5)},${hy-9*Math.sin(ang-.5)} ${hx-9*Math.cos(ang+.5)},${hy-9*Math.sin(ang+.5)}`);
+  ah.setAttribute('fill',color);
+  out.push(ah);
+  return out;
+}
+function drawPointersFor(refs,ptrs){
+  ptrs=ptrs||{}; refs.ptrs=refs.ptrs||{}; const seen={};
+  const byId={}; Object.keys(ptrs).forEach(nm=>{const id=ptrs[nm];(byId[id]=byId[id]||[]).push(nm);});
+  Object.keys(ptrs).forEach(nm=>{
+    seen[nm]=1; const id=ptrs[nm]; const pos=(id&&refs.pos[id]); const order=byId[id].indexOf(nm);
+    let p=refs.ptrs[nm]; const cr=ptrColor(nm);
+    if(!p){ const g=E('g',{opacity:0});
+      g.appendChild(E('polygon',{points:'0,7 6,-3 -6,-3',fill:cr}));
+      g.appendChild(E('text',{x:0,y:-10,'text-anchor':'middle','font-family':'var(--mono)','font-size':12,'font-weight':700,fill:cr,text:nm}));
+      refs._svg.appendChild(g); p=refs.ptrs[nm]={g};
+    }
+    if(pos){ p.g.style.transform=`translate(${pos.x}px,${pos.y-refs.nw/2-14-order*22}px)`; p.g.setAttribute('opacity',1); }
+    else p.g.setAttribute('opacity',0);
+  });
+  Object.keys(refs.ptrs).forEach(nm=>{if(!seen[nm])refs.ptrs[nm].g.setAttribute('opacity',0);});
+}
+
+/* ============================ TREE ============================ */
+const TreeR={
+  layout(base){
+    const map={}; base.nodes.forEach(n=>map[n.id]=n);
+    let order=0; const depthMap={};
+    (function ino(id,d){ if(id==null||!map[id])return; const nd=map[id];
+      ino(nd.l,d+1); nd._x=order++; nd._d=d; depthMap[d]=1; ino(nd.r,d+1);
+    })(base.root,0);
+    const maxX=Math.max(1,order-1), maxD=Math.max(...base.nodes.map(n=>n._d||0));
+    base.nodes.forEach(n=>{
+      n.px=70+(n._x/(maxX||1))*(VB.w-140);
+      n.py=70+(n._d/(maxD||1))*(VB.h-170);
+    });
+    return map;
+  },
+  build(svg,base){
+    const map=this.layout(base);
+    const refs={map,nodes:{},edges:{},_svg:svg,read:null};
+    refs.edgeG=E('g',{}); svg.appendChild(refs.edgeG);
+    base.nodes.forEach(n=>{
+      ['l','r'].forEach(side=>{ const c=n[side]; if(c!=null&&map[c]){
+        const ln=E('line',{x1:n.px,y1:n.py,x2:map[c].px,y2:map[c].py,stroke:col('line2'),'stroke-width':2});
+        refs.edgeG.appendChild(ln); refs.edges[n.id+'>'+c]=ln;
+      }});
+    });
+    base.nodes.forEach(n=>{
+      const g=E('g',{}); g.style.transform=`translate(${n.px}px,${n.py}px)`;
+      const cc=E('circle',{r:22,fill:'var(--bg2)',stroke:col('line2'),'stroke-width':2});
+      const t=E('text',{x:0,y:1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':16,'font-weight':700,fill:col('ink'),text:String(n.val)});
+      g.appendChild(cc);g.appendChild(t);svg.appendChild(g);
+      refs.nodes[n.id]={g,cc,t};
+    });
+    refs.read=E('text',{x:VB.w/2,y:VB.h-16,'text-anchor':'middle','font-family':'var(--mono)','font-size':15,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{}, marks=st.marks||{}, em=st.edges||{}, vals=st.vals||{};
+    for(const id in refs.nodes){
+      const sk=cellSkin(marks[id]||'');
+      const nd=refs.nodes[id];
+      nd.cc.setAttribute('fill',sk.fill);nd.cc.setAttribute('stroke',sk.stroke);
+      nd.cc.setAttribute('stroke-width',sk.glow?3:2);
+      nd.cc.style.filter=sk.glow?'drop-shadow(0 0 9px rgba(247,183,51,.5))':'none';
+      nd.t.setAttribute('fill',sk.tcol);
+      if(vals[id]!==undefined && String(vals[id])!==nd.t.textContent){nd.t.textContent=String(vals[id]);pulse(nd.g);}
+    }
+    for(const k in refs.edges){ const e=em[k];
+      refs.edges[k].setAttribute('stroke', e?col(e):col('line2'));
+      refs.edges[k].setAttribute('stroke-width', e?3:2);
+    }
+    refs.read.textContent=st.read||'';
+  }
+};
+
+/* ============================ GRAPH ============================ */
+const GraphR={
+  build(svg,base){
+    const refs={nodes:{},edges:{},_svg:svg,read:null,directed:base.directed};
+    refs.edgeG=E('g',{}); svg.appendChild(refs.edgeG);
+    const px=id=>60+base.nodes.find(n=>n.id===id).x*(VB.w-120);
+    const py=id=>60+base.nodes.find(n=>n.id===id).y*(VB.h-140);
+    base.edges.forEach(ed=>{
+      const x1=px(ed[0]),y1=py(ed[0]),x2=px(ed[1]),y2=py(ed[1]);
+      const ln=E('line',{x1,y1,x2,y2,stroke:col('line2'),'stroke-width':2});
+      refs.edgeG.appendChild(ln); refs.edges[ed[0]+'-'+ed[1]]=ln; refs.edges[ed[1]+'-'+ed[0]]=ln;
+      if(base.directed){
+        const ang=Math.atan2(y2-y1,x2-x1), hx=x2-24*Math.cos(ang), hy=y2-24*Math.sin(ang);
+        const ah=E('polygon',{points:`${hx},${hy} ${hx-11*Math.cos(ang-.4)},${hy-11*Math.sin(ang-.4)} ${hx-11*Math.cos(ang+.4)},${hy-11*Math.sin(ang+.4)}`,fill:col('line2')});
+        refs.edgeG.appendChild(ah); refs.edges['a'+ed[0]+'-'+ed[1]]=ah;
+      }
+    });
+    base.nodes.forEach(n=>{
+      const g=E('g',{}); g.style.transform=`translate(${px(n.id)}px,${py(n.id)}px)`;
+      const cc=E('circle',{r:24,fill:'var(--bg2)',stroke:col('line2'),'stroke-width':2});
+      const t=E('text',{x:0,y:1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':16,'font-weight':700,fill:col('ink'),text:String(n.val)});
+      g.appendChild(cc);g.appendChild(t);svg.appendChild(g);
+      refs.nodes[n.id]={g,cc,t};
+    });
+    refs.read=E('text',{x:VB.w/2,y:VB.h-14,'text-anchor':'middle','font-family':'var(--mono)','font-size':15,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{}, marks=st.marks||{}, em=st.edges||{};
+    for(const id in refs.nodes){
+      const sk=cellSkin(marks[id]||'');
+      const nd=refs.nodes[id];
+      nd.cc.setAttribute('fill',sk.fill);nd.cc.setAttribute('stroke',sk.stroke);
+      nd.cc.setAttribute('stroke-width',sk.glow?3:2);
+      nd.cc.style.filter=sk.glow?'drop-shadow(0 0 10px rgba(247,183,51,.5))':'none';
+      nd.t.setAttribute('fill',sk.tcol);
+    }
+    for(const k in em){ if(refs.edges[k]){refs.edges[k].setAttribute('stroke',col(em[k]));refs.edges[k].setAttribute('stroke-width',3);}
+      if(refs.edges['a'+k])refs.edges['a'+k].setAttribute('fill',col(em[k])); }
+    // reset non-marked
+    refs.read.textContent=st.read||'';
+  }
+};
+
+/* ============================ STACK ============================ */
+const StackR={
+  build(svg,base){
+    const refs={_svg:svg,items:[],base,read:null};
+    refs.title=E('text',{x:150,y:60,'text-anchor':'middle','font-family':'var(--disp)','font-size':13,'font-weight':600,fill:col('faint'),text:(base.title||'STACK').toUpperCase()});
+    svg.appendChild(refs.title);
+    // input row (optional) drawn as array up top
+    refs.inputG=E('g',{}); svg.appendChild(refs.inputG);
+    if(base.input){
+      const arr=base.input, cw=44, gap=8, x0=VB.w-arr.length*(cw+gap)-40, y0=90;
+      refs.inputRefs=[];
+      refs.inputG.appendChild(E('text',{x:x0,y:y0-16,'font-family':'var(--disp)','font-size':13,'font-weight':600,fill:col('faint'),text:'INPUT'}));
+      arr.forEach((v,i)=>{
+        const g=E('g',{}); g.style.transform=`translate(${x0+i*(cw+gap)}px,${y0}px)`;
+        const r=E('rect',{width:cw,height:cw,rx:9,fill:'var(--bg2)',stroke:col('line2'),'stroke-width':1.4});
+        const t=E('text',{x:cw/2,y:cw/2+1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':18,'font-weight':700,fill:col('ink'),text:String(v)});
+        g.appendChild(r);g.appendChild(t);refs.inputG.appendChild(g);
+        refs.inputRefs.push({g,r,t});
+      });
+      refs.ix0=x0;refs.icw=cw;refs.igap=gap;refs.iy0=y0;
+    }
+    refs.read=E('text',{x:150,y:VB.h-24,'text-anchor':'middle','font-family':'var(--mono)','font-size':14,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    refs.stackG=E('g',{}); svg.appendChild(refs.stackG);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{}, items=st.stack||[];
+    // input marks
+    if(refs.inputRefs&&st.inputMarks){ refs.inputRefs.forEach((c,i)=>{ const sk=cellSkin(st.inputMarks[i]||''); c.r.setAttribute('fill',sk.fill);c.r.setAttribute('stroke',sk.stroke);c.t.setAttribute('fill',sk.tcol); }); }
+    refs.stackG.innerHTML='';
+    const bw=90, bh=40, gap=6, baseY=VB.h-70, cx=150;
+    items.forEach((it,i)=>{
+      const y=baseY-(i+1)*(bh+gap);
+      const sk=cellSkin(it.mark|| (i===items.length-1?'active':'default'));
+      const g=E('g',{opacity:0}); g.style.transform=`translate(${cx-bw/2}px,${y}px)`;
+      g.appendChild(E('rect',{width:bw,height:bh,rx:9,fill:sk.fill,stroke:sk.stroke,'stroke-width':1.6}));
+      g.appendChild(E('text',{x:bw/2,y:bh/2+1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':17,'font-weight':700,fill:sk.tcol,text:String(it.v!==undefined?it.v:it)}));
+      refs.stackG.appendChild(g);
+      requestAnimationFrame(()=>g.setAttribute('opacity',1));
+    });
+    // base line
+    refs.stackG.appendChild(E('line',{x1:cx-bw/2-8,y1:baseY,x2:cx+bw/2+8,y2:baseY,stroke:col('line2'),'stroke-width':2}));
+    refs.read.textContent=st.read||'';
+  }
+};
+
+/* ============================ INTERVALS ============================ */
+const IntervalR={
+  build(svg,base){
+    const refs={_svg:svg,base,read:null,rowsG:null};
+    const min=base.min, max=base.max, x0=70, x1=VB.w-70;
+    refs.scale=v=>x0+((v-min)/(max-min))*(x1-x0);
+    // axis
+    for(let v=min;v<=max;v++){
+      const x=refs.scale(v);
+      svg.appendChild(E('line',{x1:x,y1:60,x2:x,y2:VB.h-40,stroke:'rgba(38,50,90,.5)','stroke-width':1}));
+      svg.appendChild(E('text',{x:x,y:VB.h-22,'text-anchor':'middle','font-family':'var(--mono)','font-size':11,fill:col('faint'),text:String(v)}));
+    }
+    refs.rowsG=E('g',{}); svg.appendChild(refs.rowsG);
+    refs.read=E('text',{x:VB.w/2,y:44,'text-anchor':'middle','font-family':'var(--mono)','font-size':14,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{}, bars=st.bars||[];
+    refs.rowsG.innerHTML='';
+    bars.forEach((b,i)=>{
+      const x=refs.scale(b.s), w=Math.max(6,refs.scale(b.e)-refs.scale(b.s)), y=80+ (b.row!==undefined?b.row:i)*46;
+      const sk=cellSkin(b.mark||'default');
+      const g=E('g',{opacity:0}); g.style.transform=`translate(0,0)`;
+      g.appendChild(E('rect',{x,y,width:w,height:32,rx:9,fill:sk.fill,stroke:sk.stroke,'stroke-width':2}));
+      g.appendChild(E('text',{x:x+w/2,y:y+17,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':13,'font-weight':600,fill:sk.tcol,text:b.label||`[${b.s},${b.e}]`}));
+      refs.rowsG.appendChild(g);
+      requestAnimationFrame(()=>g.setAttribute('opacity',1));
+    });
+    refs.read.textContent=st.read||'';
+  }
+};
+
+/* ============================ BITS ============================ */
+const BitR={
+  build(svg,base){
+    const w=base.width||8; const refs={_svg:svg,w,bits:[],read:null,sub:null};
+    const bw=52,gap=8,total=w*bw+(w-1)*gap,x0=(VB.w-total)/2,y0=150;
+    refs.title=E('text',{x:VB.w/2,y:y0-30,'text-anchor':'middle','font-family':'var(--disp)','font-size':13,'font-weight':600,fill:col('faint'),text:''});
+    svg.appendChild(refs.title);
+    for(let i=0;i<w;i++){
+      const g=E('g',{}); g.style.transform=`translate(${x0+i*(bw+gap)}px,${y0}px)`;
+      const r=E('rect',{width:bw,height:bw,rx:11,fill:'var(--bg2)',stroke:col('line2'),'stroke-width':1.5});
+      const t=E('text',{x:bw/2,y:bw/2+1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':22,'font-weight':700,fill:col('ink'),text:'0'});
+      const p=E('text',{x:bw/2,y:bw+20,'text-anchor':'middle','font-family':'var(--mono)','font-size':11,fill:col('faint'),text:String(1<<(w-1-i))});
+      g.appendChild(r);g.appendChild(t);svg.appendChild(g);svg.appendChild(E('g',{},[p]));
+      // place p under
+      const pg=E('text',{x:x0+i*(bw+gap)+bw/2,y:y0+bw+20,'text-anchor':'middle','font-family':'var(--mono)','font-size':11,fill:col('faint'),text:String(1<<(w-1-i))});
+      svg.appendChild(pg);
+      refs.bits.push({g,r,t});
+    }
+    refs.read=E('text',{x:VB.w/2,y:y0+120,'text-anchor':'middle','font-family':'var(--mono)','font-size':16,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{}, bitsArr=st.bits||[], marks=st.marks||{};
+    refs.title.textContent=st.title||'';
+    for(let i=0;i<refs.w;i++){
+      const b=refs.bits[i]; const val=bitsArr[i]!==undefined?bitsArr[i]:0;
+      const sk=cellSkin(marks[i]|| (val?'done':''));
+      b.t.textContent=String(val);
+      b.r.setAttribute('fill', val? 'rgba(45,212,191,.18)':'var(--bg2)');
+      if(marks[i]){b.r.setAttribute('fill',sk.fill);b.r.setAttribute('stroke',sk.stroke);b.t.setAttribute('fill',sk.tcol);b.r.setAttribute('stroke-width',2.4);b.r.style.filter=sk.glow?'drop-shadow(0 0 8px rgba(247,183,51,.5))':'none';}
+      else {b.r.setAttribute('stroke', val?col('teal'):col('line2'));b.r.setAttribute('stroke-width',1.5);b.t.setAttribute('fill',val?col('teal'):col('faint'));b.r.style.filter='none';}
+    }
+    refs.read.textContent=st.read||'';
+  }
+};
+
+/* ============================ HEAPS (two-heaps / heap) ============================ */
+const HeapR={
+  build(svg,base){
+    const refs={_svg:svg,base,read:null};
+    refs.g=E('g',{}); svg.appendChild(refs.g);
+    refs.read=E('text',{x:VB.w/2,y:VB.h-26,'text-anchor':'middle','font-family':'var(--mono)','font-size':16,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{};
+    refs.g.innerHTML='';
+    const cols=[{title:st.leftTitle||'MAX-HEAP (low half)',vals:st.left||[],color:'coral',x:VB.w*0.3},
+                {title:st.rightTitle||'MIN-HEAP (high half)',vals:st.right||[],color:'sky',x:VB.w*0.7}];
+    cols.forEach(cl=>{
+      refs.g.appendChild(E('text',{x:cl.x,y:70,'text-anchor':'middle','font-family':'var(--disp)','font-size':13,'font-weight':600,fill:col(cl.color),text:cl.title}));
+      const bw=54,gap=8,total=cl.vals.length*(bw+gap)-gap,x0=cl.x-total/2;
+      cl.vals.forEach((v,i)=>{
+        const g=E('g',{opacity:0}); g.style.transform=`translate(${x0+i*(bw+gap)}px,110px)`;
+        const hot=(i===0);
+        g.appendChild(E('rect',{width:bw,height:bw,rx:11,fill:hot?'rgba(247,183,51,.16)':'var(--bg2)',stroke:hot?col('amber'):col(cl.color),'stroke-width':hot?2.4:1.5}));
+        g.appendChild(E('text',{x:bw/2,y:bw/2+1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':18,'font-weight':700,fill:hot?col('amber'):col('ink'),text:String(v)}));
+        g.appendChild(E('text',{x:bw/2,y:-10,'text-anchor':'middle','font-family':'var(--mono)','font-size':10,fill:col('faint'),text:hot?'top':''}));
+        refs.g.appendChild(g); requestAnimationFrame(()=>g.setAttribute('opacity',1));
+      });
+    });
+    refs.read.textContent=st.read||'';
+  }
+};
+
+/* ============================ TRIE ============================ */
+const TrieR={
+  build(svg,base){
+    // layout like a tree using explicit x,y (0..1)
+    const refs={nodes:{},edges:{},_svg:svg,read:null};
+    refs.edgeG=E('g',{}); svg.appendChild(refs.edgeG);
+    const px=n=>60+n.x*(VB.w-120), py=n=>70+n.y*(VB.h-160);
+    base.nodes.forEach(n=>{ if(n.parent!=null){ const p=base.nodes.find(m=>m.id===n.parent);
+      const ln=E('line',{x1:px(p),y1:py(p),x2:px(n),y2:py(n),stroke:col('line2'),'stroke-width':2});
+      refs.edgeG.appendChild(ln); refs.edges[n.id]=ln;
+    }});
+    base.nodes.forEach(n=>{
+      const g=E('g',{}); g.style.transform=`translate(${px(n)}px,${py(n)}px)`;
+      const cc=E('circle',{r:19,fill:n.id==='root'?'var(--panel2)':'var(--bg2)',stroke:col('line2'),'stroke-width':2});
+      const t=E('text',{x:0,y:1,'text-anchor':'middle','dominant-baseline':'central','font-family':'var(--mono)','font-size':15,'font-weight':700,fill:col('ink'),text:n.id==='root'?'•':n.ch});
+      g.appendChild(cc);g.appendChild(t);
+      if(n.end){ g.appendChild(E('circle',{r:24,fill:'none',stroke:col('teal'),'stroke-width':1.5,'stroke-dasharray':'3 3'})); }
+      svg.appendChild(g); refs.nodes[n.id]={g,cc,t,end:n.end};
+    });
+    refs.read=E('text',{x:VB.w/2,y:VB.h-14,'text-anchor':'middle','font-family':'var(--mono)','font-size':15,fill:col('muted'),text:''});
+    svg.appendChild(refs.read);
+    return refs;
+  },
+  update(refs,f){
+    const st=f.st||{}, marks=st.marks||{}, vis=st.visible;
+    for(const id in refs.nodes){
+      const nd=refs.nodes[id];
+      const shown=!vis||vis.includes(id)||id==='root';
+      nd.g.setAttribute('opacity',shown?1:0.12);
+      if(refs.edges[id])refs.edges[id].setAttribute('opacity',shown?1:0.12);
+      const sk=cellSkin(marks[id]||'');
+      nd.cc.setAttribute('fill',marks[id]?sk.fill:(id==='root'?'var(--panel2)':'var(--bg2)'));
+      nd.cc.setAttribute('stroke',marks[id]?sk.stroke:col('line2'));
+      nd.cc.setAttribute('stroke-width',sk.glow?3:2);
+      nd.cc.style.filter=sk.glow?'drop-shadow(0 0 8px rgba(247,183,51,.5))':'none';
+      nd.t.setAttribute('fill',marks[id]?sk.tcol:col('ink'));
+    }
+    refs.read.textContent=st.read||'';
+  }
+};
+
+const RENDERERS={array:ArrayR,grid:GridR,list:ListR,tree:TreeR,graph:GraphR,stack:StackR,intervals:IntervalR,bits:BitR,heaps:HeapR,trie:TrieR};
+
+/* =====================================================================
+   PROBLEM DATA
+   ===================================================================== */
+const PROBLEMS = [
+/* ===== ARRAYS & HASHING ===== */
+{n:1,title:"Two Sum",diff:"Easy",cat:"Arrays & Hashing",pat:"Hash Map",url:"https://leetcode.com/problems/two-sum/",
+ insight:"Store each number as you pass it. For every number, ask the map whether its complement `target - num` has already appeared — that turns a nested O(n²) search into one O(n) pass.",
+ time:"O(n)",space:"O(n)",
+ code:["map = {}","for i, num in nums:","  need = target - num","  if need in map: return [map[need], i]","  map[num] = i"],
+ viz:{type:"array",base:{values:[2,7,11,15]},frames:[
+  fa({c:{},p:{i:0},kv:{title:"seen  val\u2192idx",entries:[]},r:"target = 9",n:"For each num, check if `target - num` was already seen.",k:0}),
+  fa({c:{0:"active"},p:{i:0},kv:{entries:[]},r:"need 9-2 = 7  \u2192 not seen",n:"At `2`, complement `7` is not in the map. Remember `2`.",k:2}),
+  fa({c:{0:"done"},p:{i:1},kv:{entries:[["2","0"]]},r:"stored 2 \u2192 0",n:"Map now holds `2 \u2192 0`. Advance `i`.",k:4}),
+  fa({c:{0:"compare",1:"active"},p:{i:1},kv:{entries:[["2","0",true]]},r:"need 9-7 = 2  \u2192 FOUND at 0!",n:"At `7`, complement `2` is in the map at index 0.",k:3}),
+  fa({c:{0:"done",1:"done"},p:{},kv:{entries:[["2","0"]]},r:"answer = [0, 1]",n:"One pass. The hash map makes each lookup O(1).",k:3})
+ ]}},
+
+{n:2,title:"Valid Anagram",diff:"Easy",cat:"Arrays & Hashing",pat:"Frequency Count",url:"https://leetcode.com/problems/valid-anagram/",
+ insight:"Two strings are anagrams iff they have identical letter counts. Add one for every letter of `s`, subtract one for every letter of `t`; if every count lands back on zero, they match.",
+ time:"O(n)",space:"O(1)",
+ code:["count = {}","for c in s: count[c] += 1","for c in t: count[c] -= 1","for v in count: if v != 0: return false","return true"],
+ viz:{type:"array",base:{values:["c","a","t"]},frames:[
+  fa({c:{},kv:{title:"count",entries:[]},r:"s = cat   t = act",n:"Count each letter of `s` (+1).",k:0}),
+  fa({c:{0:"active"},p:{i:0},kv:{entries:[["c","1"]]},r:"+c",n:"Add `c`.",k:1}),
+  fa({c:{0:"done",1:"active"},p:{i:1},kv:{entries:[["c","1"],["a","1"]]},r:"+a",n:"Add `a`.",k:1}),
+  fa({c:{0:"done",1:"done",2:"active"},p:{i:2},kv:{entries:[["c","1"],["a","1"],["t","1"]]},r:"+t",n:"Now subtract each letter of `t = act`.",k:1}),
+  fa({c:{0:"done",1:"done",2:"done"},kv:{entries:[["c","0"],["a","0"],["t","0"]]},r:"all zero \u2192 true",n:"Every count returns to 0 \u2014 `s` and `t` are anagrams.",k:4})
+ ]}},
+
+{n:3,title:"Contains Duplicate",diff:"Easy",cat:"Arrays & Hashing",pat:"Hash Set",url:"https://leetcode.com/problems/contains-duplicate/",
+ insight:"A set remembers what you have already seen in O(1). The first time a number is already inside the set, you have found a duplicate.",
+ time:"O(n)",space:"O(n)",
+ code:["seen = set()","for n in nums:","  if n in seen: return true","  seen.add(n)","return false"],
+ viz:{type:"array",base:{values:[1,2,3,1]},frames:[
+  fa({c:{0:"active"},p:{i:0},kv:{title:"seen",entries:[]},n:"Add numbers to a set as you scan.",k:3}),
+  fa({c:{0:"done",1:"active"},p:{i:1},kv:{entries:["1"]},n:"`2` not seen \u2192 add it.",k:3}),
+  fa({c:{0:"done",1:"done",2:"active"},p:{i:2},kv:{entries:["1","2"]},n:"`3` not seen \u2192 add it.",k:3}),
+  fa({c:{0:"compare",1:"done",2:"done",3:"active"},p:{i:3},kv:{entries:["1","2","3"]},r:"1 already in set!",n:"`1` is already in the set \u2192 duplicate found.",k:2}),
+  fa({c:{0:"compare",3:"compare"},r:"return true",n:"Return true immediately.",k:2})
+ ]}},
+
+{n:4,title:"Group Anagrams",diff:"Medium",cat:"Arrays & Hashing",pat:"Hash Map + Key",url:"https://leetcode.com/problems/group-anagrams/",
+ insight:"Anagrams collapse to the same signature. Use the sorted letters (or a 26-length count) as a dictionary key, and every word files itself into the right bucket.",
+ time:"O(n\u00b7k log k)",space:"O(n\u00b7k)",
+ code:["groups = {}","for w in strs:","  key = sorted(w)","  groups[key].append(w)","return groups.values()"],
+ viz:{type:"array",base:{values:["eat","tea","tan"]},frames:[
+  fa({c:{0:"active"},p:{i:0},kv:{title:"key \u2192 group",entries:[]},r:"sort(eat) = aet",n:"Sort letters of `eat` \u2192 key `aet`. New bucket.",k:2}),
+  fa({c:{0:"done",1:"active"},p:{i:1},kv:{entries:[["aet","eat"]]},r:"sort(tea) = aet",n:"`tea` also sorts to `aet` \u2192 same bucket.",k:3}),
+  fa({c:{0:"done",1:"done",2:"active"},p:{i:2},kv:{entries:[["aet","eat, tea",true]]},r:"sort(tan) = ant",n:"`tan` sorts to `ant` \u2192 a new bucket.",k:2}),
+  fa({c:{0:"done",1:"done",2:"done"},kv:{entries:[["aet","eat, tea"],["ant","tan"]]},r:"[[eat,tea],[tan]]",n:"Each key groups its anagrams together.",k:4})
+ ]}},
+
+{n:5,title:"Top K Frequent Elements",diff:"Medium",cat:"Arrays & Hashing",pat:"Bucket Sort",url:"https://leetcode.com/problems/top-k-frequent-elements/",
+ insight:"Count frequencies, then place each number in a bucket indexed by its frequency. Reading buckets from high frequency down gives the top-k without sorting \u2014 O(n).",
+ time:"O(n)",space:"O(n)",
+ code:["count = frequency map","buckets[freq].append(num)","for f from high to low:","  take nums until k picked"],
+ viz:{type:"array",base:{values:[1,1,1,2,2,3]},frames:[
+  fa({c:{0:"active",1:"active",2:"active"},kv:{title:"count",entries:[["1","3"]]},r:"k = 2",n:"Count each value.",k:0}),
+  fa({c:{},kv:{entries:[["1","3"],["2","2"],["3","1"]]},r:"freq: 1\u21923, 2\u21922, 3\u21921",n:"Bucket by frequency instead of sorting.",k:1}),
+  fa({c:{0:"done",1:"done",2:"done"},kv:{entries:[["freq 3","[1]",true]]},r:"pick 1  (freq 3)",n:"Read from the highest frequency bucket first \u2192 take `1`.",k:2}),
+  fa({c:{0:"done",1:"done",2:"done",3:"pick",4:"pick"},kv:{entries:[["freq 3","[1]"],["freq 2","[2]",true]]},r:"pick 2  (freq 2)  \u2192 k reached",n:"Next bucket gives `2`. We have k=2 \u2192 answer `[1,2]`.",k:3})
+ ]}},
+
+{n:6,title:"Encode and Decode Strings",diff:"Medium",cat:"Arrays & Hashing",pat:"Length Prefix",url:"https://leetcode.com/problems/encode-and-decode-strings/",
+ insight:"Prefix every string with its length and a delimiter: `4#neet`. On decode you read the number, then grab exactly that many characters \u2014 delimiters inside the data can never fool you.",
+ time:"O(n)",space:"O(n)",
+ code:["encode: for s: out += len(s)+'#'+s","decode:","  read digits until '#' \u2192 L","  take next L chars as one string"],
+ viz:{type:"array",base:{values:["neet","code"]},frames:[
+  fa({c:{0:"active"},p:{i:0},r:"encoded: 4#neet",n:"Prefix `neet` with its length: `4#neet`.",k:0}),
+  fa({c:{0:"done",1:"active"},p:{i:1},r:"encoded: 4#neet4#code",n:"Append `4#code`. The stream is now self-describing.",k:0}),
+  fa({c:{0:"compare"},r:"read 4 \u2192 take 4 chars \u2192 neet",n:"Decode: read `4`, skip `#`, take 4 chars \u2192 `neet`.",k:2}),
+  fa({c:{0:"done",1:"compare"},r:"read 4 \u2192 take 4 chars \u2192 code",n:"Repeat for the next chunk \u2192 `code`. No ambiguity.",k:3})
+ ]}},
+
+{n:7,title:"Product of Array Except Self",diff:"Medium",cat:"Arrays & Hashing",pat:"Prefix / Suffix",url:"https://leetcode.com/problems/product-of-array-except-self/",
+ insight:"The answer at `i` is (product of everything left) \u00d7 (product of everything right). Sweep once left-to-right filling prefix products, then once right-to-left multiplying in the suffix \u2014 no division needed.",
+ time:"O(n)",space:"O(1)",
+ code:["res = [1]*n","pre = 1","for i: res[i] = pre; pre *= nums[i]","post = 1","for i backwards: res[i] *= post; post *= nums[i]"],
+ viz:{type:"array",base:{values:[1,2,3,4]},frames:[
+  fa({c:{0:"active"},p:{i:0},r:"res = [1, _, _, _]  pre=1",n:"Left pass: put the running left-product into `res[i]`.",k:2}),
+  fa({c:{0:"done",1:"active"},p:{i:1},r:"res = [1, 1, _, _]  pre=2",n:"`res[1]=1` (product of items left of 1), then pre becomes 2.",k:2}),
+  fa({c:{0:"done",1:"done",2:"done",3:"active"},p:{i:3},r:"res = [1, 1, 2, 6]  (left products)",n:"After the left pass `res` holds all left-products.",k:2}),
+  fa({c:{3:"done"},p:{i:3},r:"res = [1,1,2,6\u00d71=6]  post=4",n:"Right pass: multiply each by the running right-product.",k:4}),
+  fa({c:{0:"done"},p:{i:0},r:"res = [24, 12, 8, 6]",n:"Final answer without ever dividing.",k:4})
+ ]}},
+
+{n:8,title:"Longest Consecutive Sequence",diff:"Medium",cat:"Arrays & Hashing",pat:"Hash Set",url:"https://leetcode.com/problems/longest-consecutive-sequence/",
+ insight:"Put everything in a set. Only start counting a run at a number whose predecessor is absent (a true sequence start), then walk upward. Each number is visited at most twice \u2192 O(n).",
+ time:"O(n)",space:"O(n)",
+ code:["s = set(nums)","for n in s:","  if n-1 not in s:      # start of a run","    len = 1; while n+len in s: len++","    best = max(best, len)"],
+ viz:{type:"array",base:{values:[100,4,200,1,3,2]},frames:[
+  fa({c:{},kv:{title:"set",entries:["100","4","200","1","3","2"]},n:"Load all numbers into a set for O(1) lookups.",k:0}),
+  fa({c:{3:"compare"},r:"0 not in set \u2192 1 is a run start",n:"`1` has no predecessor `0` \u2192 it begins a run.",k:2}),
+  fa({c:{3:"done",5:"done"},r:"1,2 in set \u2192 len 2",n:"Walk up: `2` is present.",k:3}),
+  fa({c:{1:"done",3:"done",4:"done",5:"done"},r:"1,2,3,4 \u2192 len 4",n:"`3`,`4` present, `5` absent. Run length 4.",k:3}),
+  fa({c:{1:"done",3:"done",4:"done",5:"done"},r:"answer = 4",n:"100 and 200 are lone starts (len 1). Best = 4.",k:3})
+ ]}},
+/* ===== TWO POINTERS ===== */
+{n:9,title:"Valid Palindrome",diff:"Easy",cat:"Two Pointers",pat:"Converging Pointers",url:"https://leetcode.com/problems/valid-palindrome/",
+ insight:"One pointer from each end walking inward. Compare the two characters; the moment they differ it is not a palindrome. When they cross, every mirrored pair matched.",
+ time:"O(n)",space:"O(1)",
+ code:["l = 0, r = n-1","while l < r:","  if s[l] != s[r]: return false","  l++, r--","return true"],
+ viz:{type:"array",base:{values:["r","a","c","e","c","a","r"]},frames:[
+  fa({c:{0:"compare",6:"compare"},p:{l:0,r:6},r:"r == r  \u2713",n:"Compare the outer pair.",k:2}),
+  fa({c:{0:"done",6:"done",1:"compare",5:"compare"},p:{l:1,r:5},r:"a == a  \u2713",n:"Step both pointers inward.",k:3}),
+  fa({c:{0:"done",6:"done",1:"done",5:"done",2:"compare",4:"compare"},p:{l:2,r:4},r:"c == c  \u2713",n:"Still matching.",k:2}),
+  fa({c:{0:"done",1:"done",2:"done",3:"active",4:"done",5:"done",6:"done"},p:{l:3,r:3},r:"pointers meet \u2192 true",n:"Pointers crossed \u2014 it is a palindrome.",k:4})
+ ]}},
+
+{n:10,title:"3Sum",diff:"Medium",cat:"Two Pointers",pat:"Sort + Two Pointers",url:"https://leetcode.com/problems/3sum/",
+ insight:"Sort first. Fix one number, then use two converging pointers on the rest: if the sum is too small move left up, too big move right down. Sorting makes the direction obvious and dedup easy.",
+ time:"O(n\u00b2)",space:"O(1)",
+ code:["sort(nums)","for i in range(n):","  l=i+1, r=n-1","  while l<r:","    s = nums[i]+nums[l]+nums[r]","    if s<0: l++  elif s>0: r--  else: record, move both"],
+ viz:{type:"array",base:{values:[-4,-1,-1,0,1,2]},frames:[
+  fa({c:{0:"pick"},p:{i:0,l:1,r:5},r:"-4 + (-1) + 2 = -3  < 0",n:"Sorted. Fix `-4`; sum too small \u2192 move `l` right.",k:5}),
+  fa({c:{0:"pick"},p:{i:0,l:2,r:5},r:"-4 + (-1) + 2 = -3  < 0",n:"Still negative; keep raising `l`. (No triplet with -4 here.)",k:5}),
+  fa({c:{1:"pick"},p:{i:1,l:2,r:5},r:"-1 + (-1) + 2 = 0  \u2713",n:"Fix `-1`. Left+right sum to 0 \u2192 record `[-1,-1,2]`.",k:5}),
+  fa({c:{1:"pick",2:"done",5:"done"},p:{i:1,l:3,r:4},r:"-1 + 0 + 1 = 0  \u2713",n:"Move both inward \u2192 another hit `[-1,0,1]`.",k:5}),
+  fa({c:{1:"done",2:"done",3:"done",4:"done",5:"done"},r:"[[-1,-1,2], [-1,0,1]]",n:"Two pointers scan each fixed value in O(n).",k:5})
+ ]}},
+
+{n:11,title:"Container With Most Water",diff:"Medium",cat:"Two Pointers",pat:"Converging Pointers",url:"https://leetcode.com/problems/container-with-most-water/",
+ insight:"Area is width \u00d7 the shorter wall. Start at the widest pair; moving the taller wall can never help, so always move the shorter one inward \u2014 the only move that could find a taller bottleneck.",
+ time:"O(n)",space:"O(1)",
+ code:["l=0, r=n-1, best=0","while l<r:","  area = (r-l) * min(h[l], h[r])","  best = max(best, area)","  if h[l] < h[r]: l++ else r--"],
+ viz:{type:"array",base:{values:[1,8,6,2,5,4,8,3,7]},frames:[
+  fa({c:{0:"active",8:"active"},p:{l:0,r:8},r:"area = 8 \u00d7 min(1,7) = 8",n:"Widest box. Left wall (1) is shorter \u2192 move `l`.",k:4}),
+  fa({c:{1:"active",8:"active"},p:{l:1,r:8},r:"area = 7 \u00d7 min(8,7) = 49",n:"Much taller left wall \u2192 area jumps to 49.",k:2}),
+  fa({c:{1:"active",6:"compare"},p:{l:1,r:6},r:"area = 5 \u00d7 min(8,8) = 40",n:"Right wall (7) was shorter, so it moved. 40 < best.",k:4}),
+  fa({c:{1:"done",8:"done"},r:"best area = 49",n:"Every step discards the wall that limits area. Answer 49.",k:1})
+ ]}},
+
+/* ===== SLIDING WINDOW ===== */
+{n:12,title:"Best Time to Buy and Sell Stock",diff:"Easy",cat:"Sliding Window",pat:"Track Minimum",url:"https://leetcode.com/problems/best-time-to-buy-and-sell-stock/",
+ insight:"Keep the lowest price seen so far as your buy point. At each day, the best sale is today minus that minimum. Slide forward, updating the min and the best profit \u2014 one pass.",
+ time:"O(n)",space:"O(1)",
+ code:["minPrice = \u221e, profit = 0","for p in prices:","  minPrice = min(minPrice, p)","  profit = max(profit, p - minPrice)"],
+ viz:{type:"array",base:{values:[7,1,5,3,6,4]},frames:[
+  fa({c:{0:"active"},p:{buy:0,i:0},r:"min = 7  profit = 0",n:"First day sets the running minimum.",k:2}),
+  fa({c:{1:"active"},p:{buy:1,i:1},r:"min = 1  profit = 0",n:"Price 1 is a new low \u2192 better buy point.",k:2}),
+  fa({c:{1:"pick",2:"active"},p:{buy:1,i:2},r:"5 - 1 = 4  profit = 4",n:"Sell at 5 against the min 1 \u2192 profit 4.",k:3}),
+  fa({c:{1:"pick",4:"active"},p:{buy:1,i:4},r:"6 - 1 = 5  profit = 5",n:"Day 6 beats it \u2192 profit 5.",k:3}),
+  fa({c:{1:"done",4:"done"},r:"max profit = 5",n:"Buy low (1), sell high (6). Answer 5.",k:3})
+ ]}},
+
+{n:13,title:"Longest Substring Without Repeating Characters",diff:"Medium",cat:"Sliding Window",pat:"Expand / Shrink Window",url:"https://leetcode.com/problems/longest-substring-without-repeating-characters/",
+ insight:"Grow a window by moving right. If the new char is already inside, shrink from the left until the duplicate is gone. The window always holds a valid distinct run; track its max length.",
+ time:"O(n)",space:"O(min(n,\u03a3))",
+ code:["seen=set(); l=0; best=0","for r in range(n):","  while s[r] in seen: seen.remove(s[l]); l++","  seen.add(s[r])","  best = max(best, r-l+1)"],
+ viz:{type:"array",base:{values:["a","b","c","a","b","c","b","b"]},frames:[
+  fa({c:{},w:[0,0],p:{l:0,r:0},kv:{title:"in window",entries:["a"]},r:"len 1",n:"Window starts with `a`.",k:4}),
+  fa({c:{},w:[0,2],p:{l:0,r:2},kv:{entries:["a","b","c"]},r:"abc \u2192 len 3",n:"Extend right while all chars stay distinct.",k:4}),
+  fa({c:{0:"compare",3:"compare"},w:[0,3],p:{l:0,r:3},kv:{entries:["a","b","c"]},r:"s[3]=a already in window!",n:"`a` repeats \u2192 shrink from the left.",k:2}),
+  fa({c:{},w:[1,3],p:{l:1,r:3},kv:{entries:["b","c","a"]},r:"drop a, window = bca (len 3)",n:"Left slides past the old `a`; window valid again.",k:2}),
+  fa({c:{},r:"longest = 3",n:"Each pointer moves forward only \u2192 O(n).",k:4})
+ ]}},
+
+{n:14,title:"Longest Repeating Character Replacement",diff:"Medium",cat:"Sliding Window",pat:"Window + Max Freq",url:"https://leetcode.com/problems/longest-repeating-character-replacement/",
+ insight:"A window is valid if (its length \u2212 count of its most frequent char) \u2264 k \u2014 that many changes turn it uniform. Expand right always; when invalid, slide left once. Track the widest valid window.",
+ time:"O(n)",space:"O(1)",
+ code:["count={}; l=0; maxf=0","for r:","  count[s[r]]++; maxf=max(maxf,count[s[r]])","  if (r-l+1) - maxf > k: count[s[l]]--; l++","  best=max(best, r-l+1)"],
+ viz:{type:"array",base:{values:["A","A","B","A","B","B","A"]},frames:[
+  fa({c:{},w:[0,1],p:{l:0,r:1},r:"AA  maxf=2  need 0 \u2264 1  \u2713",n:"k = 1. Two A's need zero replacements.",k:1}),
+  fa({c:{},w:[0,2],p:{l:0,r:2},r:"AAB  maxf=2  need 1 \u2264 1  \u2713",n:"Add B: replace 1 char \u2192 still valid.",k:1}),
+  fa({c:{},w:[0,3],p:{l:0,r:3},r:"AABA  maxf=3  need 1 \u2264 1  \u2713",n:"AABA \u2192 change the B, length 4.",k:3}),
+  fa({c:{0:"dim"},w:[1,4],p:{l:1,r:4},r:"ABAB  maxf=2  need 2 > 1  \u2192 shrink",n:"Adding another B breaks the budget \u2192 slide left.",k:3}),
+  fa({c:{},r:"best window = 4",n:"Widest window we could make uniform with 1 change.",k:4})
+ ]}},
+
+{n:15,title:"Minimum Window Substring",diff:"Hard",cat:"Sliding Window",pat:"Window + Need Counts",url:"https://leetcode.com/problems/minimum-window-substring/",
+ insight:"Expand right until the window covers every required character (a `have == need` counter). Then greedily shrink from the left while it stays valid, recording the smallest such window.",
+ time:"O(n)",space:"O(\u03a3)",
+ code:["need=count(t); have=0","for r:","  add s[r]; if it completes a need: have++","  while have==needTypes:","    update answer","    remove s[l]; l++"],
+ viz:{type:"array",base:{values:["A","D","O","B","E","C","O","D","E","B","A","N","C"]},frames:[
+  fa({c:{},p:{l:0,r:0},r:"need A,B,C",n:"Target t = ABC. Expand right until all are covered.",k:1}),
+  fa({c:{},w:[0,5],p:{l:0,r:5},r:"ADOBEC covers A,B,C \u2713  (len 6)",n:"First valid window found.",k:2}),
+  fa({c:{},w:[3,5],p:{l:3,r:5},r:"shrink \u2192 BEC... still need A",n:"Shrink from left while still valid; here dropping A breaks it.",k:5}),
+  fa({c:{},w:[9,12],p:{l:9,r:12},r:"BANC covers A,B,C \u2713  (len 4)",n:"Later window `BANC` is valid and shorter.",k:3}),
+  fa({c:{9:"done",10:"done",11:"done",12:"done"},r:"minimum window = BANC",n:"Smallest window containing all of t.",k:3})
+ ]}},
+
+/* ===== STACK ===== */
+{n:16,title:"Valid Parentheses",diff:"Easy",cat:"Stack",pat:"Matching Stack",url:"https://leetcode.com/problems/valid-parentheses/",
+ insight:"A stack captures nesting. Push every opener; on a closer, the top of the stack must be its exact match, then pop. Valid iff nothing ever mismatches and the stack ends empty.",
+ time:"O(n)",space:"O(n)",
+ code:["stack=[]; pairs={')':'(',']':'[','}':'{'}","for c in s:","  if c is opener: push c","  else: if pop() != pairs[c]: return false","return stack empty"],
+ viz:{type:"stack",base:{title:"stack",input:["(","[","{","}","]",")"]},frames:[
+  fst({stack:[{v:"("}],im:{0:"active"},r:"push (",n:"Opener \u2192 push.",k:2}),
+  fst({stack:[{v:"("},{v:"["}],im:{1:"active"},r:"push [",n:"Push the next opener.",k:2}),
+  fst({stack:[{v:"("},{v:"["},{v:"{"}],im:{2:"active"},r:"push {",n:"Push again.",k:2}),
+  fst({stack:[{v:"("},{v:"["}],im:{3:"compare"},r:"} matches { \u2192 pop",n:"Closer `}` matches the top `{` \u2192 pop.",k:3}),
+  fst({stack:[{v:"("}],im:{4:"compare"},r:"] matches [ \u2192 pop",n:"`]` matches `[` \u2192 pop.",k:3}),
+  fst({stack:[],im:{5:"compare"},r:") matches ( \u2192 pop  \u2192 empty!",n:"`)` matches `(`. Stack empty \u2192 valid.",k:3})
+ ]}},
+
+/* ===== BINARY SEARCH ===== */
+{n:17,title:"Find Minimum in Rotated Sorted Array",diff:"Medium",cat:"Binary Search",pat:"Binary Search on Pivot",url:"https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/",
+ insight:"Compare mid to the right end. If `nums[mid] > nums[right]`, the rotation point (the minimum) lies to the right of mid; otherwise it is mid or to its left. Halve the range each step.",
+ time:"O(log n)",space:"O(1)",
+ code:["l=0, r=n-1","while l<r:","  m=(l+r)//2","  if nums[m] > nums[r]: l=m+1","  else: r=m","return nums[l]"],
+ viz:{type:"array",base:{values:[4,5,6,7,0,1,2]},frames:[
+  fa({c:{3:"active"},p:{lo:0,mid:3,hi:6},r:"nums[3]=7 > nums[6]=2 \u2192 go right",n:"Mid is bigger than the right end \u2192 min is to the right.",k:3}),
+  fa({c:{5:"active"},p:{lo:4,mid:5,hi:6},r:"nums[5]=1 < nums[6]=2 \u2192 go left",n:"Now mid is smaller than right \u2192 min is mid or left.",k:4}),
+  fa({c:{4:"active"},p:{lo:4,mid:4,hi:4},r:"nums[4]=0",n:"Range collapses onto index 4.",k:4}),
+  fa({c:{4:"done"},r:"minimum = 0",n:"The pivot value is the array minimum.",k:5})
+ ]}},
+
+{n:18,title:"Search in Rotated Sorted Array",diff:"Medium",cat:"Binary Search",pat:"Binary Search + Halves",url:"https://leetcode.com/problems/search-in-rotated-sorted-array/",
+ insight:"At any mid, one half is guaranteed sorted. Detect which half is sorted, test whether the target lies inside its clean range, and recurse into the correct side \u2014 still O(log n).",
+ time:"O(log n)",space:"O(1)",
+ code:["while l<=r:","  m=(l+r)//2","  if nums[m]==target: return m","  if nums[l]<=nums[m]:  # left sorted","    if target in [l..m): r=m-1 else l=m+1","  else:  # right sorted","    if target in (m..r]: l=m+1 else r=m-1"],
+ viz:{type:"array",base:{values:[4,5,6,7,0,1,2]},frames:[
+  fa({c:{3:"active"},p:{l:0,mid:3,r:6},r:"target = 0",n:"Left half [4..7] is sorted; 0 is not inside it.",k:1}),
+  fa({c:{0:"dim",1:"dim",2:"dim",3:"dim"},p:{l:4,mid:5,r:6},r:"search right half",n:"Discard the sorted left half \u2192 go right.",k:6}),
+  fa({c:{5:"active"},p:{l:4,mid:5,r:6},r:"nums[5]=1, target 0 is left of it",n:"Right side sorted; 0 sits left of mid.",k:6}),
+  fa({c:{4:"done"},p:{l:4,mid:4,r:4},r:"found 0 at index 4",n:"Converge onto the target.",k:2})
+ ]}},
+/* ===== LINKED LIST ===== */
+{n:19,title:"Reverse Linked List",diff:"Easy",cat:"Linked List",pat:"Pointer Rewiring",url:"https://leetcode.com/problems/reverse-linked-list/",
+ insight:"Walk the list holding three pointers \u2014 prev, curr, next. Each step, save next, flip curr.next to point back at prev, then shuffle all three forward. When curr falls off the end, prev is the new head.",
+ time:"O(n)",space:"O(1)",
+ code:["prev=null, curr=head","while curr:","  nxt = curr.next","  curr.next = prev","  prev = curr; curr = nxt","return prev"],
+ viz:{type:"list",base:{nodes:[{id:"a",val:1},{id:"b",val:2},{id:"c",val:3}]},frames:[
+  fl({links:[["a","b"],["b","c"],["c",null]],p:{curr:"a"},m:{a:"active"},r:"prev = null",n:"Start: `prev=null`, `curr` at head.",k:0}),
+  fl({links:[["a",null,{color:"teal"}],["b","c"],["c",null]],p:{prev:"a",curr:"b"},m:{a:"done",b:"active"},r:"a.next \u2192 null",n:"Flip `a.next` to `prev` (null), then advance.",k:3}),
+  fl({links:[["b","a",{color:"teal"}],["a",null,{color:"teal"}],["c",null]],p:{prev:"b",curr:"c"},m:{a:"done",b:"done",c:"active"},r:"b.next \u2192 a",n:"Flip `b.next` back to `a`.",k:3}),
+  fl({links:[["c","b",{color:"teal"}],["b","a",{color:"teal"}],["a",null,{color:"teal"}]],p:{prev:"c"},m:{a:"done",b:"done",c:"done"},r:"new head = 3",n:"`curr` is null \u2192 `prev` (3) is the reversed head.",k:5})
+ ]}},
+
+{n:20,title:"Merge Two Sorted Lists",diff:"Easy",cat:"Linked List",pat:"Two Pointer Merge",url:"https://leetcode.com/problems/merge-two-sorted-lists/",
+ insight:"Like zipping two sorted streams: compare the two front nodes, splice the smaller onto the result tail, advance that list. A dummy head removes the special case for the very first node.",
+ time:"O(n+m)",space:"O(1)",
+ code:["dummy=tail=Node()","while a and b:","  if a.val<=b.val: tail.next=a; a=a.next","  else: tail.next=b; b=b.next","tail.next = a or b"],
+ viz:{type:"list",base:{rowLabels:["L1","L2"],nodes:[
+   {id:"a",val:1,row:0,col:0},{id:"b",val:2,row:0,col:1},{id:"c",val:4,row:0,col:2},
+   {id:"d",val:1,row:1,col:0},{id:"e",val:3,row:1,col:1},{id:"f",val:4,row:1,col:2}]},frames:[
+  fl({links:[["a","b"],["b","c"],["c",null],["d","e"],["e","f"],["f",null]],p:{p:"a",q:"d"},m:{a:"compare",d:"compare"},r:"1 \u2264 1 \u2192 take L1",n:"Tie goes to L1. Output: 1",k:2}),
+  fl({links:[["a","b"],["b","c"],["c",null],["d","e"],["e","f"],["f",null]],p:{p:"b",q:"d"},m:{a:"done",d:"compare",b:"compare"},r:"1 < 2 \u2192 take L2",n:"L2's 1 is smaller. Output: 1,1",k:3}),
+  fl({links:[["a","b"],["b","c"],["c",null],["d","e"],["e","f"],["f",null]],p:{p:"b",q:"e"},m:{a:"done",d:"done",b:"compare",e:"compare"},r:"2 < 3 \u2192 take 2",n:"Output: 1,1,2",k:2}),
+  fl({links:[["a","b"],["b","c"],["c",null],["d","e"],["e","f"],["f",null]],p:{p:"c",q:"e"},m:{a:"done",b:"done",d:"done",e:"compare",c:"compare"},r:"3 < 4 \u2192 take 3",n:"Output: 1,1,2,3",k:3}),
+  fl({m:{a:"done",b:"done",c:"done",d:"done",e:"done",f:"done"},r:"merged: 1 1 2 3 4 4",n:"Splice the remaining tail in one move.",k:4})
+ ]}},
+
+{n:21,title:"Reorder List",diff:"Medium",cat:"Linked List",pat:"Mid + Reverse + Weave",url:"https://leetcode.com/problems/reorder-list/",
+ insight:"Three classic moves in sequence: find the middle with slow/fast, reverse the second half, then weave the two halves together alternately. Each is O(n) and O(1) space.",
+ time:"O(n)",space:"O(1)",
+ code:["mid = slow/fast pointers","reverse second half","merge halves alternately:","  n1.next=n2; n2.next=n1.next..."],
+ viz:{type:"list",base:{nodes:[{id:"a",val:1},{id:"b",val:2},{id:"c",val:3},{id:"d",val:4}]},frames:[
+  fl({links:[["a","b"],["b","c"],["c","d"],["d",null]],p:{slow:"b",fast:"d"},r:"middle after node 2",n:"Slow/fast find the midpoint.",k:0}),
+  fl({links:[["a","b"],["b",null],["d","c",{color:"teal"}],["c",null]],p:{},m:{c:"pick",d:"pick"},r:"second half reversed: 4 \u2192 3",n:"Reverse the back half in place.",k:1}),
+  fl({links:[["a","d",{color:"amber"}],["d","b",{color:"amber"}],["b","c",{color:"amber"}],["c",null]],p:{},m:{a:"done",b:"done",c:"done",d:"done"},r:"1 \u2192 4 \u2192 2 \u2192 3",n:"Weave front and reversed-back alternately.",k:2})
+ ]}},
+
+{n:22,title:"Remove Nth Node From End of List",diff:"Medium",cat:"Linked List",pat:"Two Pointer Gap",url:"https://leetcode.com/problems/remove-nth-node-from-end-of-list/",
+ insight:"Open a gap of n between a fast and slow pointer, then move both until fast hits the end. Slow now sits just before the target, so `slow.next = slow.next.next` unlinks it \u2014 one pass.",
+ time:"O(n)",space:"O(1)",
+ code:["fast advances n steps","while fast.next: fast++, slow++","slow.next = slow.next.next"],
+ viz:{type:"list",base:{nodes:[{id:"a",val:1},{id:"b",val:2},{id:"c",val:3},{id:"d",val:4},{id:"e",val:5}]},frames:[
+  fl({links:[["a","b"],["b","c"],["c","d"],["d","e"],["e",null]],p:{slow:"a",fast:"c"},r:"n=2 \u2192 gap of 2",n:"Advance fast n=2 nodes ahead of slow.",k:0}),
+  fl({links:[["a","b"],["b","c"],["c","d"],["d","e"],["e",null]],p:{slow:"c",fast:"e"},r:"fast at last node",n:"Move both until fast reaches the end.",k:1}),
+  fl({links:[["a","b"],["b","c"],["c","e",{color:"teal"}],["e",null]],p:{slow:"c"},m:{d:"dim"},r:"slow.next.next \u2192 skips 4",n:"Slow sits before the target \u2192 unlink node 4.",k:2}),
+  fl({links:[["a","b"],["b","c"],["c","e",{color:"teal"}],["e",null]],m:{a:"done",b:"done",c:"done",e:"done",d:"dim"},r:"result: 1 2 3 5",n:"Node removed in a single traversal.",k:2})
+ ]}},
+
+{n:23,title:"Linked List Cycle",diff:"Easy",cat:"Linked List",pat:"Floyd's Tortoise & Hare",url:"https://leetcode.com/problems/linked-list-cycle/",
+ insight:"Run a slow pointer (1 step) and a fast pointer (2 steps). If there is a loop, the fast one keeps lapping the track and must eventually land on the slow one. If fast reaches null, there is no cycle.",
+ time:"O(n)",space:"O(1)",
+ code:["slow=fast=head","while fast and fast.next:","  slow=slow.next; fast=fast.next.next","  if slow==fast: return true","return false"],
+ viz:{type:"list",base:{nodes:[{id:"a",val:3},{id:"b",val:2},{id:"c",val:0},{id:"d",val:4}]},frames:[
+  fl({links:[["a","b"],["b","c"],["c","d"],["d","b",{color:"coral",dashed:true}]],p:{slow:"a",fast:"a"},r:"both at head",n:"Note the tail loops back to node 2.",k:0}),
+  fl({links:[["a","b"],["b","c"],["c","d"],["d","b",{color:"coral",dashed:true}]],p:{slow:"b",fast:"c"},r:"slow +1, fast +2",n:"Fast pulls ahead by one each round.",k:1}),
+  fl({links:[["a","b"],["b","c"],["c","d"],["d","b",{color:"coral",dashed:true}]],p:{slow:"c",fast:"b"},r:"fast wrapped around",n:"Fast re-enters the loop from the back edge.",k:1}),
+  fl({links:[["a","b"],["b","c"],["c","d"],["d","b",{color:"coral",dashed:true}]],p:{slow:"d",fast:"d"},m:{d:"done"},r:"slow == fast \u2192 cycle!",n:"They collide \u2192 a cycle exists.",k:3})
+ ]}},
+
+{n:24,title:"Merge k Sorted Lists",diff:"Hard",cat:"Linked List",pat:"Min-Heap / Pairwise",url:"https://leetcode.com/problems/merge-k-sorted-lists/",
+ insight:"Keep the current head of every list in a min-heap. Pop the global minimum, attach it, and push that node's successor. Each of the N nodes costs one log-k heap op \u2192 O(N log k).",
+ time:"O(N log k)",space:"O(k)",
+ code:["heap = [head of each list]","while heap:","  node = pop_min(heap)","  tail.next = node","  push node.next if exists"],
+ viz:{type:"list",base:{rowLabels:["A","B","C"],nodes:[
+   {id:"a",val:1,row:0,col:0},{id:"b",val:4,row:0,col:1},{id:"c",val:5,row:0,col:2},
+   {id:"d",val:1,row:1,col:0},{id:"e",val:3,row:1,col:1},{id:"f",val:4,row:1,col:2},
+   {id:"g",val:2,row:2,col:0},{id:"h",val:6,row:2,col:1}]},frames:[
+  fl({links:[["a","b"],["b","c"],["c",null],["d","e"],["e","f"],["f",null],["g","h"],["h",null]],p:{p:"a",q:"d",cur:"g"},m:{a:"compare",d:"compare",g:"compare"},r:"heads: 1,1,2 \u2192 min 1",n:"Heap holds the three heads. Pop the smallest.",k:1}),
+  fl({p:{p:"b",q:"d",cur:"g"},m:{a:"done",b:"compare",d:"compare",g:"compare"},r:"pop 1 (A) \u2192 output 1",n:"Attach it, push its successor. Output: 1",k:2}),
+  fl({p:{p:"b",q:"e",cur:"g"},m:{a:"done",d:"done",g:"compare",b:"compare",e:"compare"},r:"pop 1 (B) \u2192 output 1,1",n:"Next min is B's 1.",k:2}),
+  fl({p:{p:"b",q:"e",cur:"h"},m:{a:"done",d:"done",g:"done",b:"compare",e:"compare",h:"compare"},r:"pop 2 (C) \u2192 output 1,1,2",n:"Heap keeps surfacing the global minimum.",k:3}),
+  fl({m:{a:"done",b:"done",c:"done",d:"done",e:"done",f:"done",g:"done",h:"done"},r:"merged: 1 1 2 3 4 4 5 6",n:"All N nodes merged with log-k comparisons each.",k:4})
+ ]}},
+/* ===== TREES ===== */
+{n:25,title:"Invert Binary Tree",diff:"Easy",cat:"Trees",pat:"DFS Swap",url:"https://leetcode.com/problems/invert-binary-tree/",
+ insight:"Mirror the tree by swapping every node's left and right child, then recursing into both. The swap can happen before or after recursion \u2014 either order fully mirrors the tree.",
+ time:"O(n)",space:"O(h)",
+ code:["def invert(node):","  if not node: return","  node.left, node.right = node.right, node.left","  invert(node.left); invert(node.right)"],
+ viz:{type:"tree",base:{root:"n4",nodes:[
+   {id:"n4",val:4,l:"n2",r:"n7"},{id:"n2",val:2,l:"n1",r:"n3"},{id:"n7",val:7,l:"n6",r:"n9"},
+   {id:"n1",val:1},{id:"n3",val:3},{id:"n6",val:6},{id:"n9",val:9}]},frames:[
+  ft({m:{n2:"active"},r:"swap children of 2",n:"Swap the two children under node 2.",k:2}),
+  ft({vals:{n1:3,n3:1},m:{n1:"pick",n3:"pick"},r:"1 \u2194 3",n:"Left/right swapped.",k:2}),
+  ft({vals:{n1:3,n3:1,n6:9,n9:6},m:{n6:"pick",n9:"pick"},r:"6 \u2194 9",n:"Do the same under node 7.",k:2}),
+  ft({vals:{n1:3,n3:1,n6:9,n9:6},m:{n4:"active",n2:"pick",n7:"pick"},r:"swap subtrees 2 \u2194 7",n:"Finally swap the top two subtrees.",k:2}),
+  ft({vals:{n1:3,n3:1,n6:9,n9:6},m:{n4:"done",n2:"done",n7:"done",n1:"done",n3:"done",n6:"done",n9:"done"},r:"fully mirrored",n:"Every level is now reflected.",k:0})
+ ]}},
+
+{n:26,title:"Maximum Depth of Binary Tree",diff:"Easy",cat:"Trees",pat:"DFS Recursion",url:"https://leetcode.com/problems/maximum-depth-of-binary-tree/",
+ insight:"A node's depth is 1 plus the deeper of its two subtrees. Recurse to the leaves (which return 0), then let each parent add one on the way back up. The root returns the height.",
+ time:"O(n)",space:"O(h)",
+ code:["def depth(node):","  if not node: return 0","  return 1 + max(depth(node.left), depth(node.right))"],
+ viz:{type:"tree",base:{root:"a",nodes:[
+   {id:"a",val:3,l:"b",r:"c"},{id:"b",val:9},{id:"c",val:20,l:"d",r:"e"},{id:"d",val:15},{id:"e",val:7}]},frames:[
+  ft({m:{a:"active"},r:"depth(root)",n:"Recurse down to the leaves first.",k:0}),
+  ft({m:{d:"done",e:"done"},r:"leaves return 0",n:"Leaves 15 and 7 return depth 0.",k:1}),
+  ft({m:{c:"pick",d:"done",e:"done"},r:"node 20 = 1 + max(0,0) = 1",n:"Node 20 adds one above its subtrees.",k:2}),
+  ft({m:{a:"done",b:"done",c:"pick"},r:"root = 1 + max(0, 2) = 3",n:"Root takes the deeper side (through 20) + 1.",k:2}),
+  ft({m:{a:"done",c:"done",d:"done",e:"done"},r:"max depth = 3",n:"Answer 3.",k:2})
+ ]}},
+
+{n:27,title:"Same Tree",diff:"Easy",cat:"Trees",pat:"Parallel DFS",url:"https://leetcode.com/problems/same-tree/",
+ insight:"Walk both trees in lockstep. At each pair of nodes: both null is fine, one null or unequal values fails, otherwise recurse into left-with-left and right-with-right.",
+ time:"O(n)",space:"O(h)",
+ code:["def same(p,q):","  if not p and not q: return true","  if not p or not q or p.val!=q.val: return false","  return same(p.l,q.l) and same(p.r,q.r)"],
+ viz:{type:"graph",base:{directed:true,nodes:[
+   {id:"p",val:1,x:0.16,y:0.15},{id:"pl",val:2,x:0.06,y:0.55},{id:"pr",val:3,x:0.30,y:0.55},
+   {id:"q",val:1,x:0.66,y:0.15},{id:"ql",val:2,x:0.56,y:0.55},{id:"qr",val:3,x:0.82,y:0.55}],
+   edges:[["p","pl"],["p","pr"],["q","ql"],["q","qr"]]},frames:[
+  fgr({m:{p:"compare",q:"compare"},r:"1 == 1  \u2713",n:"Compare the two roots.",k:3}),
+  fgr({m:{p:"done",q:"done",pl:"compare",ql:"compare"},r:"2 == 2  \u2713",n:"Left with left.",k:4}),
+  fgr({m:{p:"done",q:"done",pl:"done",ql:"done",pr:"compare",qr:"compare"},r:"3 == 3  \u2713",n:"Right with right.",k:4}),
+  fgr({m:{p:"done",q:"done",pl:"done",ql:"done",pr:"done",qr:"done"},r:"identical \u2192 true",n:"Every pair matched \u2192 same tree.",k:1})
+ ]}},
+
+{n:28,title:"Subtree of Another Tree",diff:"Easy",cat:"Trees",pat:"DFS + Same-Tree",url:"https://leetcode.com/problems/subtree-of-another-tree/",
+ insight:"At every node of the big tree, try a full same-tree check against the target root. If any anchor matches identically, it is a subtree. Otherwise recurse into children.",
+ time:"O(n\u00b7m)",space:"O(h)",
+ code:["def isSub(root, sub):","  if not root: return false","  if sameTree(root, sub): return true","  return isSub(root.l,sub) or isSub(root.r,sub)"],
+ viz:{type:"graph",base:{directed:true,nodes:[
+   {id:"a",val:3,x:0.18,y:0.12},{id:"b",val:4,x:0.08,y:0.5},{id:"c",val:5,x:0.30,y:0.5},
+   {id:"d",val:1,x:0.02,y:0.85},{id:"e",val:2,x:0.16,y:0.85},
+   {id:"s",val:4,x:0.72,y:0.3},{id:"sl",val:1,x:0.62,y:0.72},{id:"sr",val:2,x:0.82,y:0.72}],
+   edges:[["a","b"],["a","c"],["b","d"],["b","e"],["s","sl"],["s","sr"]]},frames:[
+  fgr({m:{a:"compare",s:"compare"},r:"3 vs 4  \u2717",n:"Anchor at root 3 \u2192 values differ, not a match here.",k:1}),
+  fgr({m:{a:"done",b:"active",s:"compare"},r:"try anchor at node 4",n:"Recurse; try the same-tree check at node 4.",k:3}),
+  fgr({m:{b:"compare",s:"compare",d:"compare",sl:"compare",e:"compare",sr:"compare"},r:"4/1/2 all match  \u2713",n:"Node 4 with its children matches the target exactly.",k:2}),
+  fgr({m:{b:"done",d:"done",e:"done",s:"done",sl:"done",sr:"done"},r:"is a subtree \u2192 true",n:"Found an identical subtree.",k:2})
+ ]}},
+
+{n:29,title:"Lowest Common Ancestor of a BST",diff:"Medium",cat:"Trees",pat:"BST Walk",url:"https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/",
+ insight:"Use the BST order. If both targets are smaller than the current node go left; if both are larger go right; the first node where they split (one on each side, or one equals the node) is their lowest common ancestor.",
+ time:"O(h)",space:"O(1)",
+ code:["node = root","while node:","  if p,q < node: node = node.left","  elif p,q > node: node = node.right","  else: return node"],
+ viz:{type:"tree",base:{root:"n6",nodes:[
+   {id:"n6",val:6,l:"n2",r:"n8"},{id:"n2",val:2,l:"n0",r:"n4"},{id:"n8",val:8,l:"n7",r:"n9"},
+   {id:"n0",val:0},{id:"n4",val:4,l:"n3",r:"n5"},{id:"n3",val:3},{id:"n5",val:5},{id:"n7",val:7},{id:"n9",val:9}]},frames:[
+  ft({m:{n6:"active"},r:"find LCA(3, 5)",n:"Both 3 and 5 are < 6 \u2192 go left.",k:2}),
+  ft({m:{n6:"dim",n2:"active"},r:"3,5 > 2 \u2192 go right",n:"Both are > 2 \u2192 go right.",k:3}),
+  ft({m:{n4:"done"},r:"3 \u2264 4 \u2264 5 \u2192 split here",n:"They straddle node 4 \u2192 that is the LCA.",k:4}),
+  ft({m:{n4:"done",n3:"pick",n5:"pick"},r:"LCA = 4",n:"Answer 4.",k:4})
+ ]}},
+
+{n:30,title:"Binary Tree Level Order Traversal",diff:"Medium",cat:"Trees",pat:"BFS Queue",url:"https://leetcode.com/problems/binary-tree-level-order-traversal/",
+ insight:"Breadth-first with a queue. Process the queue one full level at a time: record how many nodes are currently queued, pop exactly that many into a row, enqueuing their children for the next level.",
+ time:"O(n)",space:"O(n)",
+ code:["q=[root]","while q:","  level=[]; for _ in range(len(q)):","    node=q.pop(0); level.append(node.val)","    push node.left, node.right","  result.append(level)"],
+ viz:{type:"tree",base:{root:"a",nodes:[
+   {id:"a",val:3,l:"b",r:"c"},{id:"b",val:9},{id:"c",val:20,l:"d",r:"e"},{id:"d",val:15},{id:"e",val:7}]},frames:[
+  ft({m:{a:"active"},r:"level 0: [3]",n:"Dequeue the whole first level.",k:1}),
+  ft({m:{a:"done",b:"active",c:"active"},r:"level 1: [9, 20]",n:"Its children form the next level.",k:2}),
+  ft({m:{a:"done",b:"done",c:"done",d:"active",e:"active"},r:"level 2: [15, 7]",n:"Then their children.",k:2}),
+  ft({m:{a:"done",b:"done",c:"done",d:"done",e:"done"},r:"[[3],[9,20],[15,7]]",n:"Queue size marks the level boundary.",k:5})
+ ]}},
+{n:31,title:"Validate Binary Search Tree",diff:"Medium",cat:"Trees",pat:"Range Bounds DFS",url:"https://leetcode.com/problems/validate-binary-search-tree/",
+ insight:"A node is valid only inside an allowed (low, high) range. Going left tightens the upper bound to the parent's value; going right tightens the lower bound. A value outside its inherited window breaks the BST.",
+ time:"O(n)",space:"O(h)",
+ code:["def valid(node, lo, hi):","  if not node: return true","  if not (lo < node.val < hi): return false","  return valid(node.l,lo,node.val) and valid(node.r,node.val,hi)"],
+ viz:{type:"tree",base:{root:"a",nodes:[
+   {id:"a",val:5,l:"b",r:"c"},{id:"b",val:1},{id:"c",val:4,l:"d",r:"e"},{id:"d",val:3},{id:"e",val:6}]},frames:[
+  ft({m:{a:"active"},r:"5 in (-\u221e, +\u221e)  \u2713",n:"Root allowed range is unbounded.",k:2}),
+  ft({m:{a:"done",b:"done"},r:"left 1 in (-\u221e, 5)  \u2713",n:"Left child must be < 5.",k:2}),
+  ft({m:{a:"done",c:"compare"},r:"right subtree must be in (5, +\u221e)",n:"Everything on the right must exceed 5.",k:3}),
+  ft({m:{c:"dim",d:"compare"},r:"node 3 in (5, 4)?  3 < 5  \u2717",n:"But 3 sits under the right subtree \u2192 violates 3 > 5.",k:2}),
+  ft({m:{d:"compare"},r:"invalid \u2192 false",n:"A single out-of-range value fails the whole tree.",k:2})
+ ]}},
+
+{n:32,title:"Kth Smallest Element in a BST",diff:"Medium",cat:"Trees",pat:"In-order Traversal",url:"https://leetcode.com/problems/kth-smallest-element-in-a-bst/",
+ insight:"An in-order traversal of a BST visits values in sorted order. Count nodes as you emit them; the k-th one you touch is the answer \u2014 you can stop the moment the count hits k.",
+ time:"O(h + k)",space:"O(h)",
+ code:["stack=[]; node=root; cnt=0","while node or stack:","  push lefts; node=stack.pop()","  cnt++; if cnt==k: return node.val","  node = node.right"],
+ viz:{type:"tree",base:{root:"a",nodes:[
+   {id:"a",val:5,l:"b",r:"f"},{id:"b",val:3,l:"c",r:"d"},{id:"f",val:6},{id:"c",val:2,l:"g"},{id:"d",val:4},{id:"g",val:1}]},frames:[
+  ft({m:{g:"done"},r:"visit 1  (count 1)",n:"In-order starts at the leftmost node. k = 3.",k:4}),
+  ft({m:{g:"done",c:"done"},r:"visit 2  (count 2)",n:"Next in sorted order: 2.",k:4}),
+  ft({m:{g:"done",c:"done",b:"active"},r:"visit 3  (count 3 == k)",n:"The 3rd value visited is 3 \u2192 stop.",k:3}),
+  ft({m:{b:"done"},r:"kth smallest = 3",n:"In-order gives sorted order for free.",k:3})
+ ]}},
+
+{n:33,title:"Construct Binary Tree from Preorder and Inorder",diff:"Medium",cat:"Trees",pat:"Divide by Root",url:"https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/",
+ insight:"Preorder's first element is always the current root. Find it in inorder: everything to its left is the left subtree, everything right is the right subtree. Recurse on those slices to rebuild the tree.",
+ time:"O(n)",space:"O(n)",
+ code:["root = preorder[0]","i = index of root in inorder","left  = build(pre[1:1+i], in[:i])","right = build(pre[1+i:], in[i+1:])"],
+ viz:{type:"tree",base:{root:"a",nodes:[
+   {id:"a",val:3,l:"b",r:"c"},{id:"b",val:9},{id:"c",val:20,l:"d",r:"e"},{id:"d",val:15},{id:"e",val:7}]},frames:[
+  ft({m:{a:"active"},r:"pre=[3,9,20,15,7]  in=[9,3,15,20,7]",n:"Preorder head 3 is the root.",k:0}),
+  ft({m:{a:"done",b:"pick"},r:"in: [9] | 3 | [15,20,7]",n:"Left of 3 in inorder = {9} \u2192 left subtree.",k:2}),
+  ft({m:{a:"done",b:"done",c:"active"},r:"right slice \u2192 root 20",n:"Next preorder root for the right slice is 20.",k:3}),
+  ft({m:{a:"done",b:"done",c:"done",d:"done",e:"done"},r:"tree rebuilt",n:"Recurse until every slice is placed.",k:3})
+ ]}},
+
+{n:34,title:"Binary Tree Maximum Path Sum",diff:"Hard",cat:"Trees",pat:"DFS Return Gain",url:"https://leetcode.com/problems/binary-tree-maximum-path-sum/",
+ insight:"Each node returns the best single downward branch (itself + max(0, left, right)). But the best path *through* a node may use both branches, so update a global max with left + node + right before returning just one side upward.",
+ time:"O(n)",space:"O(h)",
+ code:["def gain(node):","  if not node: return 0","  L=max(gain(node.l),0); R=max(gain(node.r),0)","  best = max(best, node.val+L+R)   # path through node","  return node.val + max(L,R)       # branch to give parent"],
+ viz:{type:"tree",base:{root:"a",nodes:[
+   {id:"a",val:-10,l:"b",r:"c"},{id:"b",val:9},{id:"c",val:20,l:"d",r:"e"},{id:"d",val:15},{id:"e",val:7}]},frames:[
+  ft({m:{d:"done",e:"done"},r:"leaf gains: 15, 7",n:"Leaves return their own values.",k:1}),
+  ft({m:{c:"active",d:"pick",e:"pick"},r:"through 20: 15 + 20 + 7 = 42",n:"Path through 20 uses both children \u2192 42.",k:3}),
+  ft({m:{c:"pick",e:"dim"},r:"20 returns 20 + max(15,7) = 35 up",n:"But upward it can only offer one branch.",k:4}),
+  ft({m:{d:"done",c:"done",e:"done"},r:"max path sum = 42",n:"Best split-path wins even if root is negative.",k:3})
+ ]}},
+
+{n:35,title:"Serialize and Deserialize Binary Tree",diff:"Hard",cat:"Trees",pat:"Preorder + Nulls",url:"https://leetcode.com/problems/serialize-and-deserialize-binary-tree/",
+ insight:"Serialize with a preorder walk that writes a sentinel (like `#`) for every null child. That fully pins the shape, so deserialize just consumes tokens in the same order, building each node before its children.",
+ time:"O(n)",space:"O(n)",
+ code:["serialize: preorder, emit '#' for null","deserialize:","  token = next()","  if token=='#': return null","  node=Node(token); node.l=build(); node.r=build()"],
+ viz:{type:"tree",base:{root:"a",nodes:[
+   {id:"a",val:1,l:"b",r:"c"},{id:"b",val:2},{id:"c",val:3,l:"d",r:"e"},{id:"d",val:4},{id:"e",val:5}]},frames:[
+  ft({m:{a:"active"},r:"1",n:"Preorder visit: write 1.",k:0}),
+  ft({m:{a:"done",b:"active"},r:"1,2,#,#",n:"Node 2 is a leaf \u2192 two null markers.",k:0}),
+  ft({m:{a:"done",b:"done",c:"active",d:"active",e:"active"},r:"1,2,#,#,3,4,#,#,5,#,#",n:"Nulls make the structure unambiguous.",k:0}),
+  ft({m:{a:"done",b:"done",c:"done",d:"done",e:"done"},r:"rebuild consumes tokens in order",n:"Deserialize reads the same stream to rebuild.",k:5})
+ ]}},
+/* ===== HEAP / PRIORITY QUEUE ===== */
+{n:36,title:"Find Median from Data Stream",diff:"Hard",cat:"Heap / Priority Queue",pat:"Two Heaps",url:"https://leetcode.com/problems/find-median-from-data-stream/",
+ insight:"Split the numbers into a max-heap of the lower half and a min-heap of the upper half, kept balanced in size. The median is then the top of the larger heap, or the average of both tops \u2014 all in O(log n) per insert.",
+ time:"O(log n) add",space:"O(n)",
+ code:["add: push to low (max-heap); move its top to high","  if high larger: move high's top back to low","median: if equal sizes: avg of tops","        else: top of the bigger heap"],
+ viz:{type:"heaps",base:{},frames:[
+  fh({left:[1],right:[],r:"median = 1",n:"First value goes to the low half.",k:0}),
+  fh({left:[1],right:[2],r:"median = (1+2)/2 = 1.5",n:"Second value balances into the high half.",k:2}),
+  fh({left:[2,1],right:[3],r:"median = 2",n:"Odd count \u2192 median is the low-half top.",k:3}),
+  fh({left:[2,1],right:[4,3],r:"add 5 \u2192 rebalance",n:"Tops of the two heaps always frame the middle.",k:0}),
+  fh({left:[3,2,1],right:[5,4],r:"median = 3",n:"Each add is one log-n rebalance. Median is O(1) to read.",k:3})
+ ]}},
+
+/* ===== BACKTRACKING ===== */
+{n:37,title:"Combination Sum",diff:"Medium",cat:"Backtracking",pat:"DFS + Backtrack",url:"https://leetcode.com/problems/combination-sum/",
+ insight:"Explore a decision tree: at each step add a candidate (reuse allowed, so stay at the same index) and subtract from the remaining target. Hitting 0 records a combination; going negative prunes the branch; then undo the choice and try the next candidate.",
+ time:"O(2^t)",space:"O(t)",
+ code:["def dfs(start, path, remain):","  if remain==0: record(path); return","  for i in range(start, n):","    if cand[i] <= remain:","      dfs(i, path+[cand[i]], remain-cand[i])"],
+ viz:{type:"array",base:{values:[2,3,6,7]},frames:[
+  fa({c:{0:"pick"},p:{i:0},r:"path [2]   remaining 5",n:"Target 7. Pick 2 (reuse allowed \u2192 stay at index 0).",k:4}),
+  fa({c:{0:"pick"},p:{i:0},r:"path [2,2]   remaining 3",n:"Pick 2 again.",k:4}),
+  fa({c:{0:"done",1:"pick"},p:{i:1},r:"path [2,2,3]   remaining 0  \u2713",n:"Pick 3 \u2192 sum hits 7. Record it.",k:1}),
+  fa({c:{3:"pick"},p:{i:3},r:"backtrack \u2192 path [7]   remaining 0  \u2713",n:"Undo choices, jump ahead: 7 alone also works.",k:4}),
+  fa({c:{},r:"[[2,2,3], [7]]",n:"DFS tries every choice, undoing on the way back.",k:0})
+ ]}},
+
+{n:38,title:"Word Search",diff:"Medium",cat:"Backtracking",pat:"Grid DFS",url:"https://leetcode.com/problems/word-search/",
+ insight:"From every cell, DFS matching the word letter by letter into the 4 neighbors. Mark the current cell used so a path never reuses it, and unmark on backtrack. Dead ends fail fast; a full match returns true.",
+ time:"O(m\u00b7n\u00b74^L)",space:"O(L)",
+ code:["def dfs(r,c,i):","  if i==len(word): return true","  if out of bounds or board[r][c]!=word[i]: return false","  mark used; try 4 neighbors with i+1; unmark","  return any success"],
+ viz:{type:"grid",base:{grid:[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]]},frames:[
+  fg({m:{"0,0":"active"},r:"word = ABCCED",n:"Find the 'A' start and DFS.",k:0}),
+  fg({m:{"0,0":"done","0,1":"active"},r:"A \u2192 B",n:"Match B to the right.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","0,2":"active"},r:"A B \u2192 C",n:"Then C.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","1,2":"active"},r:"...C \u2192 C (down)",n:"Turn downward to the second C.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","1,2":"done","2,2":"active"},r:"...C \u2192 E",n:"Down to E.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","1,2":"done","2,2":"done","2,1":"done"},r:"...E \u2192 D  \u2192 found!",n:"Last letter D matched \u2192 path exists.",k:1})
+ ]}},
+
+/* ===== TRIES ===== */
+{n:39,title:"Implement Trie (Prefix Tree)",diff:"Medium",cat:"Tries",pat:"Prefix Tree",url:"https://leetcode.com/problems/implement-trie-prefix-tree/",
+ insight:"Each node is a branch keyed by a letter, with a flag marking word endings. Insert walks/creates one node per character; search follows the path and checks the end flag; startsWith just checks the path exists.",
+ time:"O(L) per op",space:"O(\u03a3\u00b7N)",
+ code:["insert: walk chars, create missing nodes, mark end","search(w): walk w; return node.isEnd","startsWith(p): walk p; return node exists"],
+ viz:{type:"trie",base:{nodes:[
+   {id:"root",x:0.5,y:0.02},
+   {id:"a",ch:"a",parent:"root",x:0.5,y:0.19},
+   {id:"p1",ch:"p",parent:"a",x:0.5,y:0.36},
+   {id:"p2",ch:"p",parent:"p1",x:0.5,y:0.53,end:true},
+   {id:"l",ch:"l",parent:"p2",x:0.5,y:0.70},
+   {id:"e",ch:"e",parent:"l",x:0.5,y:0.87,end:true}]},frames:[
+  ftr({vis:["a","p1","p2"],m:{p2:"done"},r:"insert 'app'",n:"Create a\u2192p\u2192p and mark the last as a word end.",k:0}),
+  ftr({vis:["a","p1","p2","l","e"],m:{e:"done"},r:"insert 'apple'",n:"'apple' extends the shared prefix 'app'.",k:0}),
+  ftr({vis:["a","p1","p2","l","e"],m:{a:"active",p1:"active",p2:"active",l:"active",e:"done"},r:"search 'apple' \u2192 true (end flag)",n:"Walk the path; the end flag confirms the word.",k:1}),
+  ftr({vis:["a","p1","p2","l","e"],m:{a:"pick",p1:"pick"},r:"startsWith 'ap' \u2192 true",n:"Prefix check only needs the path to exist.",k:2})
+ ]}},
+
+{n:40,title:"Design Add and Search Words Data Structure",diff:"Medium",cat:"Tries",pat:"Trie + Wildcard DFS",url:"https://leetcode.com/problems/design-add-and-search-words-data-structure/",
+ insight:"Store words in a trie. Search is normal until it meets a `.` wildcard \u2014 there it branches into a DFS over every child, succeeding if any branch matches the rest of the pattern.",
+ time:"O(26^dots \u00b7 L)",space:"O(\u03a3\u00b7N)",
+ code:["def search(node, pattern, i):","  if i==len: return node.isEnd","  c = pattern[i]","  if c=='.': return any(search(child, pattern, i+1))","  else: return c in node and search(node[c], pattern, i+1)"],
+ viz:{type:"trie",base:{nodes:[
+   {id:"root",x:0.5,y:0.05},
+   {id:"b",ch:"b",parent:"root",x:0.3,y:0.3},
+   {id:"a1",ch:"a",parent:"b",x:0.3,y:0.55},
+   {id:"d1",ch:"d",parent:"a1",x:0.3,y:0.8,end:true},
+   {id:"d",ch:"d",parent:"root",x:0.7,y:0.3},
+   {id:"a2",ch:"a",parent:"d",x:0.7,y:0.55},
+   {id:"d2",ch:"d",parent:"a2",x:0.7,y:0.8,end:true}]},frames:[
+  ftr({m:{b:"active"},r:"search 'b.d' \u2192 match 'b'",n:"Words: bad, dad. First letter b is exact.",k:3}),
+  ftr({m:{b:"done",a1:"active"},r:". \u2192 explore all children (a)",n:"The '.' wildcard dives into every child.",k:3}),
+  ftr({m:{b:"done",a1:"done",d1:"done"},r:"'d' at end flag \u2192 true",n:"b\u2192a\u2192d ends a word \u2192 'b.d' matches 'bad'.",k:3})
+ ]}},
+
+{n:41,title:"Word Search II",diff:"Hard",cat:"Tries",pat:"Trie + Grid DFS",url:"https://leetcode.com/problems/word-search-ii/",
+ insight:"Build a trie of all target words, then DFS the board once. Walk the board and the trie together: a letter with no matching trie child prunes the branch instantly, so many words are searched in a single sweep.",
+ time:"O(m\u00b7n\u00b74^L)",space:"O(total letters)",
+ code:["build trie of words","for each cell: dfs(cell, trieRoot)","dfs: follow board letter into trie child (or prune)","  if trie node isEnd: collect word"],
+ viz:{type:"grid",base:{grid:[["o","a","a","n"],["e","t","a","e"],["i","h","k","r"],["i","f","l","v"]]},frames:[
+  fg({m:{"0,0":"active"},r:"trie has: oath, eat",n:"DFS from 'o'; the trie says 'o' can start a word.",k:1}),
+  fg({m:{"0,0":"done","0,1":"active"},r:"o \u2192 a",n:"Trie child 'a' exists \u2192 continue.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","1,1":"active"},r:"o a \u2192 t",n:"Down to 't'.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","1,1":"done","2,1":"done"},r:"o a t h \u2192 isEnd \u2192 collect 'oath'",n:"Trie node marks a word end \u2192 record 'oath'.",k:3}),
+  fg({m:{"3,3":"dim","0,3":"dim"},r:"dead letters prune early",n:"Letters with no trie child are pruned immediately.",k:2})
+ ]}},
+/* ===== GRAPHS ===== */
+{n:42,title:"Number of Islands",diff:"Medium",cat:"Graphs",pat:"Flood Fill DFS",url:"https://leetcode.com/problems/number-of-islands/",
+ insight:"Scan every cell. On an unvisited land cell, run a DFS/BFS that sinks the whole connected landmass (marking it visited), and add one to the island count. Each cell is touched once \u2192 O(m\u00b7n).",
+ time:"O(m\u00b7n)",space:"O(m\u00b7n)",
+ code:["for each cell:","  if grid[r][c]=='1' and not visited:","    count++","    flood(r,c)   # sink all connected land"],
+ viz:{type:"grid",base:{grid:[["1","1","0","0"],["1","0","0","1"],["0","0","1","1"]]},frames:[
+  fg({m:{"0,0":"active"},r:"island #1",n:"Hit land \u2192 start flooding.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","1,0":"done"},r:"sink connected land",n:"DFS spreads through all 4-connected land.",k:3}),
+  fg({m:{"0,0":"done","0,1":"done","1,0":"done","1,3":"active"},r:"island #2",n:"Next unvisited land starts a new island.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","1,0":"done","1,3":"done","2,2":"done","2,3":"done"},r:"islands = 2",n:"Two separate landmasses.",k:1})
+ ]}},
+
+{n:43,title:"Clone Graph",diff:"Medium",cat:"Graphs",pat:"DFS + Hash Map",url:"https://leetcode.com/problems/clone-graph/",
+ insight:"Keep a map from each original node to its copy. DFS the graph; when you first see a node, create its clone and store it, then recurse to wire up neighbor-clones. The map prevents infinite loops on cycles and shares copies correctly.",
+ time:"O(V+E)",space:"O(V)",
+ code:["def clone(node):","  if node in map: return map[node]","  copy = Node(node.val); map[node]=copy","  for nei in node.neighbors:","    copy.neighbors.append(clone(nei))","  return copy"],
+ viz:{type:"graph",base:{nodes:[
+   {id:"1",val:1,x:0.3,y:0.25},{id:"2",val:2,x:0.7,y:0.25},{id:"3",val:3,x:0.7,y:0.78},{id:"4",val:4,x:0.3,y:0.78}],
+   edges:[["1","2"],["2","3"],["3","4"],["4","1"]]},frames:[
+  fgr({m:{"1":"active"},r:"clone 1  \u2192 map{1:1'}",n:"Create the first copy and remember it.",k:2}),
+  fgr({m:{"1":"done","2":"active"},e:{"1-2":"teal"},r:"clone neighbor 2",n:"Recurse into an un-cloned neighbor.",k:4}),
+  fgr({m:{"1":"done","2":"done","4":"active"},e:{"1-2":"teal","4-1":"teal"},r:"clone neighbor 4",n:"Wire each clone to its neighbor-clones.",k:4}),
+  fgr({m:{"1":"done","2":"done","3":"active","4":"done"},e:{"1-2":"teal","2-3":"teal","4-1":"teal"},r:"clone 3 (last)",n:"The map stops us re-cloning visited nodes.",k:0}),
+  fgr({m:{"1":"done","2":"done","3":"done","4":"done"},e:{"1-2":"teal","2-3":"teal","3-4":"teal","4-1":"teal"},r:"deep copy complete",n:"Independent graph with identical structure.",k:5})
+ ]}},
+
+{n:44,title:"Pacific Atlantic Water Flow",diff:"Medium",cat:"Graphs",pat:"Reverse BFS from Borders",url:"https://leetcode.com/problems/pacific-atlantic-water-flow/",
+ insight:"Instead of asking which cells flow to each ocean, flip it: start from each ocean's border and climb to equal-or-higher neighbors. Cells reachable from both floods are the answer \u2014 two BFS sweeps, then intersect.",
+ time:"O(m\u00b7n)",space:"O(m\u00b7n)",
+ code:["BFS from Pacific edge, climbing uphill \u2192 set P","BFS from Atlantic edge \u2192 set A","answer = cells in P \u2229 A"],
+ viz:{type:"grid",base:{grid:[[1,2,2,3],[3,2,3,4],[2,4,5,3]]},frames:[
+  fg({m:{"0,0":"window","0,1":"window","0,2":"window","0,3":"window","1,0":"window","2,0":"window"},r:"Pacific touches top & left",n:"Flood upward from the Pacific border.",k:0}),
+  fg({m:{"0,3":"pick","1,3":"pick","2,3":"pick","2,0":"pick","2,1":"pick","2,2":"pick"},r:"Atlantic touches bottom & right",n:"Then from the Atlantic border.",k:1}),
+  fg({m:{"0,3":"done","2,0":"done","1,3":"done"},r:"reachable by BOTH",n:"Cells in both floods can drain to either ocean.",k:2}),
+  fg({m:{"0,3":"done","1,3":"done","2,0":"done"},r:"answer = intersection cells",n:"Reversing the flow makes it two clean sweeps.",k:2})
+ ]}},
+
+{n:45,title:"Course Schedule",diff:"Medium",cat:"Graphs",pat:"Topological Sort / Cycle",url:"https://leetcode.com/problems/course-schedule/",
+ insight:"Model prerequisites as a directed graph. You can finish all courses iff the graph has no cycle. Kahn's algorithm repeatedly removes a node with no remaining prerequisites; if every node is removed, it is acyclic.",
+ time:"O(V+E)",space:"O(V+E)",
+ code:["compute in-degree of each node","queue = nodes with in-degree 0","while queue: pop u; for v in adj[u]: indeg[v]--; if 0 push","return processed == V"],
+ viz:{type:"graph",base:{directed:true,nodes:[
+   {id:"3",val:3,x:0.5,y:0.12},{id:"1",val:1,x:0.28,y:0.5},{id:"2",val:2,x:0.72,y:0.5},{id:"0",val:0,x:0.5,y:0.86}],
+   edges:[["3","1"],["3","2"],["1","0"],["2","0"]]},frames:[
+  fgr({m:{"3":"active"},r:"3 has in-degree 0",n:"Course 3 has no prerequisites \u2192 take it first.",k:1}),
+  fgr({m:{"3":"done","1":"active","2":"active"},e:{"3-1":"teal","3-2":"teal"},r:"1, 2 now in-degree 0",n:"Removing 3 frees courses 1 and 2.",k:3}),
+  fgr({m:{"3":"done","1":"done","2":"done","0":"active"},e:{"3-1":"teal","3-2":"teal","1-0":"teal","2-0":"teal"},r:"0 now unlocked",n:"Then course 0.",k:3}),
+  fgr({m:{"3":"done","1":"done","2":"done","0":"done"},r:"all 4 processed \u2192 true",n:"No cycle \u2192 every course is finishable.",k:4})
+ ]}},
+
+{n:46,title:"Graph Valid Tree",diff:"Medium",cat:"Graphs",pat:"Union-Find / DFS",url:"https://leetcode.com/problems/graph-valid-tree/",
+ insight:"A graph on n nodes is a tree iff it is fully connected and has exactly n\u22121 edges (equivalently: connected with no cycle). Check both: the edge count is a quick filter, then a single DFS/union-find confirms connectivity without cycles.",
+ time:"O(V+E)",space:"O(V)",
+ code:["if len(edges) != n-1: return false   # too few/many","dfs from node 0, mark visited","return visitedCount == n   # fully connected"],
+ viz:{type:"graph",base:{nodes:[
+   {id:"0",val:0,x:0.5,y:0.15},{id:"1",val:1,x:0.25,y:0.5},{id:"2",val:2,x:0.5,y:0.5},{id:"3",val:3,x:0.75,y:0.5},{id:"4",val:4,x:0.25,y:0.85}],
+   edges:[["0","1"],["0","2"],["0","3"],["1","4"]]},frames:[
+  fgr({m:{},r:"n=5, edges=4 = n-1  \u2713",n:"Edge count check passes (necessary condition).",k:0}),
+  fgr({m:{"0":"active"},r:"DFS from node 0",n:"Now confirm connectivity from any start.",k:1}),
+  fgr({m:{"0":"done","1":"done","2":"done","3":"done"},e:{"0-1":"teal","0-2":"teal","0-3":"teal"},r:"reach 1,2,3",n:"No edge ever revisits a seen node \u2192 acyclic.",k:1}),
+  fgr({m:{"0":"done","1":"done","2":"done","3":"done","4":"done"},e:{"0-1":"teal","0-2":"teal","0-3":"teal","1-4":"teal"},r:"all 5 reached \u2192 valid tree",n:"Connected + n\u22121 edges = tree.",k:2})
+ ]}},
+
+{n:47,title:"Number of Connected Components in an Undirected Graph",diff:"Medium",cat:"Graphs",pat:"Union-Find",url:"https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/",
+ insight:"Start with n separate singletons and a counter of n. Each edge unions two sets; every time a union actually merges two different sets, the count drops by one. The leftover count is the number of components.",
+ time:"O(E\u00b7\u03b1)",space:"O(V)",
+ code:["parent = [i for i in range(n)]; comp = n","for (a,b) in edges:","  if find(a) != find(b): union(a,b); comp--","return comp"],
+ viz:{type:"graph",base:{nodes:[
+   {id:"0",val:0,x:0.15,y:0.3},{id:"1",val:1,x:0.3,y:0.62},{id:"2",val:2,x:0.46,y:0.3},{id:"3",val:3,x:0.72,y:0.35},{id:"4",val:4,x:0.86,y:0.66}],
+   edges:[["0","1"],["1","2"],["3","4"]]},frames:[
+  fgr({m:{},r:"start: 5 components",n:"Every node is its own set.",k:0}),
+  fgr({m:{"0":"done","1":"done"},e:{"0-1":"teal"},r:"union 0-1 \u2192 4 comps",n:"Merge 0 and 1.",k:2}),
+  fgr({m:{"0":"done","1":"done","2":"done"},e:{"0-1":"teal","1-2":"teal"},r:"union 1-2 \u2192 3 comps",n:"Now {0,1,2} are one set.",k:2}),
+  fgr({m:{"0":"done","1":"done","2":"done","3":"pick","4":"pick"},e:{"0-1":"teal","1-2":"teal","3-4":"violet"},r:"union 3-4 \u2192 2 comps",n:"A second separate set {3,4}.",k:2}),
+  fgr({m:{"0":"done","1":"done","2":"done","3":"pick","4":"pick"},r:"components = 2",n:"Two disjoint groups remain.",k:4})
+ ]}},
+
+/* ===== ADVANCED GRAPHS ===== */
+{n:48,title:"Alien Dictionary",diff:"Hard",cat:"Advanced Graphs",pat:"Topological Sort",url:"https://leetcode.com/problems/alien-dictionary/",
+ insight:"Each pair of adjacent words reveals one ordering rule: at their first differing letter, the earlier word's letter comes first. Build a graph of these letter\u2192letter edges, then topologically sort it to recover the alphabet (or detect a contradiction cycle).",
+ time:"O(C)",space:"O(1)",
+ code:["for adjacent words w1,w2:","  find first differing char \u2192 edge w1c \u2192 w2c","topological sort the letter graph","if cycle: return '' else return order"],
+ viz:{type:"graph",base:{directed:true,nodes:[
+   {id:"w",val:"w",x:0.12,y:0.25},{id:"e",val:"e",x:0.36,y:0.62},{id:"r",val:"r",x:0.54,y:0.22},{id:"t",val:"t",x:0.72,y:0.62},{id:"f",val:"f",x:0.9,y:0.24}],
+   edges:[["w","e"],["e","r"],["r","t"],["t","f"]]},frames:[
+  fgr({m:{},r:"words: wrt, wrf, er, ett, rftt",n:"Compare adjacent words for the first difference.",k:0}),
+  fgr({e:{"w-e":"amber","r-t":"amber","t-f":"amber","e-r":"amber"},r:"edges: w\u2192e, e\u2192r, r\u2192t, t\u2192f",n:"Each rule becomes a directed edge.",k:1}),
+  fgr({m:{"w":"done"},r:"w has in-degree 0 \u2192 first",n:"Topological sort peels off in-degree-0 letters.",k:2}),
+  fgr({m:{"w":"done","e":"done","r":"done","t":"done","f":"done"},e:{"w-e":"teal","e-r":"teal","r-t":"teal","t-f":"teal"},r:"order = w e r t f",n:"The unique topological order is the alien alphabet.",k:3})
+ ]}},
+/* ===== 1-D DYNAMIC PROGRAMMING ===== */
+{n:49,title:"Climbing Stairs",diff:"Easy",cat:"1-D Dynamic Programming",pat:"Fibonacci DP",url:"https://leetcode.com/problems/climbing-stairs/",
+ insight:"To reach step i you arrive from step i-1 (a 1-step) or i-2 (a 2-step), so ways(i) = ways(i-1) + ways(i-2). It is Fibonacci \u2014 keep just the last two values.",
+ time:"O(n)",space:"O(1)",
+ code:["a, b = 1, 1","for _ in range(n-1):","  a, b = b, a + b","return b"],
+ viz:{type:"array",base:{values:[1,1,2,3,5,8]},frames:[
+  fa({c:{0:"done",1:"done",2:"dim",3:"dim",4:"dim",5:"dim"},r:"base: ways(0)=1, ways(1)=1",n:"Two base cases seed the sequence.",k:0}),
+  fa({c:{0:"done",1:"done",2:"active",3:"dim",4:"dim",5:"dim"},p:{i:2},r:"ways(2)=1+1=2",n:"Each step sums the previous two.",k:2}),
+  fa({c:{0:"done",1:"done",2:"done",3:"active",4:"dim",5:"dim"},p:{i:3},r:"ways(3)=2+1=3",n:"Roll forward.",k:2}),
+  fa({c:{0:"done",1:"done",2:"done",3:"done",4:"active",5:"dim"},p:{i:4},r:"ways(4)=3+2=5",n:"...",k:2}),
+  fa({c:{0:"done",1:"done",2:"done",3:"done",4:"done",5:"active"},p:{i:5},r:"ways(5) = 8",n:"Answer for 5 stairs is 8.",k:3})
+ ]}},
+
+{n:50,title:"House Robber",diff:"Medium",cat:"1-D Dynamic Programming",pat:"Pick / Skip DP",url:"https://leetcode.com/problems/house-robber/",
+ insight:"At each house choose the better of two futures: skip it (keep dp[i-1]) or rob it (dp[i-2] + money here). Adjacent houses can never both be robbed, which is exactly what dp[i-2] enforces.",
+ time:"O(n)",space:"O(1)",
+ code:["prev2, prev1 = 0, 0","for n in nums:","  cur = max(prev1, prev2 + n)","  prev2, prev1 = prev1, cur","return prev1"],
+ viz:{type:"array",base:{values:[2,7,9,3,1]},frames:[
+  fa({c:{0:"active"},p:{i:0},r:"dp = 2",n:"Rob house 0 \u2192 best so far 2.",k:2}),
+  fa({c:{0:"pick",1:"active"},p:{i:1},r:"max(2, 0+7) = 7",n:"Rob 7 alone beats keeping 2.",k:2}),
+  fa({c:{0:"pick",2:"active"},p:{i:2},r:"max(7, 2+9) = 11",n:"Rob houses 0 and 2 \u2192 11.",k:2}),
+  fa({c:{0:"pick",2:"pick",4:"active"},p:{i:4},r:"max(11, 11+1) = 12",n:"Add house 4 (non-adjacent to 2) \u2192 12.",k:2}),
+  fa({c:{0:"done",2:"done",4:"done"},r:"max loot = 12",n:"Best non-adjacent pick is {2,9,1}=12.",k:4})
+ ]}},
+
+{n:51,title:"House Robber II",diff:"Medium",cat:"1-D Dynamic Programming",pat:"Circular \u2192 Two Runs",url:"https://leetcode.com/problems/house-robber-ii/",
+ insight:"The houses form a circle, so the first and last are adjacent and can't both be taken. Split into two ordinary House Robber problems \u2014 one excluding the first house, one excluding the last \u2014 and take the better result.",
+ time:"O(n)",space:"O(1)",
+ code:["if n==1: return nums[0]","best = max( rob(nums[0:n-1]),   # drop last","            rob(nums[1:n]) )    # drop first","return best"],
+ viz:{type:"array",base:{values:[2,3,2]},frames:[
+  fa({c:{2:"dim"},p:{},r:"run A: rob [2, 3]  \u2192 3",n:"Exclude the last house, solve linearly.",k:2}),
+  fa({c:{0:"dim"},p:{},r:"run B: rob [3, 2]  \u2192 3",n:"Exclude the first house.",k:3}),
+  fa({c:{1:"done"},r:"answer = max(3, 3) = 3",n:"Take the better of the two runs.",k:4})
+ ]}},
+
+{n:52,title:"Longest Palindromic Substring",diff:"Medium",cat:"1-D Dynamic Programming",pat:"Expand Around Center",url:"https://leetcode.com/problems/longest-palindromic-substring/",
+ insight:"Every palindrome has a center. Try all 2n-1 centers (each char and each gap), expanding two pointers outward while the characters mirror. Track the longest span found \u2014 O(n\u00b2) with O(1) space.",
+ time:"O(n\u00b2)",space:"O(1)",
+ code:["for each center (i, and i|i+1):","  l,r = center","  while l>=0 and r<n and s[l]==s[r]:","    update best; l--, r++"],
+ viz:{type:"array",base:{values:["b","a","b","a","d"]},frames:[
+  fa({c:{1:"active"},p:{i:1},r:"center = a",n:"Start a single-char center at 'a'.",k:0}),
+  fa({c:{0:"compare",1:"pick",2:"compare"},p:{l:0,r:2},r:"b == b \u2192 'bab'",n:"Expand: outer chars match \u2192 length 3.",k:2}),
+  fa({c:{2:"active"},p:{i:2},r:"center = b \u2192 'aba' (len 3)",n:"Another center gives 'aba', also 3.",k:3}),
+  fa({c:{0:"done",1:"done",2:"done"},r:"longest = bab",n:"Best palindrome has length 3.",k:2})
+ ]}},
+
+{n:53,title:"Palindromic Substrings",diff:"Medium",cat:"1-D Dynamic Programming",pat:"Expand Around Center",url:"https://leetcode.com/problems/palindromic-substrings/",
+ insight:"Same expand-around-center idea, but instead of tracking the longest you count every successful expansion. Each time two pointers mirror, that is one more palindromic substring.",
+ time:"O(n\u00b2)",space:"O(1)",
+ code:["count = 0","for each center:","  expand while s[l]==s[r]:","    count++; l--, r++","return count"],
+ viz:{type:"array",base:{values:["a","a","a"]},frames:[
+  fa({c:{0:"done",1:"done",2:"done"},r:"3 single chars: a, a, a",n:"Every single character is a palindrome.",k:0}),
+  fa({c:{0:"pick",1:"pick"},p:{l:0,r:1},r:"+ 'aa', 'aa'  \u2192 count 5",n:"Even centers add two 'aa' substrings.",k:2}),
+  fa({c:{0:"pick",1:"pick",2:"pick"},p:{l:0,r:2},r:"+ 'aaa'  \u2192 count 6",n:"The full 'aaa' expands too.",k:2}),
+  fa({c:{0:"done",1:"done",2:"done"},r:"total = 6",n:"Sum of all successful expansions.",k:4})
+ ]}},
+
+{n:54,title:"Decode Ways",diff:"Medium",cat:"1-D Dynamic Programming",pat:"1-D DP",url:"https://leetcode.com/problems/decode-ways/",
+ insight:"dp[i] counts decodings of the first i digits. Add dp[i-1] if the single digit is 1-9, and dp[i-2] if the two-digit number is 10-26. Zeros and invalid pairs contribute nothing \u2014 they kill a branch.",
+ time:"O(n)",space:"O(1)",
+ code:["dp[0]=1","for i in 1..n:","  if s[i-1] != '0': dp[i] += dp[i-1]","  if 10 <= int(s[i-2:i]) <= 26: dp[i] += dp[i-2]"],
+ viz:{type:"array",base:{values:["2","2","6"]},frames:[
+  fa({c:{0:"done"},p:{i:0},r:"'2' \u2192 1 way",n:"Single valid digit: 1 way so far.",k:1}),
+  fa({c:{0:"done",1:"active"},p:{i:1},r:"'2' + '22' \u2192 2 ways",n:"'22' is 10-26, so both 2|2 and 22 count.",k:3}),
+  fa({c:{0:"done",1:"done",2:"active"},p:{i:2},r:"'6' + '26' \u2192 2 + 1 = 3",n:"'26' is valid too \u2192 total 3.",k:3}),
+  fa({c:{0:"done",1:"done",2:"done"},r:"answer = 3",n:"2 2 6 / 22 6 / 2 26.",k:0})
+ ]}},
+
+{n:55,title:"Coin Change",diff:"Medium",cat:"1-D Dynamic Programming",pat:"Unbounded Knapsack",url:"https://leetcode.com/problems/coin-change/",
+ insight:"dp[a] = fewest coins to make amount a. For each amount, try every coin: dp[a] = 1 + min(dp[a - coin]). Build bottom-up from 0; unreachable amounts stay at infinity.",
+ time:"O(amount\u00b7coins)",space:"O(amount)",
+ code:["dp = [0] + [\u221e]*amount","for a in 1..amount:","  for c in coins:","    if c <= a: dp[a] = min(dp[a], 1 + dp[a-c])","return dp[amount]"],
+ viz:{type:"array",base:{values:[0,1,1,2,2,1,2,2,3,3,2,3]},frames:[
+  fa({c:{0:"done",1:"done",2:"done",5:"done"},r:"dp[1]=1, dp[2]=1, dp[5]=1",n:"coins {1,2,5}. Single-coin amounts cost 1.",k:0}),
+  fa({c:{5:"pick",6:"active"},p:{i:6},r:"dp[6] = 1 + dp[5] = 2",n:"Amount 6 = coin 1 on top of dp[5].",k:3}),
+  fa({c:{5:"pick",10:"active"},p:{i:10},r:"dp[10] = 1 + dp[5] = 2",n:"Two 5-coins make 10.",k:3}),
+  fa({c:{10:"pick",11:"active"},p:{i:11},r:"dp[11] = 1 + dp[10] = 3",n:"Amount 11 = 5+5+1.",k:3}),
+  fa({c:{11:"done"},r:"answer = 3",n:"Fewest coins for 11 is 3.",k:5})
+ ]}},
+
+{n:56,title:"Maximum Product Subarray",diff:"Medium",cat:"1-D Dynamic Programming",pat:"Track Max & Min",url:"https://leetcode.com/problems/maximum-product-subarray/",
+ insight:"A negative number flips big-positive into big-negative and vice-versa, so track BOTH the running max and running min product. At each element, the new max/min is chosen among num, num\u00d7max, num\u00d7min.",
+ time:"O(n)",space:"O(1)",
+ code:["curMax = curMin = best = nums[0]","for n in nums[1:]:","  a, b = n*curMax, n*curMin","  curMax = max(n, a, b); curMin = min(n, a, b)","  best = max(best, curMax)"],
+ viz:{type:"array",base:{values:[2,3,-2,4]},frames:[
+  fa({c:{0:"active"},p:{i:0},r:"max=2  min=2",n:"Seed both with the first value.",k:0}),
+  fa({c:{0:"done",1:"active"},p:{i:1},r:"max=6  min=3",n:"Product grows to 6.",k:3}),
+  fa({c:{2:"compare"},p:{i:2},r:"-2 flips \u2192 max=-2  min=-12",n:"A negative swaps roles \u2014 keep the min around!",k:3}),
+  fa({c:{3:"active"},p:{i:3},r:"max = max(4, 4\u00d7-2, 4\u00d7-12) = 4",n:"Fresh start beats carrying negatives here.",k:4}),
+  fa({c:{0:"done",1:"done"},r:"best = 6",n:"Tracking min saves us from sign flips.",k:5})
+ ]}},
+
+{n:57,title:"Word Break",diff:"Medium",cat:"1-D Dynamic Programming",pat:"1-D DP",url:"https://leetcode.com/problems/word-break/",
+ insight:"dp[i] is true if the first i characters split cleanly into dictionary words. It's true when some earlier dp[j] is true AND the substring s[j:i] is a word. Sweep i forward, checking every split point.",
+ time:"O(n\u00b2)",space:"O(n)",
+ code:["dp[0] = True","for i in 1..n:","  for j in 0..i:","    if dp[j] and s[j:i] in words: dp[i]=True"],
+ viz:{type:"array",base:{values:["l","e","e","t","c","o","d","e"]},frames:[
+  fa({c:{},r:"dp[0] = true  (empty prefix)",n:"words = {leet, code}. Start-of-string is trivially breakable.",k:0}),
+  fa({c:{0:"done",1:"done",2:"done",3:"done"},r:"s[0:4]='leet' \u2713 \u2192 dp[4]=true",n:"'leet' is a word \u2192 first 4 chars break.",k:3}),
+  fa({c:{4:"active",5:"active",6:"active",7:"active"},r:"s[4:8]='code' \u2713 \u2192 dp[8]=true",n:"From dp[4], 'code' finishes the string.",k:3}),
+  fa({c:{0:"done",1:"done",2:"done",3:"done",4:"done",5:"done",6:"done",7:"done"},r:"dp[8] = true",n:"'leet' + 'code' \u2192 breakable.",k:0})
+ ]}},
+
+{n:58,title:"Longest Increasing Subsequence",diff:"Medium",cat:"1-D Dynamic Programming",pat:"DP / Patience",url:"https://leetcode.com/problems/longest-increasing-subsequence/",
+ insight:"dp[i] = length of the longest increasing subsequence ending at i = 1 + max(dp[j]) over all earlier j with nums[j] < nums[i]. (A patience/binary-search variant does it in O(n log n).)",
+ time:"O(n\u00b2)",space:"O(n)",
+ code:["dp = [1]*n","for i in range(n):","  for j in range(i):","    if nums[j] < nums[i]: dp[i]=max(dp[i], dp[j]+1)","return max(dp)"],
+ viz:{type:"array",base:{values:[10,9,2,5,3,7,101,18]},frames:[
+  fa({c:{2:"active"},p:{i:2},r:"dp: subseq [2]  len 1",n:"Every element starts a length-1 run.",k:0}),
+  fa({c:{2:"pick",3:"active"},p:{i:3},r:"2 < 5 \u2192 [2,5] len 2",n:"5 extends the run ending at 2.",k:4}),
+  fa({c:{2:"pick",4:"pick",5:"active"},p:{i:5},r:"[2,3,7] len 3",n:"7 builds on [2,3].",k:4}),
+  fa({c:{2:"done",4:"done",5:"done",6:"active"},p:{i:6},r:"[2,3,7,101] len 4",n:"101 extends the best run to length 4.",k:4}),
+  fa({c:{2:"done",4:"done",5:"done",6:"done"},r:"LIS length = 4",n:"Longest strictly-increasing run.",k:5})
+ ]}},
+/* ===== 2-D DYNAMIC PROGRAMMING ===== */
+{n:59,title:"Unique Paths",diff:"Medium",cat:"2-D Dynamic Programming",pat:"Grid DP",url:"https://leetcode.com/problems/unique-paths/",
+ insight:"A robot moving only right or down reaches cell (i,j) from directly above or directly left, so paths(i,j) = paths(i-1,j) + paths(i,j-1). The top row and left column are all 1 (one straight path).",
+ time:"O(m\u00b7n)",space:"O(n)",
+ code:["dp = grid of 1s (first row/col)","for i in 1..m-1:","  for j in 1..n-1:","    dp[i][j] = dp[i-1][j] + dp[i][j-1]","return dp[m-1][n-1]"],
+ viz:{type:"grid",base:{grid:[[1,1,1],[1,2,3],[1,3,6]]},frames:[
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","1,0":"done","2,0":"done","1,1":"dim","1,2":"dim","2,1":"dim","2,2":"dim"},r:"edges = 1 (single path)",n:"Only one way to reach any edge cell.",k:0}),
+  fg({m:{"1,1":"active","0,1":"pick","1,0":"pick","1,2":"dim","2,1":"dim","2,2":"dim"},r:"dp[1][1] = 1 + 1 = 2",n:"Interior cell sums above + left.",k:4}),
+  fg({m:{"1,2":"active","0,2":"pick","1,1":"pick","2,1":"dim","2,2":"dim"},r:"dp[1][2] = 1 + 2 = 3",n:"Continue across the row.",k:4}),
+  fg({m:{"2,2":"active","1,2":"pick","2,1":"pick"},r:"dp[2][2] = 3 + 3 = 6",n:"Bottom-right accumulates every path.",k:4}),
+  fg({m:{"2,2":"done"},r:"unique paths = 6",n:"Answer for a 3\u00d73 grid is 6.",k:5})
+ ]}},
+
+{n:60,title:"Longest Common Subsequence",diff:"Medium",cat:"2-D Dynamic Programming",pat:"Grid DP",url:"https://leetcode.com/problems/longest-common-subsequence/",
+ insight:"Fill a table where dp[i][j] is the LCS of the two prefixes. On a matching pair take the diagonal + 1; otherwise carry the better of the cell above or to the left. The bottom-right corner is the answer.",
+ time:"O(m\u00b7n)",space:"O(m\u00b7n)",
+ code:["for i in 1..m: for j in 1..n:","  if a[i-1]==b[j-1]: dp[i][j]=dp[i-1][j-1]+1","  else: dp[i][j]=max(dp[i-1][j], dp[i][j-1])"],
+ viz:{type:"grid",base:{grid:[[0,0,0,0,0,0],[0,1,1,1,1,1],[0,1,1,2,2,2],[0,1,1,2,2,3]]},frames:[
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","0,3":"done","0,4":"done","0,5":"done","1,0":"done","2,0":"done","3,0":"done"},r:"rows: ace   cols: abcde",n:"Empty prefix row/column are all 0.",k:0}),
+  fg({m:{"1,1":"active"},r:"a == a \u2192 diag(0)+1 = 1",n:"Matching letters step diagonally +1.",k:1}),
+  fg({m:{"2,3":"active"},r:"c == c \u2192 1 + 1 = 2",n:"Another match on the diagonal.",k:1}),
+  fg({m:{"3,5":"active"},r:"e == e \u2192 2 + 1 = 3",n:"Third match completes 'ace'.",k:1}),
+  fg({m:{"3,5":"done"},r:"LCS = 3  (a, c, e)",n:"Bottom-right holds the answer.",k:0})
+ ]}},
+
+/* ===== GREEDY ===== */
+{n:61,title:"Maximum Subarray",diff:"Medium",cat:"Greedy",pat:"Kadane's Algorithm",url:"https://leetcode.com/problems/maximum-subarray/",
+ insight:"Kadane: carry a running sum, but reset it to the current element whenever the running sum turns negative \u2014 a negative prefix can only hurt what follows. Track the best sum ever seen.",
+ time:"O(n)",space:"O(1)",
+ code:["cur = best = nums[0]","for n in nums[1:]:","  cur = max(n, cur + n)   # drop negative prefix","  best = max(best, cur)"],
+ viz:{type:"array",base:{values:[-2,1,-3,4,-1,2,1,-5,4]},frames:[
+  fa({c:{1:"active"},p:{i:1},r:"cur=1  best=1",n:"Restart at 1 (dropping the -2 prefix).",k:2}),
+  fa({c:{3:"active"},p:{i:3},r:"cur=4  best=4  (reset after -3)",n:"Negative sum \u2192 reset to 4.",k:2}),
+  fa({c:{3:"window",4:"window",5:"window"},w:[3,5],p:{i:5},r:"cur = 4-1+2 = 5  best=5",n:"Grow the window while it helps.",k:2}),
+  fa({c:{3:"window",4:"window",5:"window",6:"window"},w:[3,6],p:{i:6},r:"cur = 6  best = 6",n:"Best subarray is [4,-1,2,1].",k:3}),
+  fa({c:{3:"done",4:"done",5:"done",6:"done"},r:"max sum = 6",n:"Answer 6.",k:3})
+ ]}},
+
+{n:62,title:"Jump Game",diff:"Medium",cat:"Greedy",pat:"Furthest Reach",url:"https://leetcode.com/problems/jump-game/",
+ insight:"Sweep left to right tracking the furthest index reachable so far. If you ever stand beyond that reach, you're stuck. If the reach ever covers the last index, you can finish.",
+ time:"O(n)",space:"O(1)",
+ code:["reach = 0","for i, n in enumerate(nums):","  if i > reach: return false","  reach = max(reach, i + n)","return true"],
+ viz:{type:"array",base:{values:[2,3,1,1,4]},frames:[
+  fa({c:{0:"active"},w:[0,2],p:{i:0},r:"reach = 0 + 2 = 2",n:"From index 0 you can reach index 2.",k:3}),
+  fa({c:{1:"active"},w:[0,4],p:{i:1},r:"reach = max(2, 1+3) = 4",n:"Index 1 extends reach to the end.",k:3}),
+  fa({c:{2:"pick"},w:[0,4],p:{i:2},r:"2 \u2264 reach \u2192 still ok",n:"Every index stays within reach.",k:2}),
+  fa({c:{4:"done"},r:"reach \u2265 last \u2192 true",n:"The last index is reachable.",k:4})
+ ]}},
+
+/* ===== INTERVALS ===== */
+{n:63,title:"Insert Interval",diff:"Medium",cat:"Intervals",pat:"Merge on Insert",url:"https://leetcode.com/problems/insert-interval/",
+ insight:"Intervals are sorted. Copy the ones entirely before the new interval, then absorb every interval that overlaps it by widening the new interval's bounds, then copy the rest. One linear pass.",
+ time:"O(n)",space:"O(n)",
+ code:["add intervals ending before new.start","while overlap: new = [min starts, max ends]","add merged new","add remaining intervals"],
+ viz:{type:"intervals",base:{min:0,max:10},frames:[
+  fin({bars:[{s:1,e:3,row:0,label:"[1,3]"},{s:6,e:9,row:0,label:"[6,9]"},{s:2,e:5,row:1,mark:"active",label:"new [2,5]"}],r:"insert [2,5]",n:"The new interval overlaps [1,3].",k:0}),
+  fin({bars:[{s:1,e:5,row:0,mark:"pick",label:"[1,5]"},{s:6,e:9,row:0,label:"[6,9]"}],r:"merge \u2192 [1,5]",n:"Absorb [1,3] by widening to [1,5].",k:1}),
+  fin({bars:[{s:1,e:5,row:0,mark:"done",label:"[1,5]"},{s:6,e:9,row:0,mark:"done",label:"[6,9]"}],r:"result: [1,5], [6,9]",n:"[6,9] doesn't overlap \u2192 kept as-is.",k:3})
+ ]}},
+
+{n:64,title:"Merge Intervals",diff:"Medium",cat:"Intervals",pat:"Sort + Sweep",url:"https://leetcode.com/problems/merge-intervals/",
+ insight:"Sort by start. Walk through keeping a current interval; if the next starts at or before the current end, they overlap \u2014 extend the end. Otherwise close the current one and open a new one.",
+ time:"O(n log n)",space:"O(n)",
+ code:["sort by start","for each interval:","  if it starts <= last.end: last.end = max(last.end, end)","  else: push it as a new block"],
+ viz:{type:"intervals",base:{min:0,max:18},frames:[
+  fin({bars:[{s:1,e:3,label:"[1,3]"},{s:2,e:6,label:"[2,6]"},{s:8,e:10,label:"[8,10]"},{s:12,e:16,label:"[12,16]"}],r:"sorted by start",n:"[1,3] and [2,6] overlap (2 \u2264 3).",k:0}),
+  fin({bars:[{s:1,e:6,mark:"pick",label:"[1,6]"},{s:8,e:10,label:"[8,10]"},{s:12,e:16,label:"[12,16]"}],r:"merge \u2192 [1,6]",n:"Extend the end to 6.",k:2}),
+  fin({bars:[{s:1,e:6,mark:"done",label:"[1,6]"},{s:8,e:10,mark:"done",label:"[8,10]"},{s:12,e:16,mark:"done",label:"[12,16]"}],r:"result: [1,6], [8,10], [12,16]",n:"The rest have gaps \u2192 stay separate.",k:5})
+ ]}},
+
+{n:65,title:"Non-overlapping Intervals",diff:"Medium",cat:"Intervals",pat:"Greedy by End",url:"https://leetcode.com/problems/non-overlapping-intervals/",
+ insight:"To keep the most intervals (remove the fewest), always keep the one that ends earliest \u2014 it leaves the most room. Sort by end; whenever the next interval starts before the last kept one ends, remove it.",
+ time:"O(n log n)",space:"O(1)",
+ code:["sort by end; prevEnd = -\u221e; removed = 0","for (s,e) in intervals:","  if s >= prevEnd: prevEnd = e   # keep","  else: removed++              # drop overlap"],
+ viz:{type:"intervals",base:{min:0,max:4},frames:[
+  fin({bars:[{s:1,e:2,label:"[1,2]"},{s:2,e:3,label:"[2,3]"},{s:3,e:4,label:"[3,4]"},{s:1,e:3,row:1,label:"[1,3]"}],r:"sort by end time",n:"Prefer intervals that finish earliest.",k:0}),
+  fin({bars:[{s:1,e:2,mark:"done",label:"[1,2]"},{s:2,e:3,mark:"done",label:"[2,3]"},{s:3,e:4,mark:"done",label:"[3,4]"}],r:"keep 3 non-overlapping",n:"[1,2],[2,3],[3,4] chain without overlap.",k:2}),
+  fin({bars:[{s:1,e:2,mark:"done",label:"[1,2]"},{s:2,e:3,mark:"done",label:"[2,3]"},{s:3,e:4,mark:"done",label:"[3,4]"},{s:1,e:3,row:1,mark:"compare",label:"[1,3] remove"}],r:"remove [1,3] \u2192 answer 1",n:"[1,3] clashes with kept ones \u2192 drop it.",k:3})
+ ]}},
+
+{n:66,title:"Meeting Rooms",diff:"Easy",cat:"Intervals",pat:"Sort + Adjacent Check",url:"https://leetcode.com/problems/meeting-rooms/",
+ insight:"One person can attend all meetings only if none overlap. Sort by start time and check each meeting against the previous one \u2014 if any meeting starts before the previous ends, it's impossible.",
+ time:"O(n log n)",space:"O(1)",
+ code:["sort by start","for i in 1..n:","  if start[i] < end[i-1]: return false","return true"],
+ viz:{type:"intervals",base:{min:0,max:30},frames:[
+  fin({bars:[{s:0,e:30,label:"[0,30]"},{s:5,e:10,row:1,label:"[5,10]"},{s:15,e:20,row:2,label:"[15,20]"}],r:"sort by start",n:"Check for any time collision.",k:0}),
+  fin({bars:[{s:0,e:30,mark:"compare",label:"[0,30]"},{s:5,e:10,row:1,mark:"compare",label:"[5,10]"}],r:"5 < 30 \u2192 overlap!",n:"[5,10] starts before [0,30] ends.",k:2}),
+  fin({bars:[{s:0,e:30,mark:"compare",label:"[0,30]"},{s:5,e:10,row:1,mark:"compare",label:"[5,10]"}],r:"cannot attend all \u2192 false",n:"Overlapping meetings \u2192 return false.",k:2})
+ ]}},
+
+{n:67,title:"Meeting Rooms II",diff:"Medium",cat:"Intervals",pat:"Sweep / Min-Heap",url:"https://leetcode.com/problems/meeting-rooms-ii/",
+ insight:"The answer is the maximum number of meetings happening at once. Sort start and end times separately and sweep a timeline: a start needs a room, an end frees one. Track the peak simultaneous count.",
+ time:"O(n log n)",space:"O(n)",
+ code:["sort starts, sort ends; rooms=0; peak=0","two pointers over starts/ends:","  if next event is a start: rooms++; peak=max(peak,rooms)","  else: rooms--"],
+ viz:{type:"intervals",base:{min:0,max:30},frames:[
+  fin({bars:[{s:0,e:30,label:"[0,30]"},{s:5,e:10,row:1,label:"[5,10]"},{s:15,e:20,row:2,label:"[15,20]"}],r:"sweep the timeline",n:"Count how many overlap at each moment.",k:0}),
+  fin({bars:[{s:0,e:30,mark:"active",label:"[0,30]"},{s:5,e:10,row:1,mark:"active",label:"[5,10]"}],r:"at t=5: 2 meetings live \u2192 peak 2",n:"[0,30] and [5,10] run together \u2192 2 rooms.",k:2}),
+  fin({bars:[{s:0,e:30,mark:"done",label:"[0,30]"},{s:15,e:20,row:2,mark:"active",label:"[15,20]"}],r:"[5,10] ends before [15,20] \u2192 reuse",n:"A freed room is reused \u2192 stays at 2.",k:3}),
+  fin({bars:[{s:0,e:30,mark:"done",label:"[0,30]"},{s:5,e:10,row:1,mark:"done",label:"[5,10]"},{s:15,e:20,row:2,mark:"done",label:"[15,20]"}],r:"rooms needed = 2",n:"Peak concurrency is the room count.",k:0})
+ ]}},
+/* ===== MATH & GEOMETRY ===== */
+{n:68,title:"Rotate Image",diff:"Medium",cat:"Math & Geometry",pat:"Transpose + Reverse",url:"https://leetcode.com/problems/rotate-image/",
+ insight:"A 90\u00b0 clockwise rotation equals two in-place moves: transpose the matrix (swap element i,j with j,i), then reverse each row. No extra matrix needed.",
+ time:"O(n\u00b2)",space:"O(1)",
+ code:["# transpose","for i in range(n): for j in range(i+1,n): swap(m[i][j], m[j][i])","# reverse each row","for row in m: row.reverse()"],
+ viz:{type:"grid",base:{grid:[[1,2,3],[4,5,6],[7,8,9]]},frames:[
+  fg({r:"rotate 90\u00b0 clockwise",n:"Goal: top row becomes the right column.",k:0}),
+  fg({values:[[1,4,7],[2,5,8],[3,6,9]],m:{"0,1":"pick","1,0":"pick"},r:"transpose: swap [i][j] \u2194 [j][i]",n:"Mirror across the main diagonal.",k:1}),
+  fg({values:[[7,4,1],[8,5,2],[9,6,3]],m:{"0,0":"active","0,2":"active"},r:"reverse each row",n:"Flip every row left-to-right.",k:3}),
+  fg({values:[[7,4,1],[8,5,2],[9,6,3]],m:{"0,0":"done","0,1":"done","0,2":"done","1,0":"done","1,1":"done","1,2":"done","2,0":"done","2,1":"done","2,2":"done"},r:"rotated!",n:"Done fully in place.",k:0})
+ ]}},
+
+{n:69,title:"Spiral Matrix",diff:"Medium",cat:"Math & Geometry",pat:"Boundary Shrink",url:"https://leetcode.com/problems/spiral-matrix/",
+ insight:"Keep four boundaries \u2014 top, bottom, left, right. Walk the top row, right column, bottom row, left column, then shrink the boundaries inward and repeat until they cross.",
+ time:"O(m\u00b7n)",space:"O(1)",
+ code:["while top<=bottom and left<=right:","  walk top row \u2192 ; top++","  walk right col \u2193 ; right--","  walk bottom row \u2190 ; bottom--","  walk left col \u2191 ; left++"],
+ viz:{type:"grid",base:{grid:[[1,2,3,4],[5,6,7,8],[9,10,11,12]]},frames:[
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","0,3":"active"},r:"1 2 3 4",n:"Walk the top row rightward.",k:1}),
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","0,3":"done","1,3":"done","2,3":"active"},r:"...8 12",n:"Turn down the right column.",k:2}),
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","0,3":"done","1,3":"done","2,3":"done","2,2":"done","2,1":"done","2,0":"active"},r:"...11 10 9",n:"Back along the bottom row.",k:3}),
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","0,3":"done","1,3":"done","2,3":"done","2,2":"done","2,1":"done","2,0":"done","1,0":"active"},r:"...5",n:"Up the left column, then shrink inward.",k:4}),
+  fg({m:{"1,1":"active","1,2":"active"},r:"...6 7",n:"Inner ring: 6, 7.",k:0}),
+  fg({m:{"0,0":"done","0,1":"done","0,2":"done","0,3":"done","1,0":"done","1,1":"done","1,2":"done","1,3":"done","2,0":"done","2,1":"done","2,2":"done","2,3":"done"},r:"1 2 3 4 8 12 11 10 9 5 6 7",n:"Full spiral order collected.",k:0})
+ ]}},
+
+{n:70,title:"Set Matrix Zeroes",diff:"Medium",cat:"Math & Geometry",pat:"In-place Markers",url:"https://leetcode.com/problems/set-matrix-zeroes/",
+ insight:"To use O(1) space, let the first row and first column act as flags: when you see a zero, mark its row-start and column-start. A second pass reads those flags to zero out the interior, then the first row/col themselves.",
+ time:"O(m\u00b7n)",space:"O(1)",
+ code:["pass 1: for each 0 at (r,c): mark row[r]=0, col[c]=0 in first row/col","pass 2: zero interior cells whose row/col flag is set","finally zero first row/col if flagged"],
+ viz:{type:"grid",base:{grid:[[1,1,1],[1,0,1],[1,1,1]]},frames:[
+  fg({m:{"1,1":"compare"},r:"found a 0 at (1,1)",n:"Record its row and column as flags.",k:0}),
+  fg({m:{"1,0":"pick","1,1":"compare","1,2":"pick","0,1":"pick","2,1":"pick"},r:"mark row 1 and col 1",n:"Flag the whole row and column.",k:1}),
+  fg({values:[[1,0,1],[0,0,0],[1,0,1]],m:{"0,1":"active","1,0":"active","1,1":"active","1,2":"active","2,1":"active"},r:"zero them out",n:"Second pass sets flagged cells to 0.",k:2}),
+  fg({values:[[1,0,1],[0,0,0],[1,0,1]],r:"done in O(1) space",n:"Row 1 and column 1 are zeroed.",k:0})
+ ]}},
+
+/* ===== BIT MANIPULATION ===== */
+{n:71,title:"Number of 1 Bits",diff:"Easy",cat:"Bit Manipulation",pat:"Clear Lowest Set Bit",url:"https://leetcode.com/problems/number-of-1-bits/",
+ insight:"The trick `n & (n-1)` erases the lowest set 1-bit. Repeat until n is zero, counting each erase \u2014 the loop runs exactly once per set bit, not once per bit.",
+ time:"O(set bits)",space:"O(1)",
+ code:["count = 0","while n:","  n = n & (n - 1)   # drop lowest 1-bit","  count++","return count"],
+ viz:{type:"bits",base:{width:8},frames:[
+  fbi({bits:[0,0,0,0,1,0,1,1],title:"n = 11 = 1011",r:"count = 0",n:"Start with 11 (three 1-bits).",k:0}),
+  fbi({bits:[0,0,0,0,1,0,1,0],title:"n & (n-1) = 1010",m:{7:"compare"},r:"cleared bit 0 \u2192 count 1",n:"Erase the lowest 1-bit.",k:2}),
+  fbi({bits:[0,0,0,0,1,0,0,0],title:"= 1000",m:{5:"compare"},r:"count 2",n:"Again \u2014 lowest set bit gone.",k:2}),
+  fbi({bits:[0,0,0,0,0,0,0,0],title:"= 0",r:"count = 3",n:"n hits 0 after 3 erases \u2192 3 set bits.",k:4})
+ ]}},
+
+{n:72,title:"Counting Bits",diff:"Easy",cat:"Bit Manipulation",pat:"DP on Bits",url:"https://leetcode.com/problems/counting-bits/",
+ insight:"Reuse earlier answers: a number i has the same 1-bits as i>>1 (i with its last bit dropped), plus 1 if its last bit is set. So bits[i] = bits[i>>1] + (i & 1).",
+ time:"O(n)",space:"O(n)",
+ code:["bits = [0]*(n+1)","for i in 1..n:","  bits[i] = bits[i >> 1] + (i & 1)","return bits"],
+ viz:{type:"array",base:{values:[0,1,1,2,1,2,2,3]},frames:[
+  fa({c:{0:"done"},p:{i:0},r:"bits[0] = 0",n:"Zero has no 1-bits.",k:0}),
+  fa({c:{0:"done",1:"done",2:"active"},p:{i:2},r:"bits[2] = bits[1] + 0 = 1",n:"2 = 10: same as bits[1], last bit 0.",k:2}),
+  fa({c:{2:"pick",3:"active"},p:{i:3},r:"bits[3] = bits[1] + 1 = 2",n:"3 = 11: bits[1] plus a set last bit.",k:2}),
+  fa({c:{3:"pick",7:"active"},p:{i:7},r:"bits[7] = bits[3] + 1 = 3",n:"Each value builds on a smaller one.",k:2}),
+  fa({c:{0:"done",1:"done",2:"done",3:"done",4:"done",5:"done",6:"done",7:"done"},r:"[0,1,1,2,1,2,2,3]",n:"Whole array in one linear pass.",k:0})
+ ]}},
+
+{n:73,title:"Reverse Bits",diff:"Easy",cat:"Bit Manipulation",pat:"Bit Shifting",url:"https://leetcode.com/problems/reverse-bits/",
+ insight:"Build the result bit by bit: shift the answer left, OR in the input's lowest bit, then shift the input right. After 32 iterations the bits sit in mirror-image positions.",
+ time:"O(1)",space:"O(1)",
+ code:["res = 0","for _ in range(32):","  res = (res << 1) | (n & 1)","  n >>= 1","return res"],
+ viz:{type:"bits",base:{width:8},frames:[
+  fbi({bits:[0,0,0,0,0,0,1,1],title:"input = 00000011",r:"reverse the 8 bits",n:"Pull bits off the right, push onto the left.",k:0}),
+  fbi({bits:[1,0,0,0,0,0,0,0],title:"building...",m:{0:"active"},r:"first bit moves to the top",n:"The lowest input bit becomes the highest output bit.",k:2}),
+  fbi({bits:[1,1,0,0,0,0,0,0],title:"reversed = 11000000",m:{0:"done",1:"done"},r:"done",n:"Bits end up mirrored.",k:0})
+ ]}},
+
+{n:74,title:"Missing Number",diff:"Easy",cat:"Bit Manipulation",pat:"XOR / Sum",url:"https://leetcode.com/problems/missing-number/",
+ insight:"XOR every index 0..n together with every value; identical numbers cancel to 0, leaving only the missing one. (Equivalently: expected sum n(n+1)/2 minus the actual sum.)",
+ time:"O(n)",space:"O(1)",
+ code:["missing = n","for i, num in enumerate(nums):","  missing ^= i ^ num","return missing"],
+ viz:{type:"array",base:{values:[3,0,1]},frames:[
+  fa({c:{},r:"indices 0..3 vs values {3,0,1}",n:"n=3, so a value from 0..3 is missing.",k:0}),
+  fa({c:{0:"done",1:"done",2:"done"},r:"expected sum 0+1+2+3 = 6",n:"Sum of a full 0..n run.",k:0}),
+  fa({c:{0:"pick",1:"pick",2:"pick"},r:"actual sum 3+0+1 = 4",n:"Sum what's actually present.",k:1}),
+  fa({c:{},r:"missing = 6 - 4 = 2",n:"The gap is the missing number.",k:3})
+ ]}},
+
+{n:75,title:"Sum of Two Integers",diff:"Medium",cat:"Bit Manipulation",pat:"XOR + Carry",url:"https://leetcode.com/problems/sum-of-two-integers/",
+ insight:"Addition without `+`: XOR gives the sum ignoring carries, and (a AND b) shifted left is exactly where carries land. Loop, feeding the carry back in, until no carry remains.",
+ time:"O(1)",space:"O(1)",
+ code:["while b != 0:","  carry = (a & b) << 1","  a = a ^ b        # sum without carry","  b = carry","return a"],
+ viz:{type:"bits",base:{width:4},frames:[
+  fbi({bits:[0,0,1,0],title:"a = 2 (010),  b = 3 (011)",r:"add without using +",n:"Split into sum-bits and carry-bits.",k:0}),
+  fbi({bits:[0,0,0,1],title:"a ^ b = 001",m:{3:"active"},r:"carry = (a & b)<<1 = 100",n:"XOR = sum ignoring carry; AND<<1 = the carry.",k:2}),
+  fbi({bits:[0,1,0,1],title:"001 + 100",r:"xor = 101, carry = 0",n:"Feed the carry back; now it clears.",k:1}),
+  fbi({bits:[0,1,0,1],title:"result = 101 = 5",m:{1:"done",3:"done"},r:"2 + 3 = 5",n:"No carry left \u2192 the XOR is the answer.",k:5})
+ ]}}
+];
+
+/* =====================================================================
+   Frame builder helpers (hoisted) keep the data above compact
+   ===================================================================== */
+function fa(o){return {st:{cells:o.c||{},ptrs:o.p||{},window:o.w||null,read:o.r||"",kv:o.kv||null,values:o.v||null},note:o.n||"",code:o.k};}
+function fg(o){return {st:{marks:o.m||{},values:o.values||null,read:o.r||""},note:o.n||"",code:o.k};}
+function fl(o){return {st:{marks:o.m||{},links:o.links||null,ptrs:o.p||{},read:o.r||""},note:o.n||"",code:o.k};}
+function ft(o){return {st:{marks:o.m||{},edges:o.e||{},vals:o.vals||{},read:o.r||""},note:o.n||"",code:o.k};}
+function fgr(o){return {st:{marks:o.m||{},edges:o.e||{},read:o.r||""},note:o.n||"",code:o.k};}
+function fst(o){return {st:{stack:o.stack||[],inputMarks:o.im||{},read:o.r||""},note:o.n||"",code:o.k};}
+function fin(o){return {st:{bars:o.bars||[],read:o.r||""},note:o.n||"",code:o.k};}
+function fbi(o){return {st:{bits:o.bits||[],marks:o.m||{},title:o.title||"",read:o.r||""},note:o.n||"",code:o.k};}
+function fh(o){return {st:{left:o.left||[],right:o.right||[],leftTitle:o.lt,rightTitle:o.rt,read:o.r||""},note:o.n||"",code:o.k};}
+function ftr(o){return {st:{marks:o.m||{},visible:o.vis||null,read:o.r||""},note:o.n||"",code:o.k};}
+
+/* =====================================================================
+   App state + persistence
+   ===================================================================== */
+const CAT_ORDER=["Arrays & Hashing","Two Pointers","Sliding Window","Stack","Binary Search","Linked List","Trees","Heap / Priority Queue","Backtracking","Tries","Graphs","Advanced Graphs","1-D Dynamic Programming","2-D Dynamic Programming","Greedy","Intervals","Math & Geometry","Bit Manipulation"];
+const DIFF_COL={Easy:"var(--easy)",Medium:"var(--med)",Hard:"var(--hard)"};
+
+const store={
+  read(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  write(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
+};
+function todayKey(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+let doneSet=new Set(store.read("b75_done_"+todayKey(),[]));
+let starSet=new Set(store.read("b75_star",[]));
+let state={cur:null,frame:0,playing:false,timer:null,speed:1,loop:true,refs:null,renderer:null,filter:"all",star:false,q:""};
+
+/* =====================================================================
+   Sidebar
+   ===================================================================== */
+const listEl=document.getElementById("list");
+function buildSidebar(){
+  listEl.innerHTML="";
+  CAT_ORDER.forEach(cat=>{
+    const items=PROBLEMS.filter(p=>p.cat===cat);
+    if(!items.length)return;
+    const wrap=document.createElement("div");wrap.className="cat";wrap.dataset.cat=cat;
+    const h=document.createElement("div");h.className="cat-h";
+    h.innerHTML='<svg class="caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg><span class="nm">'+cat+'</span><span class="ct">'+items.length+'</span>';
+    h.onclick=()=>wrap.classList.toggle("closed");
+    wrap.appendChild(h);
+    const box=document.createElement("div");box.className="items";
+    items.forEach(p=>{
+      const row=document.createElement("div");row.className="row";row.dataset.n=p.n;
+      row.innerHTML='<span class="rdot" style="background:'+DIFF_COL[p.diff]+'"></span>'+
+        '<span class="rt">'+p.title+'</span>'+
+        '<span class="rstar" title="star"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 21.5 12 17.5 5.5 21.5 7 14.5 2 9.5 9 9"/></svg></span>'+
+        '<span class="rcheck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#06231f" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span>';
+      if(doneSet.has(p.n))row.classList.add("done");
+      if(starSet.has(p.n))row.querySelector(".rstar").classList.add("on");
+      row.querySelector(".rstar").addEventListener("click",ev=>{ev.stopPropagation();toggleStar(p,row);});
+      row.querySelector(".rcheck").addEventListener("click",ev=>{ev.stopPropagation();toggleDone(p,row);});
+      row.addEventListener("click",()=>selectProblem(p));
+      box.appendChild(row);
+    });
+    wrap.appendChild(box);
+    listEl.appendChild(wrap);
+  });
+}
+
+/* =====================================================================
+   Helpers: note formatting, difficulty color, problem index
+   ===================================================================== */
+function escapeHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmtNote(s){return escapeHtml(s||"").replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');}
+const byN={};
+PROBLEMS.forEach(p=>byN[p.n]=p);
+
+/* icons */
+const IC_PLAY='<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const IC_PAUSE='<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+
+/* =====================================================================
+   Star / done toggles + progress ring
+   ===================================================================== */
+function persistDone(){store.write("b75_done_"+todayKey(),[...doneSet]);}
+function persistStar(){store.write("b75_star",[...starSet]);}
+function updateRing(){
+  const r=doneSet.size, ratio=r/PROBLEMS.length;
+  const ring=document.getElementById("ring");
+  if(ring)ring.setAttribute("stroke-dashoffset",(106.8*(1-ratio)).toFixed(2));
+  const lab=document.getElementById("ringLab");
+  if(lab)lab.textContent=r+"/"+PROBLEMS.length;
+}
+function toggleDone(p,row){
+  if(doneSet.has(p.n))doneSet.delete(p.n); else doneSet.add(p.n);
+  persistDone();
+  if(row)row.classList.toggle("done",doneSet.has(p.n));
+  if(state.cur&&state.cur.n===p.n)syncSolveBtn();
+  updateRing();
+}
+function toggleStar(p,row){
+  if(starSet.has(p.n))starSet.delete(p.n); else starSet.add(p.n);
+  persistStar();
+  if(row)row.querySelector(".rstar").classList.toggle("on",starSet.has(p.n));
+  if(state.cur&&state.cur.n===p.n)syncStarBtn();
+  if(state.star)applyFilter();
+}
+function syncSolveBtn(){
+  const b=document.getElementById("solveBtn"); if(!b)return;
+  const on=doneSet.has(state.cur.n);
+  b.classList.toggle("solved",on);
+  b.innerHTML=(on?'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Revised today':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>Mark revised');
+}
+function syncStarBtn(){
+  const b=document.getElementById("starBtn"); if(!b)return;
+  const on=starSet.has(state.cur.n);
+  b.classList.toggle("on",on);
+  b.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="'+(on?'currentColor':'none')+'" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 21.5 12 17.5 5.5 21.5 7 14.5 2 9.5 9 9"/></svg>'+(on?'Starred':'Star');
+}
+
+/* =====================================================================
+   Filtering
+   ===================================================================== */
+function applyFilter(){
+  const q=state.q.trim().toLowerCase();
+  document.querySelectorAll(".cat").forEach(cat=>{
+    let vis=0;
+    cat.querySelectorAll(".row").forEach(row=>{
+      const p=byN[+row.dataset.n];
+      let ok=true;
+      if(q&&!p.title.toLowerCase().includes(q))ok=false;
+      if(state.filter!=="all"&&p.diff!==state.filter)ok=false;
+      if(state.star&&!starSet.has(p.n))ok=false;
+      row.style.display=ok?"":"none";
+      if(ok)vis++;
+    });
+    cat.style.display=vis?"":"none";
+  });
+}
+
+/* =====================================================================
+   Problem selection + pane construction
+   ===================================================================== */
+function selectProblem(p){
+  pausePlayback();
+  state.cur=p; state.frame=0;
+  document.querySelectorAll(".row").forEach(r=>r.classList.toggle("active",+r.dataset.n===p.n));
+  const total=p.viz.frames.length;
+  const codeHtml=p.code.map((ln,i)=>'<span class="ln" data-l="'+i+'"><span class="g">'+String(i+1).padStart(2," ")+'</span>  '+escapeHtml(ln)+'</span>').join("");
+  const pane=document.getElementById("pane");
+  pane.innerHTML=
+    '<div class="phead">'+
+      '<div class="idx">#'+String(p.n).padStart(2,"0")+'</div>'+
+      '<div class="htxt"><h1>'+escapeHtml(p.title)+'</h1>'+
+        '<div class="tags">'+
+          '<span class="pill diff" style="background:'+DIFF_COL[p.diff]+'">'+p.diff+'</span>'+
+          '<span class="pill pat">Pattern · <b>'+escapeHtml(p.pat)+'</b></span>'+
+          '<a class="lc-link" href="'+p.url+'" target="_blank" rel="noopener">LeetCode'+
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></a>'+
+        '</div>'+
+      '</div>'+
+      '<div class="hact">'+
+        '<button class="hbtn star" id="starBtn"></button>'+
+        '<button class="hbtn solve" id="solveBtn"></button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="stage-wrap"><svg id="stage"></svg></div>'+
+    '<div class="narr"><span class="stepno" id="stepno">1 / '+total+'</span><span class="txt" id="narrtxt"></span></div>'+
+    '<div class="transport">'+
+      '<div class="tbtns">'+
+        '<button class="tbtn" id="restartBtn" title="Restart (R)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>'+
+        '<button class="tbtn" id="backBtn" title="Step back (←)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 6 9 12 15 18"/></svg></button>'+
+        '<button class="tbtn play" id="playBtn" title="Play / Pause (Space)">'+IC_PLAY+'</button>'+
+        '<button class="tbtn" id="fwdBtn" title="Step forward (→)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg></button>'+
+      '</div>'+
+      '<div class="scrub"><div class="track" id="track">'+
+        '<div class="rail"></div><div class="fill" id="fill"></div>'+
+        '<div class="ticks" id="ticks"></div>'+
+        '<div class="knob" id="knob"></div>'+
+      '</div></div>'+
+      '<div class="sctl">'+
+        '<div class="speed" id="speed">'+
+          '<button data-s="0.5">.5×</button><button data-s="1" class="on">1×</button>'+
+          '<button data-s="1.5">1.5×</button><button data-s="2">2×</button>'+
+        '</div>'+
+        '<button class="loopbtn'+(state.loop?" on":"")+'" id="loopBtn" title="Loop"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="legend">'+
+      '<div class="lg"><i style="background:rgba(247,183,51,.4);border-color:var(--amber)"></i>Active / cursor</div>'+
+      '<div class="lg"><i style="background:rgba(255,107,107,.4);border-color:var(--coral)"></i>Compare</div>'+
+      '<div class="lg"><i style="background:rgba(45,212,191,.4);border-color:var(--teal)"></i>Done / matched</div>'+
+      '<div class="lg"><i style="background:rgba(90,180,240,.4);border-color:var(--sky)"></i>Window / visited</div>'+
+      '<div class="lg"><i style="background:rgba(167,139,250,.4);border-color:var(--violet)"></i>Chosen</div>'+
+    '</div>'+
+    '<div class="cards">'+
+      '<div class="card insight"><h3><span class="bar"></span>Insight</h3><p>'+fmtNote(p.insight)+'</p></div>'+
+      '<div class="card"><h3><span class="bar"></span>Complexity · Pattern</h3>'+
+        '<div class="cmplx"><div class="m"><span class="k">Time</span><span class="v">'+escapeHtml(p.time)+'</span></div>'+
+        '<div class="m sp"><span class="k">Space</span><span class="v">'+escapeHtml(p.space)+'</span></div>'+
+        '<div class="m"><span class="k">Pattern</span><span class="v" style="color:var(--sky);font-size:13px">'+escapeHtml(p.pat)+'</span></div></div></div>'+
+      '<div class="card code"><h3><span class="bar"></span>Approach · pseudocode</h3><pre class="code" id="code">'+codeHtml+'</pre></div>'+
+    '</div>';
+
+  state.codeLines=[...pane.querySelectorAll("#code .ln")];
+  // ticks
+  const ticks=document.getElementById("ticks");
+  for(let i=0;i<total;i++){const t=document.createElement("div");t.className="tk";ticks.appendChild(t);}
+
+  // stage + renderer
+  const svg=stageSVG();
+  state.renderer=RENDERERS[p.viz.type];
+  state.refs=state.renderer.build(svg,p.viz.base);
+
+  // wire pane controls
+  document.getElementById("playBtn").onclick=togglePlay;
+  document.getElementById("backBtn").onclick=()=>step(-1);
+  document.getElementById("fwdBtn").onclick=()=>step(1);
+  document.getElementById("restartBtn").onclick=()=>{state.frame=0;renderFrame();};
+  document.getElementById("loopBtn").onclick=function(){state.loop=!state.loop;this.classList.toggle("on",state.loop);store.write("b75_loop",state.loop);};
+  document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>setSpeed(+b.dataset.s,b));
+  document.getElementById("solveBtn").onclick=()=>{const r=document.querySelector('.row[data-n="'+p.n+'"]');toggleDone(p,r);};
+  document.getElementById("starBtn").onclick=()=>{const r=document.querySelector('.row[data-n="'+p.n+'"]');toggleStar(p,r);};
+  wireTrack();
+  syncSolveBtn(); syncStarBtn();
+
+  renderFrame();
+  // close mobile menu
+  document.getElementById("side").classList.remove("open");
+  // autoplay
+  setTimeout(()=>{ if(state.cur===p) play(); },260);
+}
+
+/* =====================================================================
+   Frame render
+   ===================================================================== */
+function renderFrame(){
+  const p=state.cur; if(!p)return;
+  const total=p.viz.frames.length;
+  state.frame=Math.max(0,Math.min(state.frame,total-1));
+  const f=p.viz.frames[state.frame];
+  state.renderer.update(state.refs,f);
+  const nt=document.getElementById("narrtxt"); if(nt)nt.innerHTML=fmtNote(f.note);
+  const sn=document.getElementById("stepno"); if(sn)sn.textContent=(state.frame+1)+" / "+total;
+  // code highlight
+  if(state.codeLines){
+    state.codeLines.forEach(l=>l.classList.remove("hl"));
+    let ci=f.code;
+    if(ci!=null){
+      if(ci>=state.codeLines.length)ci=state.codeLines.length-1;
+      if(ci>=0&&state.codeLines[ci])state.codeLines[ci].classList.add("hl");
+    }
+  }
+  // scrubber
+  const ratio=total>1?state.frame/(total-1):0;
+  const fill=document.getElementById("fill"), knob=document.getElementById("knob");
+  if(fill)fill.style.width=(ratio*100)+"%";
+  if(knob)knob.style.left=(ratio*100)+"%";
+}
+
+/* =====================================================================
+   Playback transport
+   ===================================================================== */
+function play(){
+  const p=state.cur; if(!p)return;
+  if(state.frame>=p.viz.frames.length-1)state.frame=0;
+  state.playing=true;
+  const b=document.getElementById("playBtn"); if(b)b.innerHTML=IC_PAUSE;
+  clearInterval(state.timer);
+  state.timer=setInterval(tick,Math.round(1500/state.speed));
+  renderFrame();
+}
+function pausePlayback(){
+  state.playing=false;
+  clearInterval(state.timer); state.timer=null;
+  const b=document.getElementById("playBtn"); if(b)b.innerHTML=IC_PLAY;
+}
+function togglePlay(){ state.playing?pausePlayback():play(); }
+function tick(){
+  const p=state.cur; if(!p)return;
+  if(state.frame<p.viz.frames.length-1){ state.frame++; renderFrame(); }
+  else if(state.loop){ state.frame=0; renderFrame(); }
+  else pausePlayback();
+}
+function step(d){ pausePlayback(); state.frame+=d; renderFrame(); }
+function setSpeed(s,btn){
+  state.speed=s;
+  document.querySelectorAll("#speed button").forEach(b=>b.classList.toggle("on",b===btn));
+  if(state.playing){ clearInterval(state.timer); state.timer=setInterval(tick,Math.round(1500/state.speed)); }
+}
+function wireTrack(){
+  const track=document.getElementById("track"); if(!track)return;
+  const seek=ev=>{
+    const rc=track.getBoundingClientRect();
+    const x=(ev.touches?ev.touches[0].clientX:ev.clientX)-rc.left;
+    const ratio=Math.max(0,Math.min(1,x/rc.width));
+    const total=state.cur.viz.frames.length;
+    state.frame=Math.round(ratio*(total-1));
+    renderFrame();
+  };
+  let drag=false;
+  track.addEventListener("mousedown",e=>{drag=true;pausePlayback();seek(e);});
+  window.addEventListener("mousemove",e=>{if(drag)seek(e);});
+  window.addEventListener("mouseup",()=>drag=false);
+  track.addEventListener("touchstart",e=>{pausePlayback();seek(e);},{passive:true});
+  track.addEventListener("touchmove",e=>seek(e),{passive:true});
+}
+
+/* =====================================================================
+   Sidebar controls: search, chips, random, star filter, menu
+   ===================================================================== */
+function pickRandom(){
+  const pool=PROBLEMS.filter(p=>{
+    if(state.filter!=="all"&&p.diff!==state.filter)return false;
+    if(state.star&&!starSet.has(p.n))return false;
+    return true;
+  });
+  if(!pool.length)return;
+  const p=pool[Math.floor(Math.random()*pool.length)];
+  const cat=document.querySelector('.cat[data-cat="'+CSS.escape(p.cat)+'"]');
+  if(cat)cat.classList.remove("closed");
+  selectProblem(p);
+  const row=document.querySelector('.row[data-n="'+p.n+'"]');
+  if(row)row.scrollIntoView({block:"center",behavior:"smooth"});
+}
+
+/* =====================================================================
+   Init
+   ===================================================================== */
+function init(){
+  state.loop=store.read("b75_loop",true);
+  buildSidebar();
+  updateRing();
+
+  document.getElementById("search").addEventListener("input",e=>{state.q=e.target.value;applyFilter();});
+  document.querySelectorAll("#chips .chip").forEach(c=>c.onclick=()=>{
+    document.querySelectorAll("#chips .chip").forEach(x=>x.classList.remove("on"));
+    c.classList.add("on"); state.filter=c.dataset.f; applyFilter();
+  });
+  document.getElementById("randBtn").onclick=pickRandom;
+  document.getElementById("starFilter").onclick=function(){
+    state.star=!state.star; this.classList.toggle("on",state.star);
+    this.style.color=state.star?"var(--amber)":""; this.style.borderColor=state.star?"#5a4a1e":"";
+    applyFilter();
+  };
+  document.getElementById("menuBtn").onclick=()=>document.getElementById("side").classList.toggle("open");
+
+  document.addEventListener("keydown",e=>{
+    if(e.target.tagName==="INPUT")return;
+    if(e.code==="Space"){e.preventDefault();togglePlay();}
+    else if(e.code==="ArrowRight"){e.preventDefault();step(1);}
+    else if(e.code==="ArrowLeft"){e.preventDefault();step(-1);}
+    else if(e.key==="j"||e.key==="J"){e.preventDefault();move(1);}
+    else if(e.key==="k"||e.key==="K"){e.preventDefault();move(-1);}
+    else if(e.key==="r"||e.key==="R"){e.preventDefault();state.frame=0;renderFrame();}
+  });
+
+  applyFilter();
+  selectProblem(PROBLEMS[0]);
+}
+function move(d){
+  if(!state.cur)return;
+  let i=PROBLEMS.findIndex(p=>p.n===state.cur.n);
+  i=(i+d+PROBLEMS.length)%PROBLEMS.length;
+  const p=PROBLEMS[i];
+  const cat=document.querySelector('.cat[data-cat="'+CSS.escape(p.cat)+'"]');
+  if(cat)cat.classList.remove("closed");
+  selectProblem(p);
+  const row=document.querySelector('.row[data-n="'+p.n+'"]');
+  if(row)row.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+
+init();
+</script>
+<script src="../study-controls.js"></script>
+</body>
+</html>
