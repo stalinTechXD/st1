@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Complexity Analysis — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12px; font-weight:600; padding:6px 12px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12px; margin:8px 0 4px}
+  .vwrap{overflow-x:auto; display:flex; justify-content:center; margin:12px 0; padding:4px}
+  .row{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; min-height:44px; margin:6px 0}
+  .cell{min-width:34px; height:34px; padding:0 6px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:13px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s; font-family:'Consolas',monospace}
+  .cell.cur{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  .cell.done{border-color:var(--found); background:#0d3b30}
+  .cell.drop{border-color:var(--accent2); background:#3a1d2a; opacity:.5; text-decoration:line-through}
+  .legend{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin:6px 0; font-size:12.5px; font-weight:700}
+  .legend .li{display:flex; align-items:center; gap:5px} .legend .sw{width:16px; height:4px; border-radius:2px}
+  .chartsvg .axis{stroke:#3a4a75; stroke-width:1.5}
+  .chartsvg .glbl{fill:var(--muted); font-size:10px}
+  .chartsvg .curve{fill:none; stroke-width:2.5}
+  .work{font-family:'Consolas',monospace; font-size:15px; background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:8px auto; max-width:640px; text-align:center}
+  .work .term{padding:2px 6px; border-radius:6px; transition:.3s}
+  .work .term.drop{color:#7a6472; text-decoration:line-through}
+  .work .term.keep{color:var(--found); font-weight:800}
+  .rtree .redge{stroke:#2c3d6e; stroke-width:2.5}
+  .rtree .rnode{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .rtree .rnode.cur{fill:#3a3620; stroke:var(--mid)}
+  .rtree .rnode.done{fill:#22345f; stroke:var(--accent)}
+  .rtree .rlbl{fill:var(--ink); font-weight:800; font-size:11px; text-anchor:middle; dominant-baseline:central; font-family:'Consolas',monospace}
+  .rtree .rlvl{fill:var(--mid); font-size:11px; font-weight:800; text-anchor:start; font-family:'Consolas',monospace}
+  .stackbox{display:flex; flex-direction:column-reverse; gap:5px; align-items:center; min-height:60px; justify-content:flex-start; margin:8px 0}
+  .frame{min-width:180px; padding:8px 14px; border-radius:9px; background:#1d2a52; border:2px solid #2c3d6e; font-weight:800; font-family:'Consolas',monospace; font-size:13px; transition:.3s}
+  .frame.cur{border-color:var(--mid); background:#3a3620}
+  .frame.done{border-color:var(--found); background:#0d3b30}
+  .box{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin:6px 0}
+  .bx{width:30px;height:30px;border-radius:6px;background:#1d2a52;border:2px solid #2c3d6e;transition:.3s}
+  .bx.alloc{background:#0d3b30;border-color:var(--found)}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13.5px; line-height:1.6; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  table.cmp{border-collapse:collapse; margin:12px auto; font-size:13px}
+  table.cmp th,table.cmp td{border:1px solid var(--line); padding:6px 12px; text-align:center}
+  table.cmp th{background:var(--bg2); color:var(--accent)}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Complexity Analysis — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Big-O, growth orders, recurrence trees &amp; space cost — see exactly how algorithms scale. Built so complexity intuition sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#tc">⏱️ Time Complexity</a>
+  <a href="#ord">📉 Orders &amp; Recurrences</a>
+  <a href="#snip">🔬 Code Snippets</a>
+  <a href="#sc">💾 Space Complexity</a>
+</nav>
+
+<main>
+
+  <!-- 1 TIME COMPLEXITY -->
+  <section id="tc">
+    <h2>⏱️ Introducing Time Complexity <span class="badge">Big-O growth</span></h2>
+    <p class="lead">Time complexity describes how an algorithm's operation count grows with the input size <code>n</code> — not the wall-clock time, but the <b>shape</b> of the growth.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Count the steps as n grows:</span> Big-O captures the dominant growth rate. O(1) is flat, O(log n) barely rises, O(n) is a line, O(n log n) curves up gently, O(n²) shoots up, and O(2ⁿ) explodes. Watch the curves separate as n increases — that gap <b>is</b> the difference between fast and unusable.</div>
+      <div class="steps-flow"><span class="chip">O(1)</span><span class="arrow">&lt;</span><span class="chip">O(log n)</span><span class="arrow">&lt;</span><span class="chip">O(n)</span><span class="arrow">&lt;</span><span class="chip">O(n log n)</span><span class="arrow">&lt;</span><span class="chip">O(n²)</span><span class="arrow">&lt;</span><span class="chip">O(2ⁿ)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Big-O = how the work grows with n. Compare the growth <b>rate</b>, ignore machine speed."</div>
+    </div>
+    <div class="legend">
+      <span class="li"><span class="sw" style="background:#06d6a0"></span>O(1)</span>
+      <span class="li"><span class="sw" style="background:#4cc9f0"></span>O(log n)</span>
+      <span class="li"><span class="sw" style="background:#4361ee"></span>O(n)</span>
+      <span class="li"><span class="sw" style="background:#ffd166"></span>O(n log n)</span>
+      <span class="li"><span class="sw" style="background:#f72585"></span>O(n²)</span>
+    </div>
+    <div class="vwrap" id="tcChart"></div>
+    <div class="lbl">a simple loop — one op per element → O(n)</div><div class="row" id="tcLoop"></div>
+    <div class="status" id="tcStatus">Press play to grow the complexity curves and count a loop.</div>
+    <div class="stats" id="tcStats"></div>
+    <div class="controls"><button class="btn" id="tcPlay">▶ Grow the curves</button><button class="btn ghost" id="tcReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tcSpeed" min="150" max="1200" value="380" step="30"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Big-O is worst-case &amp; asymptotic — it matters most as n gets large; for tiny n even O(2ⁿ) can be fine.</div></div>
+    <table class="cmp">
+      <tr><th>n</th><th>O(1)</th><th>O(log n)</th><th>O(n)</th><th>O(n log n)</th><th>O(n²)</th></tr>
+      <tr><td>10</td><td>1</td><td>3</td><td>10</td><td>33</td><td>100</td></tr>
+      <tr><td>100</td><td>1</td><td>7</td><td>100</td><td>664</td><td>10,000</td></tr>
+      <tr><td>1000</td><td>1</td><td>10</td><td>1,000</td><td>9,966</td><td>1,000,000</td></tr>
+    </table>
+  </section>
+
+  <!-- 2 ORDERS & RECURRENCES -->
+  <section id="ord">
+    <h2>📉 Order of Expressions &amp; Recurrence Relations <span class="badge">drop &amp; solve</span></h2>
+    <p class="lead">To find the order of growth, keep only the fastest-growing term and drop constants. For recursive algorithms, unfold the <b>recurrence</b> into a tree.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Only the biggest term survives:</span> <code>3n² + 5n + 7</code> → drop the constant 7, drop the lower-order 5n, drop the coefficient 3 → <b>O(n²)</b>. For recurrences like merge sort's <code>T(n) = 2T(n/2) + n</code>, each tree level costs n and there are log n levels → <b>O(n log n)</b>.</div>
+      <div class="steps-flow"><span class="chip">drop constants</span><span class="arrow">→</span><span class="chip">drop lower-order terms</span><span class="arrow">→</span><span class="chip">recurrence → tree → sum levels</span></div>
+      <div class="oneliner">🔒 Keep forever: "Order = the dominant term without its coefficient. Recurrence = level cost × number of levels."</div>
+    </div>
+    <div class="lbl">simplify 3n² + 5n + 7</div><div class="work" id="ordExpr"></div>
+    <div class="lbl">recurrence tree: T(n) = 2·T(n/2) + n  (n = 8)</div><div class="vwrap" id="ordTree"></div>
+    <div class="status" id="ordStatus">Press play to reduce the expression and unfold the recurrence.</div>
+    <div class="stats" id="ordStats"></div>
+    <div class="controls"><button class="btn" id="ordPlay">▶ Reduce &amp; solve</button><button class="btn ghost" id="ordReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ordSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the Master Theorem shortcuts <code>T(n)=aT(n/b)+f(n)</code>; T(n−1)+O(1) → O(n); T(n−1)+O(n) → O(n²); T(n/2)+O(1) → O(log n).</div></div>
+  </section>
+
+  <!-- 3 CODE SNIPPETS -->
+  <section id="snip">
+    <h2>🔬 Interesting Code Snippets <span class="badge">read the loops</span></h2>
+    <p class="lead">Most complexity comes down to counting how many times the innermost line runs. Let's analyze four telling snippets.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Count the inner line:</span> a single loop over n → <b>O(n)</b>; two nested loops → <b>O(n²)</b>; a loop where the index <b>doubles</b> (<code>i *= 2</code>) → <b>O(log n)</b>; a triangular loop (<code>j &lt; i</code>) still runs ~n²/2 → <b>O(n²)</b> (constants dropped). Watch the operation counter for each.</div>
+      <div class="steps-flow"><span class="chip">single loop → O(n)</span><span class="arrow">·</span><span class="chip">nested → O(n²)</span><span class="arrow">·</span><span class="chip">i*=2 → O(log n)</span><span class="arrow">·</span><span class="chip">j&lt;i → O(n²)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Complexity = how many times the innermost statement executes, as a function of n."</div>
+    </div>
+    <pre id="snipCode"><code><span class="cm">// press play to analyze each snippet</span></code></pre>
+    <div class="lbl">operations executed</div><div class="row" id="snipOps"></div>
+    <div class="status" id="snipStatus">Press play to analyze four code snippets.</div>
+    <div class="stats" id="snipStats"></div>
+    <div class="controls"><button class="btn" id="snipPlay">▶ Analyze snippets</button><button class="btn ghost" id="snipReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="snipSpeed" min="150" max="1200" value="350" step="30"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> sequential loops <b>add</b> (O(n)+O(n)=O(n)); nested loops <b>multiply</b> (O(n)·O(n)=O(n²)). Halving each step gives log n.</div></div>
+  </section>
+
+  <!-- 4 SPACE COMPLEXITY -->
+  <section id="sc">
+    <h2>💾 Space Complexity <span class="badge">memory used</span></h2>
+    <p class="lead">Space complexity counts the <b>extra</b> memory an algorithm uses as a function of n — including the recursion call stack, not just explicit arrays.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Recursion costs stack frames:</span> a few variables → <b>O(1)</b>; an array of size n → <b>O(n)</b>; an n×n matrix → <b>O(n²)</b>. And recursion is sneaky: <code>factorial(n)</code> uses no array, yet its call stack grows to depth n before unwinding → <b>O(n)</b> space.</div>
+      <div class="steps-flow"><span class="chip">O(1): a few vars</span><span class="arrow">·</span><span class="chip">O(n): array or stack depth n</span><span class="arrow">·</span><span class="chip">O(n²): matrix</span></div>
+      <div class="oneliner">🔒 Keep forever: "Space = auxiliary memory incl. the recursion stack — deep recursion is O(depth) space."</div>
+    </div>
+    <div class="lbl">call stack of factorial(5) — grows to depth 5 → O(n) space</div>
+    <div class="stackbox" id="scStack"></div>
+    <div class="lbl">an O(n) array allocation</div><div class="box" id="scArr"></div>
+    <div class="status" id="scStatus">Press play to watch the recursion stack grow and unwind.</div>
+    <div class="stats" id="scStats"></div>
+    <div class="controls"><button class="btn" id="scPlay">▶ Grow the stack</button><button class="btn ghost" id="scReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="scSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> an in-place O(1)-space algorithm reuses the input; converting recursion to iteration often trades O(n) stack for O(1).</div></div>
+
+    <div class="note key">🏆 <b>Complexity analysis mastered!</b> Big-O captures growth rate (O(1) &lt; log n &lt; n &lt; n log n &lt; n² &lt; 2ⁿ) · reduce expressions to their dominant term · solve recurrences with trees or the Master Theorem · count the innermost statement to read any loop · and remember space includes the recursion stack. Measure how it <b>scales</b>, not how fast it runs today. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Complexity Analysis — Animated Guide • Replay any animation, turn on 🎵 sound • Think in growth rates 📈</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+function row(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>`<div class="cell ${(opt.cls&&opt.cls[i])||''}">${v}</div>`).join(''); }
+
+/* ================= 1. time complexity ================= */
+(function(){
+  const st=$('#tcStatus'),sp=$('#tcSpeed'),stats=$('#tcStats'),cont=$('#tcChart'); const NMAX=10, W=520, H=260, padL=40, padB=30;
+  const funcs=[ {f:n=>1,c:'#06d6a0'}, {f:n=>Math.log2(n),c:'#4cc9f0'}, {f:n=>n,c:'#4361ee'}, {f:n=>n*Math.log2(n),c:'#ffd166'}, {f:n=>n*n,c:'#f72585'} ];
+  const YMAX=100;
+  const sx=n=>padL+(n-1)/(NMAX-1)*(W-padL-14);
+  const sy=y=>H-padB-Math.min(y,YMAX)/YMAX*(H-padB-14);
+  function draw(upto){ let g=`<line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-6}" y2="${H-padB}"/><line class="axis" x1="${padL}" y1="8" x2="${padL}" y2="${H-padB}"/>`;
+    g+=`<text class="glbl" x="${padL-6}" y="${H-padB}" text-anchor="end">0</text><text class="glbl" x="${padL-6}" y="18" text-anchor="end">${YMAX}</text><text class="glbl" x="${W-10}" y="${H-12}" text-anchor="end">n=${NMAX}</text>`;
+    for(const fn of funcs){ let pts=''; for(let n=1;n<=upto;n++){ pts+=`${sx(n)},${sy(fn.f(n))} `; } g+=`<polyline class="curve" points="${pts.trim()}" stroke="${fn.c}"/>`; }
+    cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="chartsvg">${g}</svg>`;
+  }
+  function build(){ draw(1); row($('#tcLoop'),Array(8).fill('·')); stats.innerHTML=''; st.textContent='Press play to grow the complexity curves and count a loop.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true;
+    for(let n=1;n<=NMAX;n++){ draw(n); tickSound(); st.innerHTML=`n = ${n}: O(n²)=${n*n}, O(n log n)=${Math.round(n*Math.log2(n)||0)}, O(n)=${n}, O(log n)=${(Math.log2(n)).toFixed(1)}, O(1)=1.`; stats.innerHTML=`<span class="pill pink">O(n²)=${n*n}</span><span class="pill blue">O(n)=${n}</span><span class="pill green">O(1)=1</span>`; await sleep(+sp.value); }
+    st.innerHTML=`Curves drawn. Now a simple O(n) loop counting one op per element…`; await sleep(+sp.value*1.5);
+    const cls={}; for(let i=0;i<8;i++){ cls[i]='done'; row($('#tcLoop'),Array(8).fill(0).map((_,k)=>k<=i?'✓':'·'),{cls:{...cls}}); tickSound(); st.innerHTML=`op ${i+1} of 8 — one per element → total = n.`; await sleep(+sp.value*1.2); }
+    st.innerHTML=`⏱️ Time complexity = growth of op-count with n. The loop is <span class="k">O(n)</span>; O(n²) already dominates at n=10 (100 vs 10)!`; ANIM=false; celebrate(cont);
+  }
+  $('#tcPlay').onclick=play; $('#tcReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. orders & recurrences ================= */
+(function(){
+  const st=$('#ordStatus'),sp=$('#ordSpeed'),stats=$('#ordStats'),cont=$('#ordTree');
+  // recurrence tree layout for n=8, 4 levels
+  const levels=[[8],[4,4],[2,2,2,2],[1,1,1,1,1,1,1,1]];
+  function drawTree(upto,cls){ const W=560,H=250,padT=24,lh=56; let g=''; const levelY=l=>padT+l*lh;
+    const positions=[]; for(let l=0;l<levels.length;l++){ const cnt=levels[l].length; positions.push(levels[l].map((v,i)=>({x:40+(i+0.5)/cnt*(W-90), y:levelY(l), v}))); }
+    // edges
+    for(let l=1;l<=Math.min(upto,levels.length-1);l++){ for(let i=0;i<positions[l].length;i++){ const par=positions[l-1][i>>1]; const ch=positions[l][i]; g+=`<line class="redge" x1="${par.x}" y1="${par.y}" x2="${ch.x}" y2="${ch.y}"/>`; } }
+    for(let l=0;l<=Math.min(upto,levels.length-1);l++){ const sum=levels[l].reduce((a,b)=>a+b,0); g+=`<text class="rlvl" x="${W-46}" y="${levelY(l)}">Σ=${sum}</text>`; for(const p of positions[l]){ const cc=(cls&&cls['l'+l])||''; g+=`<circle class="rnode ${cc}" cx="${p.x}" cy="${p.y}" r="15"/><text class="rlbl" x="${p.x}" y="${p.y}">${p.v}</text>`; } }
+    cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="chartsvg rtree">${g}</svg>`;
+  }
+  function build(){ $('#ordExpr').innerHTML=`<span class="term">3n²</span> + <span class="term">5n</span> + <span class="term">7</span>`; drawTree(0); stats.innerHTML=''; st.textContent='Press play to reduce the expression and unfold the recurrence.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true;
+    $('#ordExpr').innerHTML=`<span class="term">3n²</span> + <span class="term">5n</span> + <span class="term drop">7</span>`; tickSound(); st.innerHTML=`Drop the constant <span class="k">7</span> — it doesn't grow.`; await sleep(+sp.value);
+    $('#ordExpr').innerHTML=`<span class="term">3n²</span> + <span class="term drop">5n</span> + <span class="term drop">7</span>`; tickSound(); st.innerHTML=`Drop the lower-order term <span class="k">5n</span> — n² outgrows it.`; await sleep(+sp.value);
+    $('#ordExpr').innerHTML=`<span class="term keep">n²</span> <span class="term drop">(× 3)</span> → <b style="color:var(--found)">O(n²)</b>`; blip(660,0.1,'sine',0.1); st.innerHTML=`Drop the coefficient <span class="k">3</span> → <span class="k">O(n²)</span>.`; stats.innerHTML=`<span class="pill green">3n²+5n+7 → O(n²)</span>`; await sleep(+sp.value*1.3);
+    // recurrence tree
+    st.innerHTML=`Now unfold T(n) = 2·T(n/2) + n as a tree…`; await sleep(+sp.value);
+    for(let l=0;l<levels.length;l++){ drawTree(l,{['l'+l]:'cur'}); tickSound(); st.innerHTML=`Level ${l}: ${levels[l].length} node(s), each does n/${2**l} work → level cost = <span class="k">${levels[l].reduce((a,b)=>a+b,0)}</span> (= n).`; await sleep(+sp.value); drawTree(l,{['l'+l]:'done'}); await sleep(+sp.value*0.3); }
+    drawTree(levels.length-1); const depth=Math.log2(8); stats.innerHTML=`<span class="pill blue">${levels.length} levels ≈ log n + 1</span><span class="pill green">each level = n</span>`; st.innerHTML=`📉 Each of the ~log n levels costs n → T(n) = <span class="k">O(n log n)</span> (merge sort)!`; ANIM=false; celebrate(cont);
+  }
+  $('#ordPlay').onclick=play; $('#ordReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. code snippets ================= */
+(function(){
+  const st=$('#snipStatus'),sp=$('#snipSpeed'),stats=$('#snipStats');
+  const N=4;
+  const snips=[
+    { code:`<span class="kw">for</span>(i=<span class="num">0</span>; i&lt;n; i++)\n  op();          <span class="cm">// runs n times</span>`, big:'O(n)',
+      run:async(mark)=>{ let c=0; for(let i=0;i<N;i++){ c++; await mark(c,`i=${i} → op #${c}`); } return c; } },
+    { code:`<span class="kw">for</span>(i=<span class="num">0</span>; i&lt;n; i++)\n  <span class="kw">for</span>(j=<span class="num">0</span>; j&lt;n; j++)\n    op();        <span class="cm">// runs n² times</span>`, big:'O(n²)',
+      run:async(mark)=>{ let c=0; for(let i=0;i<N;i++)for(let j=0;j<N;j++){ c++; await mark(c,`i=${i},j=${j} → op #${c}`); } return c; } },
+    { code:`<span class="kw">for</span>(i=<span class="num">1</span>; i&lt;n; i*=<span class="num">2</span>)\n  op();          <span class="cm">// i doubles → log n times</span>`, big:'O(log n)',
+      run:async(mark)=>{ let c=0; for(let i=1;i<16;i*=2){ c++; await mark(c,`i=${i} → op #${c} (doubling)`); } return c; } },
+    { code:`<span class="kw">for</span>(i=<span class="num">0</span>; i&lt;n; i++)\n  <span class="kw">for</span>(j=<span class="num">0</span>; j&lt;i; j++)\n    op();        <span class="cm">// triangular ≈ n²/2</span>`, big:'O(n²)',
+      run:async(mark)=>{ let c=0; for(let i=0;i<N;i++)for(let j=0;j<i;j++){ c++; await mark(c,`i=${i},j=${j} → op #${c}`); } return c; } },
+  ];
+  function build(){ $('#snipCode').innerHTML=`<code><span class="cm">// press play to analyze each snippet</span></code>`; row($('#snipOps'),[]); stats.innerHTML=''; st.textContent='Press play to analyze four code snippets.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const results=[];
+    for(let s=0;s<snips.length;s++){ const sn=snips[s]; $('#snipCode').innerHTML=`<code>${sn.code}</code>`; row($('#snipOps'),[]); const ops=[];
+      const mark=async(c,msg)=>{ ops.push(c); row($('#snipOps'),ops.map(x=>x),{cls:Object.fromEntries(ops.map((_,k)=>[k,k===ops.length-1?'cur':'done']))}); tickSound(); st.innerHTML=`Snippet ${s+1}: ${msg}.`; await sleep(+sp.value); };
+      const total=await sn.run(mark); row($('#snipOps'),ops,{cls:Object.fromEntries(ops.map((_,k)=>[k,'done']))}); results.push(sn.big); blip(660,0.1,'sine',0.1); st.innerHTML=`Snippet ${s+1}: ${total} operations (n=${sn.big==='O(log n)'?16:N}) → <span class="k">${sn.big}</span>.`; stats.innerHTML=`<span class="pill blue">${results.join(' · ')}</span>`; await sleep(+sp.value*2.2); }
+    st.innerHTML=`🔬 Complexities: <span class="k">${results.join(', ')}</span> — count the innermost line!`; ANIM=false; celebrate($('#snipOps'));
+  }
+  $('#snipPlay').onclick=play; $('#snipReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. space complexity ================= */
+(function(){
+  const N=5; const st=$('#scStatus'),sp=$('#scSpeed'),stats=$('#scStats');
+  function stack(frames,cls){ $('#scStack').innerHTML=frames.map((f,i)=>`<div class="frame ${cls&&cls[i]||''}">${f}</div>`).join(''); }
+  function build(){ stack([]); $('#scArr').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to watch the recursion stack grow and unwind.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const frames=[];
+    for(let i=N;i>=1;i--){ frames.push(`factorial(${i})`); stack(frames,{[frames.length-1]:'cur'}); tickSound(); st.innerHTML=`Call factorial(${i}) → push frame. Stack depth = <span class="k">${frames.length}</span>.`; stats.innerHTML=`<span class="pill blue">depth = ${frames.length}</span>`; await sleep(+sp.value); }
+    st.innerHTML=`Max depth = ${N} = n → the stack itself is <span class="k">O(n)</span> space. Now unwind…`; await sleep(+sp.value*1.3);
+    let res=1;
+    for(let i=1;i<=N;i++){ res*=i; const f=frames.pop(); stack(frames,{}); blip(600,0.09,'sine',0.09); st.innerHTML=`Return factorial(${i}) = ${res}; pop frame. Depth = ${frames.length}.`; await sleep(+sp.value); }
+    // O(n) array
+    st.innerHTML=`An explicit array of size n is also O(n) space…`; await sleep(+sp.value);
+    for(let i=0;i<N;i++){ $('#scArr').innerHTML=Array(N).fill(0).map((_,k)=>`<div class="bx ${k<=i?'alloc':''}"></div>`).join(''); tickSound(); await sleep(+sp.value*0.6); }
+    stats.innerHTML=`<span class="pill green">O(n) stack</span><span class="pill green">O(n) array</span>`; st.innerHTML=`💾 factorial(5) uses no array, yet its recursion stack is <span class="k">O(n)</span> space — recursion depth counts!`; ANIM=false; celebrate($('#scStack'));
+  }
+  $('#scPlay').onclick=play; $('#scReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

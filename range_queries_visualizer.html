@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Range Queries — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12.5px; font-weight:600; padding:6px 12px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .arrwrap{display:flex; flex-direction:column; gap:2px; align-items:center; margin:14px 0}
+  .arrrow{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; min-height:52px}
+  .cell{position:relative; min-width:42px; height:44px; padding:0 6px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:15px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s}
+  .cell .idx{position:absolute; top:-17px; left:50%; transform:translateX(-50%); font-size:10.5px; color:var(--muted); font-weight:700}
+  .cell.scan{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.4)}
+  .cell.inrange{border-color:var(--accent); background:#22345f}
+  .cell.full{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .cell.partL{border-color:var(--lo); background:#182a5a; box-shadow:0 0 0 3px rgba(67,97,238,.4)}
+  .cell.partR{border-color:var(--accent2); background:#3a1d2a; box-shadow:0 0 0 3px rgba(247,37,133,.4)}
+  .cell.done{border-color:var(--found); background:#0d3b30}
+  .cell.blk0{background:#16233f} .cell.blk1{background:#241a3a}
+  .cell.empty{color:var(--muted); font-style:italic; background:#141d3a}
+  .cell.wide{min-width:74px}
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12.5px; margin:8px 0 2px}
+  .brace{display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:2px}
+  .btag{min-width:42px; text-align:center; font-size:11px; color:var(--muted); font-weight:700}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  table.cmp{border-collapse:collapse; margin:12px auto; font-size:13px}
+  table.cmp th,table.cmp td{border:1px solid var(--line); padding:6px 12px; text-align:center}
+  table.cmp th{background:var(--bg2); color:var(--accent)}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Range Queries — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch prefix sums, √n blocks, and sparse tables answer range questions in a flash. Built so every range-query trick sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#intro">📊 Intro to Range Queries</a>
+  <a href="#sqrt">🧱 √n Decomposition</a>
+  <a href="#sparse">⚡ Sparse Table</a>
+</nav>
+
+<main>
+
+  <!-- INTRO -->
+  <section id="intro">
+    <h2>📊 Introduction to Range Queries <span class="badge">Prefix sums</span></h2>
+    <p class="lead">A range query asks something about a slice <code>[l, r]</code> — sum, min, max — <b>many times</b>. Precompute so each answer is fast.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Don't recount every time:</span> scanning <code>[l, r]</code> per query is O(n) each — brutal for thousands of queries. For <b>sums</b>, precompute a prefix array once; then any range sum is <code>prefix[r] − prefix[l−1]</code> in O(1). Precompute once, answer forever.</div>
+      <div class="steps-flow"><span class="chip">naive: scan l..r → O(n)</span><span class="arrow">→</span><span class="chip">build prefix[] once → O(n)</span><span class="arrow">→</span><span class="chip">query = prefix[r]−prefix[l−1] → O(1)</span></div>
+      <div class="oneliner">🔒 Keep forever: "A range sum is the difference of two prefix sums — O(1) after an O(n) precompute."</div>
+    </div>
+    <div class="note">Array <code>[3,1,4,1,5,9,2,6]</code>. Query: sum of range <b>[2, 5]</b>.</div>
+    <div class="arrwrap"><div class="lbl">array a[]</div><div class="arrrow" id="inArr"></div></div>
+    <div class="arrwrap"><div class="lbl">prefix[]  (prefix[i] = a[0]+…+a[i])</div><div class="arrrow" id="inPre"></div></div>
+    <div class="status" id="inStatus">Press play: naive scan, then the O(1) prefix trick.</div>
+    <div class="stats" id="inStats"></div>
+    <div class="controls"><button class="btn" id="inPlay">▶ Range Sum [2,5]</button><button class="btn ghost" id="inReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="inSpeed" min="200" max="2000" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> prefix sums handle <b>sum</b> queries on a <b>static</b> array. Updates or min/max need the tougher structures below.</div></div>
+    <pre><code>prefix[<span class="num">0</span>]=a[<span class="num">0</span>]; <span class="kw">for</span>(i=<span class="num">1</span>..n-<span class="num">1</span>) prefix[i]=prefix[i-<span class="num">1</span>]+a[i];
+sum(l,r) = (l==<span class="num">0</span>) ? prefix[r] : prefix[r]-prefix[l-<span class="num">1</span>];   <span class="cm">// O(1)</span></code></pre>
+    <table class="cmp">
+      <tr><th>Structure</th><th>Query</th><th>Update</th><th>Ops</th></tr>
+      <tr><td>Prefix sums</td><td>O(1)</td><td>O(n)</td><td>sum (static)</td></tr>
+      <tr><td>√n decomposition</td><td>O(√n)</td><td>O(1)</td><td>any (updatable)</td></tr>
+      <tr><td>Sparse table</td><td>O(1)</td><td>—</td><td>min/max/gcd (static)</td></tr>
+      <tr><td>Segment tree</td><td>O(log n)</td><td>O(log n)</td><td>any (updatable)</td></tr>
+    </table>
+  </section>
+
+  <!-- SQRT DECOMPOSITION -->
+  <section id="sqrt">
+    <h2>🧱 Square Root Decomposition <span class="badge">O(√n)</span></h2>
+    <p class="lead">Split the array into blocks of size ≈ √n. Precompute each block's answer; a query uses whole-block answers + a few edge elements.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Chunk the shelf:</span> group the array into √n blocks and store each block's sum. A query <code>[l, r]</code> grabs the fully-covered blocks in O(1) each and only scans the leftover elements at the two partial ends — at most √n of them. Balance: ~√n blocks + ~√n edge elements = O(√n).</div>
+      <div class="steps-flow"><span class="chip">precompute block sums</span><span class="arrow">→</span><span class="chip">full blocks: add block sum</span><span class="arrow">·</span><span class="chip">partial ends: scan elements</span></div>
+      <div class="oneliner">🔒 Keep forever: "Whole blocks answered in O(1); only the two ragged ends are scanned → O(√n). Updates stay O(1)."</div>
+    </div>
+    <div class="note">Array split into blocks of 4. Query: sum of range <b>[2, 9]</b>.</div>
+    <div class="arrwrap"><div class="lbl">array (blocks of 4, alternating tints)</div><div class="arrrow" id="sqArr"></div></div>
+    <div class="arrwrap"><div class="lbl">block sums</div><div class="arrrow" id="sqBlk"></div></div>
+    <div class="status" id="sqStatus">Press play. Full blocks in O(1), partial ends scanned.</div>
+    <div class="stats" id="sqStats"></div>
+    <div class="controls"><button class="btn" id="sqPlay">▶ Range Sum [2,9]</button><button class="btn ghost" id="sqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="sqSpeed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a point update touches one element and its block sum — O(1). Optimal block size is √n (balances blocks vs edges). Also solves min/max, gcd, mode…</div></div>
+    <pre><code><span class="kw">int</span> B = (<span class="kw">int</span>)Math.sqrt(n);
+<span class="kw">for</span>(i) block[i/B] += a[i];              <span class="cm">// precompute</span>
+sum(l,r){ <span class="kw">int</span> s=<span class="num">0</span>;
+  <span class="kw">while</span>(l&lt;=r &amp;&amp; l%B!=<span class="num">0</span>) s+=a[l++];       <span class="cm">// left partial</span>
+  <span class="kw">while</span>(l+B-<span class="num">1</span>&lt;=r){ s+=block[l/B]; l+=B; }   <span class="cm">// full blocks</span>
+  <span class="kw">while</span>(l&lt;=r) s+=a[l++];                  <span class="cm">// right partial</span>
+  <span class="kw">return</span> s; }</code></pre>
+  </section>
+
+  <!-- SPARSE TABLE -->
+  <section id="sparse">
+    <h2>⚡ Sparse Table <span class="badge">O(1) min / max</span></h2>
+    <p class="lead">For <b>idempotent</b> operations (min, max, gcd), precompute the answer for every interval of length 2ᵏ — then any range is two overlapping blocks.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Powers-of-two shortcuts:</span> build a table where <code>sparse[k][i]</code> = min over <code>[i, i+2ᵏ−1]</code>, each row combining two cells from the row above. Since min doesn't mind overlap, any range <code>[l, r]</code> is covered by <b>two</b> blocks of length 2ᵏ (the largest power ≤ range length) — answer in O(1).</div>
+      <div class="steps-flow"><span class="chip">build rows k=0,1,2… (O(n log n))</span><span class="arrow">→</span><span class="chip">k = ⌊log₂(len)⌋</span><span class="arrow">→</span><span class="chip">min(sparse[k][l], sparse[k][r−2ᵏ+1])</span></div>
+      <div class="oneliner">🔒 Keep forever: "Two overlapping 2ᵏ blocks cover any range — O(1) min/max because overlap doesn't matter."</div>
+    </div>
+    <div class="note">Array <code>[5,2,4,7,6,3,8,1]</code>. Range-<b>min</b> query <b>[1, 6]</b>.</div>
+    <div class="arrwrap" id="spTable"></div>
+    <div class="status" id="spStatus">Press play. Build the table, then answer with two blocks.</div>
+    <div class="stats" id="spStats"></div>
+    <div class="controls"><button class="btn" id="spPlay">▶ Build &amp; Query [1,6]</button><button class="btn ghost" id="spReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="spSpeed" min="300" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(1) queries but <b>no updates</b> (rebuilding is O(n log n)). Overlap is only OK for idempotent ops — for <b>sum</b>, use two <i>disjoint</i> blocks or a segment tree.</div></div>
+    <pre><code><span class="cm">// build</span>
+<span class="kw">for</span>(i) sparse[<span class="num">0</span>][i]=a[i];
+<span class="kw">for</span>(k=<span class="num">1</span>;(<span class="num">1</span>&lt;&lt;k)&lt;=n;k++)
+  <span class="kw">for</span>(i;i+(<span class="num">1</span>&lt;&lt;k)-<span class="num">1</span>&lt;n;i++)
+    sparse[k][i]=min(sparse[k-<span class="num">1</span>][i], sparse[k-<span class="num">1</span>][i+(<span class="num">1</span>&lt;&lt;(k-<span class="num">1</span>))]);
+<span class="cm">// query [l,r]</span>
+<span class="kw">int</span> k=log2(r-l+<span class="num">1</span>);
+<span class="kw">return</span> min(sparse[k][l], sparse[k][r-(<span class="num">1</span>&lt;&lt;k)+<span class="num">1</span>]);</code></pre>
+
+    <div class="note key">🏆 <b>Range queries mastered!</b> Prefix sums give O(1) static sums · √n decomposition balances blocks &amp; edges for O(√n) with O(1) updates · sparse tables exploit idempotent overlap for O(1) min/max · and segment trees (next level) do O(log n) everything. Pick the structure by query type, update needs, and the operation. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Range Queries — Animated Guide • Replay any animation, turn on 🎵 sound • Learn by watching the precompute pay off 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.08 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*120,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- cell rendering ---- */
+function renderRow(container, arr, opts={}){ container.innerHTML=''; arr.forEach((v,i)=>{ const c=document.createElement('div'); let cls='cell'; if(opts.wide)cls+=' wide'; if(opts.blocks){ cls+=' blk'+(Math.floor(i/opts.blocks)%2); } if(opts.cls&&opts.cls[i])cls+=' '+opts.cls[i]; if(v===null||v===''){ cls+=' empty'; } c.className=cls; c.innerHTML=`${opts.idx?`<span class="idx">${i}</span>`:''}${v===null?'·':v}`; container.appendChild(c); }); }
+
+/* ================= 1. Intro (prefix sums) ================= */
+(function(){
+  const a=[3,1,4,1,5,9,2,6]; const st=$('#inStatus'); const sp=$('#inSpeed'); const stats=$('#inStats'); const L=2,R=5;
+  function build(){ renderRow($('#inArr'),a,{idx:true}); renderRow($('#inPre'),a.map(()=>null),{idx:true}); stats.innerHTML=''; st.textContent='Press play: naive scan, then the O(1) prefix trick.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build();
+    // naive scan
+    let s=0; const cls={};
+    for(let i=L;i<=R;i++){ s+=a[i]; cls[i]='scan'; renderRow($('#inArr'),a,{idx:true,cls:{...cls}}); stats.innerHTML=`<span class="pill blue">naive running sum = ${s}</span>`; st.innerHTML=`Naive: add a[${i}]=${a[i]} → ${s} (O(n) per query).`; tickSound(); await sleep(+sp.value); }
+    st.innerHTML=`Naive answer = <span class="k">${s}</span>, but it scanned ${R-L+1} cells. Now build prefix[] once…`; await sleep(+sp.value);
+    // build prefix
+    const pre=[]; for(let i=0;i<a.length;i++){ pre[i]=(i?pre[i-1]:0)+a[i]; renderRow($('#inPre'),pre.map((v,k)=>k<=i?v:null),{idx:true,cls:{[i]:'done'}}); st.innerHTML=`prefix[${i}] = ${i?`prefix[${i-1}] + `:''}${a[i]} = <span class="k">${pre[i]}</span>.`; tickSound(); await sleep(+sp.value*0.8); }
+    // O(1) query
+    renderRow($('#inPre'),pre,{idx:true,cls:{[R]:'partR',[L-1]:'partL'}});
+    const ans=pre[R]-pre[L-1];
+    renderRow($('#inArr'),a,{idx:true,cls:Object.fromEntries([...Array(R-L+1)].map((_,i)=>[L+i,'inrange']))});
+    stats.innerHTML=`<span class="pill green">sum[${L},${R}] = prefix[${R}] − prefix[${L-1}] = ${pre[R]} − ${pre[L-1]} = ${ans}</span>`; st.innerHTML=`📊 Range sum [${L},${R}] = <span class="k">${ans}</span> in O(1) — same answer, no scan!`; ANIM=false; celebrate($('#inPre'));
+  }
+  $('#inPlay').onclick=play; $('#inReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Sqrt decomposition ================= */
+(function(){
+  const a=[1,5,2,4,6,1,3,7,2,8,4,3]; const B=4; const st=$('#sqStatus'); const sp=$('#sqSpeed'); const stats=$('#sqStats'); const L=2,R=9;
+  const nBlocks=Math.ceil(a.length/B);
+  function blockSums(){ const bs=Array(nBlocks).fill(0); a.forEach((v,i)=>bs[Math.floor(i/B)]+=v); return bs; }
+  function build(){ renderRow($('#sqArr'),a,{idx:true,blocks:B}); renderRow($('#sqBlk'),blockSums().map((v,i)=>'B'+i+'='+v),{wide:true}); stats.innerHTML=''; st.textContent='Press play. Full blocks in O(1), partial ends scanned.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const bs=blockSums(); let l=L, s=0; const cls={}; const bcls={};
+    // left partial
+    while(l<=R && l%B!==0){ s+=a[l]; cls[l]='partL'; renderRow($('#sqArr'),a,{idx:true,blocks:B,cls:{...cls}}); stats.innerHTML=`<span class="pill blue">sum = ${s}</span>`; st.innerHTML=`Left partial: add a[${l}]=${a[l]} → ${s}.`; tickSound(); await sleep(+sp.value); l++; }
+    // full blocks
+    while(l+B-1<=R){ const bi=l/B; s+=bs[bi]; for(let k=l;k<l+B;k++) cls[k]='full'; bcls[bi]='full'; renderRow($('#sqArr'),a,{idx:true,blocks:B,cls:{...cls}}); renderRow($('#sqBlk'),bs.map((v,i)=>'B'+i+'='+v),{wide:true,cls:{...bcls}}); stats.innerHTML=`<span class="pill blue">sum = ${s}</span>`; st.innerHTML=`Full block B${bi} → add ${bs[bi]} in O(1) → ${s}.`; tickSound(); await sleep(+sp.value); l+=B; }
+    // right partial
+    while(l<=R){ s+=a[l]; cls[l]='partR'; renderRow($('#sqArr'),a,{idx:true,blocks:B,cls:{...cls}}); stats.innerHTML=`<span class="pill blue">sum = ${s}</span>`; st.innerHTML=`Right partial: add a[${l}]=${a[l]} → ${s}.`; tickSound(); await sleep(+sp.value); l++; }
+    stats.innerHTML=`<span class="pill green">sum[${L},${R}] = ${s}</span>`; st.innerHTML=`🧱 Range sum [${L},${R}] = <span class="k">${s}</span> using 1 full block + 4 edge cells (O(√n))!`; ANIM=false; celebrate($('#sqArr'));
+  }
+  $('#sqPlay').onclick=play; $('#sqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Sparse table ================= */
+(function(){
+  const a=[5,2,4,7,6,3,8,1]; const n=a.length; const st=$('#spStatus'); const sp=$('#spSpeed'); const stats=$('#spStats'); const L=1,R=6;
+  const K=Math.floor(Math.log2(n))+1; const cont=$('#spTable');
+  let rows=[]; // rows[k] = array of length n (null where undefined)
+  function fresh(){ rows=[]; for(let k=0;k<K;k++){ rows[k]=Array(n).fill(null); } for(let i=0;i<n;i++) rows[0][i]=a[i]; }
+  function draw(hl){ cont.innerHTML=''; for(let k=0;k<K;k++){ const lbl=document.createElement('div'); lbl.className='lbl'; lbl.textContent=k===0?'k=0  (length 1 = the array)':`k=${k}  (length ${1<<k})`; cont.appendChild(lbl); const row=document.createElement('div'); row.className='arrrow'; row.id='sp_k'+k; cont.appendChild(row); const disp=rows[k].map(v=>v===null?null:v); renderRow(row,disp,{idx:k===0, cls:(hl&&hl.k===k)?hl.cls:{}}); } }
+  function build(){ fresh(); draw(); stats.innerHTML=''; st.textContent='Press play. Build the table, then answer with two blocks.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; fresh(); draw();
+    st.innerHTML='k=0: every length-1 interval is just the element itself.'; await sleep(+sp.value);
+    for(let k=1;(1<<k)<=n;k++){ for(let i=0;i+(1<<k)-1<n;i++){ const left=rows[k-1][i], right=rows[k-1][i+(1<<(k-1))]; rows[k][i]=Math.min(left,right);
+        draw({k, cls:{[i]:'scan'}}); const rowPrev=$('#sp_k'+(k-1)); if(rowPrev){ renderRow(rowPrev, rows[k-1].map(v=>v===null?null:v), {idx:k-1===0, cls:{[i]:'partL',[i+(1<<(k-1))]:'partR'}}); }
+        stats.innerHTML=`<span class="pill blue">sparse[${k}][${i}] = min over [${i}, ${i+(1<<k)-1}]</span>`; st.innerHTML=`sparse[${k}][${i}] = min(${left}, ${right}) = <span class="k">${rows[k][i]}</span>.`; tickSound(); await sleep(+sp.value); } }
+    draw(); st.innerHTML='Table ready! Now query min[1,6].'; await sleep(+sp.value*1.2);
+    const len=R-L+1, k=Math.floor(Math.log2(len)); const a1=rows[k][L], a2=rows[k][R-(1<<k)+1]; const ans=Math.min(a1,a2);
+    // highlight the two blocks in row k
+    const rowK=$('#sp_k'+k); if(rowK){ renderRow(rowK, rows[k].map(v=>v===null?null:v), {cls:{[L]:'partL',[R-(1<<k)+1]:'partR'}}); }
+    // highlight covered range in row 0
+    const row0=$('#sp_k0'); if(row0){ renderRow(row0, a, {idx:true, cls:Object.fromEntries([...Array(len)].map((_,i)=>[L+i,'inrange']))}); }
+    stats.innerHTML=`<span class="pill green">min[${L},${R}] = min(sparse[${k}][${L}], sparse[${k}][${R-(1<<k)+1}]) = min(${a1},${a2}) = ${ans}</span>`; st.innerHTML=`⚡ Range-min [${L},${R}] = <span class="k">${ans}</span> — two overlapping length-${1<<k} blocks, O(1)!`; ANIM=false; celebrate(cont);
+  }
+  $('#spPlay').onclick=play; $('#spReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

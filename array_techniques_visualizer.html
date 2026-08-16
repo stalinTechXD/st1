@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Array Techniques — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12px; margin:8px 0 4px}
+  .arrrow{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; min-height:44px; margin:6px 0}
+  .cell{position:relative; min-width:42px; height:44px; padding:0 6px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:15px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s; font-family:'Consolas',monospace}
+  .cell .ix{position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--muted); font-weight:700}
+  .cell.cur{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  .cell.dep{border-color:var(--accent); background:#22345f}
+  .cell.win{border-color:var(--accent); background:#22345f}
+  .cell.done{border-color:var(--found); background:#0d3b30}
+  .cell.ans{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .cell.bad{border-color:var(--accent2); background:#3a1d2a}
+  .cell.empty{color:var(--muted)}
+  .cell.sm{min-width:34px;height:36px;font-size:13px}
+
+  .barwrap{display:flex; gap:4px; align-items:flex-end; justify-content:center; height:180px; margin:12px 0; padding:0 6px}
+  .bar{width:42px; border-radius:6px 6px 0 0; background:#2c3d6e; display:flex; align-items:flex-start; justify-content:center; color:var(--ink); font-weight:800; font-size:12px; font-family:'Consolas',monospace; padding-top:3px; transition:.3s; position:relative}
+  .bar.cur{background:var(--mid); color:#08122b}
+  .bar.stack{background:#4361ee}
+  .bar.best{background:var(--found); color:#08122b}
+  .bar .bi{position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--muted)}
+
+  .grid{display:inline-grid; gap:5px}
+  .gc{width:46px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-weight:800;font-size:14px;background:#1d2a52;border:2px solid #2c3d6e;font-family:'Consolas',monospace;transition:.3s}
+  .gc.cur{border-color:var(--mid);background:#3a3620}
+  .gc.dep{border-color:var(--accent);background:#22345f}
+  .gc.done{border-color:var(--found);background:#0d3b30}
+  .gc.ans{border-color:var(--found);background:#0d3b30;box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .gc.path{border-color:var(--accent);background:#22345f}
+  .gc.bad{border-color:var(--accent2);background:#3a1d2a}
+  .gc.region{background:#182a4a}
+  .vwrap{overflow-x:auto; display:flex; justify-content:center; gap:26px; flex-wrap:wrap; margin:12px 0; padding:4px}
+
+  .buckets{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:10px 0}
+  .bucket{min-width:60px; border:2px dashed #2c3d6e; border-radius:10px; padding:6px; background:#12182f; display:flex; flex-direction:column; gap:4px; align-items:center}
+  .bucket .bh{font-size:10px; color:var(--muted); font-weight:700}
+  .bucket .bv{background:#1d2a52; border:2px solid #2c3d6e; border-radius:7px; padding:3px 8px; font-weight:800; font-family:'Consolas',monospace; font-size:13px}
+  .bucket.cur{border-color:var(--mid)}
+  .stackbox{display:flex; flex-direction:column-reverse; gap:4px; align-items:center; min-height:60px; justify-content:flex-start}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Array Techniques — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Prefix sums, sliding windows, histograms, bucketing, difference arrays &amp; more — the core array tricks, animated. Built so array patterns stick for life.</p>
+</header>
+
+<nav>
+  <a href="#pre">🧮 Precomputation</a>
+  <a href="#mx">📐 Maximize Expression</a>
+  <a href="#hi">📊 Histogram</a>
+  <a href="#ch">🧩 Max Chunks</a>
+  <a href="#ro">🔄 Rotate Array</a>
+  <a href="#sw">🪟 Sliding Window</a>
+  <a href="#r1">⬅️ Reverse Lookup 1D</a>
+  <a href="#r2">↙️ Reverse Lookup 2D</a>
+  <a href="#qz">⚡ Query Processing</a>
+  <a href="#se">🔍 Special Search</a>
+  <a href="#gp">🪣 Max Gap (Buckets)</a>
+  <a href="#rr">🔀 Rearrangement</a>
+  <a href="#df">🎛️ Difference Array</a>
+</nav>
+
+<main>
+
+  <!-- 1 PRECOMPUTATION -->
+  <section id="pre">
+    <h2>🧮 Array Precomputation (Prefix Sums) <span class="badge">precompute once</span></h2>
+    <p class="lead">Precompute cumulative information so repeated queries become O(1). The prefix-sum array lets any range sum be a single subtraction.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Do the work upfront:</span> build <code>prefix[i] = a[0]+…+a[i]</code> in one pass. Then <code>sum(l, r) = prefix[r] − prefix[l−1]</code> in O(1), no matter how many queries. Array [3,1,4,1,5,9] → range [1,4] sum = <b>11</b>.</div>
+      <div class="steps-flow"><span class="chip">build prefix[] once</span><span class="arrow">→</span><span class="chip">range sum = prefix[r]−prefix[l−1]</span><span class="arrow">→</span><span class="chip">O(1) per query</span></div>
+      <div class="oneliner">🔒 Keep forever: "Precomputation trades O(n) setup for O(1) queries — prefix sums are the classic example."</div>
+    </div>
+    <div class="lbl">array a[]</div><div class="arrrow" id="preArr"></div>
+    <div class="lbl">prefix[]</div><div class="arrrow" id="prePre"></div>
+    <div class="status" id="preStatus">Press play to build prefix sums and answer a range query.</div>
+    <div class="stats" id="preStats"></div>
+    <div class="controls"><button class="btn" id="prePlay">▶ Prefix sums</button><button class="btn ghost" id="preReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="preSpeed" min="250" max="2000" value="750" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the same idea gives prefix-max, prefix-product, prefix-xor &amp; suffix versions — precompute whatever the queries need.</div></div>
+  </section>
+
+  <!-- 2 MAXIMIZE EXPRESSION -->
+  <section id="mx">
+    <h2>📐 Maximize the Expression <span class="badge">|a[i]−a[j]|+|i−j|</span></h2>
+    <p class="lead">Maximize <code>|a[i] − a[j]| + |i − j|</code> over all pairs. Splitting the absolute values turns an O(n²) scan into two O(n) precomputations.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Unfold the absolutes:</span> the expression equals <code>max</code> of <code>(a[i]+i) − (a[j]+j)</code> and <code>(a[i]−i) − (a[j]−j)</code>. So build <code>a[i]+i</code> and <code>a[i]−i</code>, and each answer is just <code>max − min</code> of that array. Array [3,1,5,2] → <b>5</b>.</div>
+      <div class="steps-flow"><span class="chip">P = a[i]+i, M = a[i]−i</span><span class="arrow">→</span><span class="chip">max−min of each</span><span class="arrow">→</span><span class="chip">answer = the larger</span></div>
+      <div class="oneliner">🔒 Keep forever: "Break |a[i]−a[j]|+|i−j| into (a[i]±i); the answer is max(maxP−minP, maxM−minM)."</div>
+    </div>
+    <div class="lbl">values a[]</div><div class="arrrow" id="mxArr"></div>
+    <div class="lbl">P = a[i] + i</div><div class="arrrow" id="mxP"></div>
+    <div class="lbl">M = a[i] − i</div><div class="arrrow" id="mxM"></div>
+    <div class="status" id="mxStatus">Press play to maximize the expression in O(n).</div>
+    <div class="stats" id="mxStats"></div>
+    <div class="controls"><button class="btn" id="mxPlay">▶ Maximize</button><button class="btn ghost" id="mxReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mxSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "get rid of the absolute value" by considering each sign case separately is a recurring trick in array problems.</div></div>
+  </section>
+
+  <!-- 3 HISTOGRAM -->
+  <section id="hi">
+    <h2>📊 Largest Rectangle in Histogram <span class="badge">monotonic stack</span></h2>
+    <p class="lead">Find the biggest rectangle fitting under a histogram. A stack of increasing bars lets each bar's max width be found in one pass.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pop when a shorter bar arrives:</span> keep a stack of indices with increasing heights. When a bar is shorter than the stack top, that top can't extend further right — pop it and compute its rectangle (height × width). The widest span uses the new left boundary. Heights [2,1,5,6,2,3] → <b>10</b>.</div>
+      <div class="steps-flow"><span class="chip">push increasing bars</span><span class="arrow">→</span><span class="chip">shorter bar? pop &amp; measure</span><span class="arrow">→</span><span class="chip">track max area</span></div>
+      <div class="oneliner">🔒 Keep forever: "Histogram rectangle = monotonic stack; on each pop, area = height × (right − left − 1)."</div>
+    </div>
+    <div class="barwrap" id="hiBars"></div>
+    <div class="lbl">stack (indices, increasing heights)</div><div class="arrrow" id="hiStack"></div>
+    <div class="status" id="hiStatus">Press play to find the largest rectangle.</div>
+    <div class="stats" id="hiStats"></div>
+    <div class="controls"><button class="btn" id="hiPlay">▶ Largest rectangle</button><button class="btn ghost" id="hiReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="hiSpeed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> append a virtual height 0 at the end so the stack fully drains and every bar gets measured.</div></div>
+  </section>
+
+  <!-- 4 MAX CHUNKS -->
+  <section id="ch">
+    <h2>🧩 Maximum Chunks to Make Sorted <span class="badge">prefix max = index</span></h2>
+    <p class="lead">Split the array into the most chunks so that sorting each chunk and concatenating yields the fully sorted array.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Cut where the max catches up:</span> scan left to right tracking the running max. You can end a chunk at index <code>i</code> exactly when <code>max(a[0..i]) == i</code> (everything so far belongs before this point). Count those cut points. Array [1,0,2,3,4] → <b>4</b> chunks.</div>
+      <div class="steps-flow"><span class="chip">track running max</span><span class="arrow">→</span><span class="chip">max == index? cut here</span><span class="arrow">→</span><span class="chip">count cuts</span></div>
+      <div class="oneliner">🔒 Keep forever: "Max chunks (permutation of 0..n−1): count indices where the prefix max equals the index."</div>
+    </div>
+    <div class="lbl">array (a permutation of 0..n−1)</div><div class="arrrow" id="chArr"></div>
+    <div class="lbl">running max</div><div class="arrrow" id="chMax"></div>
+    <div class="status" id="chStatus">Press play to count the chunks.</div>
+    <div class="stats" id="chStats"></div>
+    <div class="controls"><button class="btn" id="chPlay">▶ Count chunks</button><button class="btn ghost" id="chReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="chSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> for arbitrary values (not a permutation), compare prefix-max with suffix-min instead — cut where prefixMax[i] ≤ suffixMin[i+1].</div></div>
+  </section>
+
+  <!-- 5 ROTATE -->
+  <section id="ro">
+    <h2>🔄 Rotate the Array <span class="badge">reversal trick</span></h2>
+    <p class="lead">Rotate right by <code>k</code> in O(1) extra space using three reversals — no temp array needed.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Reverse, reverse, reverse:</span> to rotate right by k: reverse the whole array, then reverse the first k, then reverse the remaining n−k. The double-flip lands every element in its rotated spot. [1..7] rotate by 3 → <b>[5,6,7,1,2,3,4]</b>.</div>
+      <div class="steps-flow"><span class="chip">reverse all</span><span class="arrow">→</span><span class="chip">reverse first k</span><span class="arrow">→</span><span class="chip">reverse rest</span></div>
+      <div class="oneliner">🔒 Keep forever: "Rotate by k = reverse whole, reverse first k, reverse last n−k. O(1) space."</div>
+    </div>
+    <div class="arrrow" id="roArr"></div>
+    <div class="status" id="roStatus">Press play to rotate [1..7] right by 3.</div>
+    <div class="stats" id="roStats"></div>
+    <div class="controls"><button class="btn" id="roPlay">▶ Rotate by 3</button><button class="btn ghost" id="roReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="roSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> always take <code>k = k % n</code> first — rotating by n (or more) is the same as rotating by the remainder.</div></div>
+  </section>
+
+  <!-- 6 SLIDING WINDOW -->
+  <section id="sw">
+    <h2>🪟 Sliding Window Technique <span class="badge">reuse the overlap</span></h2>
+    <p class="lead">For fixed-size window problems, slide instead of recomputing: add the entering element and remove the leaving one — O(n) overall.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Don't re-sum every window:</span> compute the first window's sum, then for each step add <code>a[right]</code> and subtract <code>a[left]</code>. Track the best. Max sum of a size-3 window in [2,1,5,1,3,2] → <b>9</b> (5+1+3).</div>
+      <div class="steps-flow"><span class="chip">sum first window</span><span class="arrow">→</span><span class="chip">slide: +a[right] −a[left]</span><span class="arrow">→</span><span class="chip">track max</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sliding window reuses overlap: add the new element, drop the old one — never recompute."</div>
+    </div>
+    <div class="arrrow" id="swArr"></div>
+    <div class="status" id="swStatus">Press play to find the max sum window of size 3.</div>
+    <div class="stats" id="swStats"></div>
+    <div class="controls"><button class="btn" id="swPlay">▶ Slide window (k=3)</button><button class="btn ghost" id="swReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="swSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> variable-size windows grow the right edge and shrink the left while a condition holds — same idea, dynamic bounds.</div></div>
+  </section>
+
+  <!-- 7 REVERSE LOOKUP 1D -->
+  <section id="r1">
+    <h2>⬅️ Reverse Lookup in 1D (Suffix Scan) <span class="badge">scan from the right</span></h2>
+    <p class="lead">Sometimes the answer for each index depends on what's to its <b>right</b>. Scan right→left and precompute a suffix array.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Look backward to see forward:</span> build <code>rightMax[i] = max(a[i..n−1])</code> by scanning from the end. Then "the max to the right of index i" is <code>rightMax[i+1]</code> in O(1). Array [3,7,2,8,5] → rightMax [8,8,8,8,5].</div>
+      <div class="steps-flow"><span class="chip">scan i = n−1 → 0</span><span class="arrow">→</span><span class="chip">rightMax[i]=max(a[i], rightMax[i+1])</span></div>
+      <div class="oneliner">🔒 Keep forever: "When a cell needs info about its right side, precompute a suffix array (scan backward)."</div>
+    </div>
+    <div class="lbl">array a[]</div><div class="arrrow" id="r1Arr"></div>
+    <div class="lbl">rightMax[] (built right→left)</div><div class="arrrow" id="r1Suf"></div>
+    <div class="status" id="r1Status">Press play to build the suffix-max array.</div>
+    <div class="stats" id="r1Stats"></div>
+    <div class="controls"><button class="btn" id="r1Play">▶ Suffix scan</button><button class="btn ghost" id="r1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="r1Speed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "leaders", "next greater to the right" &amp; "trapping rain water" all use this scan-from-the-right precomputation.</div></div>
+  </section>
+
+  <!-- 8 REVERSE LOOKUP 2D -->
+  <section id="r2">
+    <h2>↙️ Reverse Lookup in 2D (Suffix Matrix) <span class="badge">bottom-right scan</span></h2>
+    <p class="lead">The 2D version: precompute, for each cell, an aggregate of the submatrix to its bottom-right by scanning from the bottom-right corner.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Inclusion-exclusion, mirrored:</span> <code>S[i][j] = a[i][j] + S[i+1][j] + S[i][j+1] − S[i+1][j+1]</code>. Filling from the bottom-right gives every cell the sum of everything down-and-right of it. Top-left cell = the whole-matrix sum = <b>45</b>.</div>
+      <div class="steps-flow"><span class="chip">scan bottom-right → top-left</span><span class="arrow">→</span><span class="chip">S = self + below + right − diag</span></div>
+      <div class="oneliner">🔒 Keep forever: "2D suffix sum mirrors 1D — add below &amp; right, subtract the double-counted diagonal."</div>
+    </div>
+    <div class="vwrap"><div><div class="lbl">matrix a[][]</div><div id="r2Mat"></div></div><div><div class="lbl">suffix-sum S[][]</div><div id="r2Suf"></div></div></div>
+    <div class="status" id="r2Status">Press play to build the 2D suffix-sum matrix.</div>
+    <div class="stats" id="r2Stats"></div>
+    <div class="controls"><button class="btn" id="r2Play">▶ 2D suffix sum</button><button class="btn ghost" id="r2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="r2Speed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> pad with an extra zero row/column so the <code>i+1</code>/<code>j+1</code> lookups never go out of bounds.</div></div>
+  </section>
+
+  <!-- 9 QUERY PROCESSING -->
+  <section id="qz">
+    <h2>⚡ Processing Queries Efficiently (2D Prefix Sum) <span class="badge">O(1) submatrix sum</span></h2>
+    <p class="lead">Precompute a 2D prefix-sum matrix so any submatrix sum is answered with four lookups — no matter how many queries.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Four corners:</span> build <code>P[i][j]</code> = sum of the rectangle from (0,0) to (i,j). Then the sum of submatrix (r1,c1)→(r2,c2) = <code>P[r2][c2] − P[r1−1][c2] − P[r2][c1−1] + P[r1−1][c1−1]</code>. Query (1,1)→(2,2) = <b>28</b>.</div>
+      <div class="steps-flow"><span class="chip">build P[][] once</span><span class="arrow">→</span><span class="chip">query = big − top − left + corner</span><span class="arrow">→</span><span class="chip">O(1)</span></div>
+      <div class="oneliner">🔒 Keep forever: "2D range-sum queries = prefix matrix + inclusion-exclusion of four corners."</div>
+    </div>
+    <div class="vwrap"><div><div class="lbl">matrix a[][]</div><div id="qzMat"></div></div><div><div class="lbl">prefix-sum P[][]</div><div id="qzPre"></div></div></div>
+    <div class="status" id="qzStatus">Press play to build P[][] and answer a submatrix query.</div>
+    <div class="stats" id="qzStats"></div>
+    <div class="controls"><button class="btn" id="qzPlay">▶ Build &amp; query</button><button class="btn ghost" id="qzReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="qzSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> setup is O(n·m) once; then thousands of range queries are each O(1) — the whole point of precomputation.</div></div>
+  </section>
+
+  <!-- 10 SPECIAL SEARCH -->
+  <section id="se">
+    <h2>🔍 A Special Searching Problem <span class="badge">sorted matrix staircase</span></h2>
+    <p class="lead">Search a matrix whose rows and columns are both sorted. Starting from the top-right corner, each comparison eliminates a whole row or column.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Staircase from the corner:</span> begin at the top-right. If it's larger than the target, move <b>left</b> (this column can't help). If smaller, move <b>down</b>. Each step drops a row or column → O(n+m). Searching 9 → path 11 → 7 → 8 → <b>9 ✓</b>.</div>
+      <div class="steps-flow"><span class="chip">start top-right</span><span class="arrow">→</span><span class="chip">bigger? go left</span><span class="arrow">·</span><span class="chip">smaller? go down</span></div>
+      <div class="oneliner">🔒 Keep forever: "Row+column sorted matrix search = staircase from the top-right corner, O(n+m)."</div>
+    </div>
+    <div class="vwrap" id="seMat"></div>
+    <div class="status" id="seStatus">Press play to search for 9 via the staircase walk.</div>
+    <div class="stats" id="seStats"></div>
+    <div class="controls"><button class="btn" id="sePlay">▶ Search 9</button><button class="btn ghost" id="seReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="seSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the bottom-left corner works too (mirror the moves). A corner where the two directions disagree is the key.</div></div>
+  </section>
+
+  <!-- 11 MAX GAP -->
+  <section id="gp">
+    <h2>🪣 Maximum Gap (Bucketing) <span class="badge">pigeonhole</span></h2>
+    <p class="lead">Find the largest gap between consecutive elements of the sorted array — in O(n), without fully sorting, using buckets.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Gaps live between buckets:</span> spread n numbers into ~n buckets of equal width. By pigeonhole, the max gap must be at least the bucket width, so it spans <b>across</b> buckets — compare each bucket's min with the previous bucket's max. [1,10,5,3,8] → max gap <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">bucket width = range/(n−1)</span><span class="arrow">→</span><span class="chip">place into buckets</span><span class="arrow">→</span><span class="chip">gap = nextMin − prevMax</span></div>
+      <div class="oneliner">🔒 Keep forever: "Max gap = bucketing + pigeonhole; the biggest gap is between buckets, not inside one."</div>
+    </div>
+    <div class="lbl">values</div><div class="arrrow" id="gpArr"></div>
+    <div class="buckets" id="gpBuckets"></div>
+    <div class="status" id="gpStatus">Press play to bucket the values and find the max gap.</div>
+    <div class="stats" id="gpStats"></div>
+    <div class="controls"><button class="btn" id="gpPlay">▶ Find max gap</button><button class="btn ghost" id="gpReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="gpSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> only each bucket's min &amp; max matter — intra-bucket order is irrelevant, which is why it's O(n).</div></div>
+  </section>
+
+  <!-- 12 REARRANGEMENT -->
+  <section id="rr">
+    <h2>🔀 Array Rearrangement (Max-Min Form) <span class="badge">two pointers</span></h2>
+    <p class="lead">Rearrange a sorted array into max, min, 2nd-max, 2nd-min, … alternating pattern using two pointers.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Grab from both ends:</span> with the array sorted, alternate taking the current largest (right pointer) and smallest (left pointer). [1,2,3,4,5,6] → <b>[6,1,5,2,4,3]</b>. (An in-place O(1)-space version encodes both values in one slot via modular arithmetic.)</div>
+      <div class="steps-flow"><span class="chip">left=0, right=n−1</span><span class="arrow">→</span><span class="chip">take right, then left, alternate</span></div>
+      <div class="oneliner">🔒 Keep forever: "Max-min rearrange = alternate picking from the right (max) and left (min) of a sorted array."</div>
+    </div>
+    <div class="lbl">sorted input</div><div class="arrrow" id="rrArr"></div>
+    <div class="lbl">rearranged output</div><div class="arrrow" id="rrOut"></div>
+    <div class="status" id="rrStatus">Press play to rearrange into max-min form.</div>
+    <div class="stats" id="rrStats"></div>
+    <div class="controls"><button class="btn" id="rrPlay">▶ Rearrange</button><button class="btn ghost" id="rrReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rrSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the two-pointer-from-ends pattern also powers "wave arrays", "alternate +/−", and "sort by parity".</div></div>
+  </section>
+
+  <!-- 13 DIFFERENCE ARRAY -->
+  <section id="df">
+    <h2>🎛️ Difference Array (Alternative Representation) <span class="badge">O(1) range update</span></h2>
+    <p class="lead">Represent an array by its consecutive differences so a whole <b>range</b> can be updated in O(1); a final prefix sum reconstructs the array.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Mark the edges, fill later:</span> to add <code>x</code> to range <code>[l, r]</code>, just do <code>diff[l] += x</code> and <code>diff[r+1] −= x</code> — O(1) per update. After all updates, a prefix sum of <code>diff[]</code> rebuilds the final array. Two range-adds on [0,0,0,0,0] → <b>[3,8,8,5,0]</b>.</div>
+      <div class="steps-flow"><span class="chip">update [l,r]+x → diff[l]+=x, diff[r+1]−=x</span><span class="arrow">→</span><span class="chip">prefix-sum diff → final array</span></div>
+      <div class="oneliner">🔒 Keep forever: "Difference array: range updates in O(1) at the two ends, then one prefix-sum to materialize."</div>
+    </div>
+    <div class="lbl">diff[] (edge marks)</div><div class="arrrow" id="dfDiff"></div>
+    <div class="lbl">final array = prefix-sum(diff)</div><div class="arrrow" id="dfArr"></div>
+    <div class="status" id="dfStatus">Press play to apply two range updates via a difference array.</div>
+    <div class="stats" id="dfStats"></div>
+    <div class="controls"><button class="btn" id="dfPlay">▶ Range updates</button><button class="btn ghost" id="dfReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dfSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the 2D analogue (a "difference matrix") supports O(1) submatrix updates the same way — mark four corners.</div></div>
+
+    <div class="note key">🏆 <b>Array techniques mastered!</b> Precomputation (prefix/suffix sums, 1D &amp; 2D) for O(1) queries · sliding windows reuse overlap · monotonic stacks crack histograms · running-max/min splits chunks &amp; expressions · reversal rotates in O(1) space · bucketing finds the max gap in O(n) · two pointers rearrange · and difference arrays make range updates O(1). Precompute, reuse, and pick the right scan direction! 🎯</div>
+  </section>
+
+</main>
+
+<footer>Array Techniques — Animated Guide • Replay any animation, turn on 🎵 sound • Precompute once, query forever 🧮</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- renderers ---- */
+function arrRow(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>{ const cls=(opt.cls&&opt.cls[i])||''; const show=(v===null||v===undefined)?'·':v; return `<div class="cell ${opt.sm?'sm':''} ${cls} ${(v===null||v===undefined)?'empty':''}">${opt.idx?`<span class="ix">${opt.idx[i]!==undefined?opt.idx[i]:i}</span>`:''}${show}</div>`; }).join(''); }
+function matGrid(cont, grid, opt={}){ const R=grid.length,C=grid[0].length; let h=`<div class="grid" style="grid-template-columns:repeat(${C},1fr)">`; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ const cls=(opt.cls&&opt.cls[r+','+c])||''; const v=grid[r][c]; h+=`<div class="gc ${cls}">${(v===null||v===undefined)?'·':v}</div>`; } h+='</div>'; cont.innerHTML=h; }
+
+/* ================= 1. precomputation ================= */
+(function(){
+  const A=[3,1,4,1,5,9]; const L=1,R=4; const st=$('#preStatus'),sp=$('#preSpeed'),stats=$('#preStats'); const idx=A.map((_,i)=>i);
+  function build(){ arrRow($('#preArr'),A,{idx}); arrRow($('#prePre'),A.map(()=>null),{idx}); stats.innerHTML=''; st.textContent='Press play to build prefix sums and answer a range query.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const pre=[];
+    for(let i=0;i<A.length;i++){ pre[i]=(i?pre[i-1]:0)+A[i]; arrRow($('#preArr'),A,{idx,cls:{[i]:'cur'}}); arrRow($('#prePre'),pre.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'done'}}); tickSound(); st.innerHTML=`prefix[${i}] = ${i?`prefix[${i-1}] + `:''}${A[i]} = <span class="k">${pre[i]}</span>.`; await sleep(+sp.value); }
+    arrRow($('#prePre'),pre,{idx,cls:{[R]:'dep',[L-1]:'dep'}}); const ans=pre[R]-pre[L-1]; arrRow($('#preArr'),A,{idx,cls:Object.fromEntries([...Array(R-L+1)].map((_,i)=>[L+i,'win']))}); stats.innerHTML=`<span class="pill green">sum[${L},${R}] = prefix[${R}] − prefix[${L-1}] = ${pre[R]}−${pre[L-1]} = ${ans}</span>`; st.innerHTML=`🧮 Range sum [${L},${R}] = <span class="k">${ans}</span> in O(1)!`; ANIM=false; celebrate($('#prePre'));
+  }
+  $('#prePlay').onclick=play; $('#preReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. maximize expression ================= */
+(function(){
+  const A=[3,1,5,2]; const st=$('#mxStatus'),sp=$('#mxSpeed'),stats=$('#mxStats'); const idx=A.map((_,i)=>i);
+  function build(){ arrRow($('#mxArr'),A,{idx}); arrRow($('#mxP'),A.map(()=>null),{idx}); arrRow($('#mxM'),A.map(()=>null),{idx}); stats.innerHTML=''; st.textContent='Press play to maximize the expression in O(n).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const P=[],M=[];
+    for(let i=0;i<A.length;i++){ P[i]=A[i]+i; M[i]=A[i]-i; arrRow($('#mxArr'),A,{idx,cls:{[i]:'cur'}}); arrRow($('#mxP'),P.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'done'}}); arrRow($('#mxM'),M.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'done'}}); tickSound(); st.innerHTML=`i=${i}: P=${A[i]}+${i}=${P[i]}, M=${A[i]}−${i}=${M[i]}.`; await sleep(+sp.value); }
+    const dP=Math.max(...P)-Math.min(...P), dM=Math.max(...M)-Math.min(...M); const ans=Math.max(dP,dM);
+    arrRow($('#mxP'),P,{idx,cls:{[P.indexOf(Math.max(...P))]:'ans',[P.indexOf(Math.min(...P))]:'dep'}}); arrRow($('#mxM'),M,{idx}); stats.innerHTML=`<span class="pill blue">maxP−minP = ${dP}</span><span class="pill blue">maxM−minM = ${dM}</span>`; st.innerHTML=`📐 Max |a[i]−a[j]|+|i−j| = max(${dP}, ${dM}) = <span class="k">${ans}</span>!`; ANIM=false; celebrate($('#mxP'));
+  }
+  $('#mxPlay').onclick=play; $('#mxReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. histogram ================= */
+(function(){
+  const H=[2,1,5,6,2,3]; const st=$('#hiStatus'),sp=$('#hiSpeed'),stats=$('#hiStats');
+  const maxH=Math.max(...H);
+  function bars(cls){ $('#hiBars').innerHTML=H.map((h,i)=>`<div class="bar ${cls&&cls[i]||''}" style="height:${h/maxH*150+18}px"><span>${h}</span><span class="bi">${i}</span></div>`).join(''); }
+  function stackRow(stk){ $('#hiStack').innerHTML=stk.length?stk.map(i=>`<div class="cell sm stack">${i}</div>`).join(''):'<div class="cell sm empty">·</div>'; }
+  function build(){ bars(); stackRow([]); stats.innerHTML=''; st.textContent='Press play to find the largest rectangle.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const stk=[]; let best=0,bl=0,br=0,bh=0; const n=H.length;
+    for(let i=0;i<=n;i++){ const cur=i<n?H[i]:0;
+      while(stk.length && H[stk[stk.length-1]]>=cur){ const top=stk.pop(); const height=H[top]; const left=stk.length?stk[stk.length-1]:-1; const width=i-left-1; const area=height*width; const cls={}; cls[top]='cur'; for(let k=left+1;k<i;k++)cls[k]='cur'; bars(cls); stackRow(stk); tickSound(); if(area>best){ best=area; bh=height; bl=left+1; br=i-1; } st.innerHTML=`Pop bar ${top} (h=${height}); width ${width} → area <span class="k">${area}</span> (best ${best}).`; await sleep(+sp.value); }
+      if(i<n){ stk.push(i); const cls={}; stk.forEach(s=>cls[s]='stack'); cls[i]='cur'; bars(cls); stackRow(stk); await sleep(+sp.value*0.7); }
+    }
+    const cls={}; for(let k=bl;k<=br;k++)cls[k]='best'; bars(cls); stackRow([]); stats.innerHTML=`<span class="pill green">max area = ${best}</span>`; st.innerHTML=`📊 Largest rectangle area = <span class="k">${best}</span> (height ${bh} × width ${br-bl+1})!`; ANIM=false; celebrate($('#hiBars'));
+  }
+  $('#hiPlay').onclick=play; $('#hiReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. max chunks ================= */
+(function(){
+  const A=[1,0,2,3,4]; const st=$('#chStatus'),sp=$('#chSpeed'),stats=$('#chStats'); const idx=A.map((_,i)=>i);
+  function build(){ arrRow($('#chArr'),A,{idx}); arrRow($('#chMax'),A.map(()=>null),{idx}); stats.innerHTML=''; st.textContent='Press play to count the chunks.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let mx=-1,chunks=0; const rm=[]; const cls={};
+    for(let i=0;i<A.length;i++){ mx=Math.max(mx,A[i]); rm[i]=mx; const cut=mx===i; if(cut){ chunks++; cls[i]='done'; } else cls[i]='cur'; arrRow($('#chArr'),A,{idx,cls:{[i]:cut?'done':'cur'}}); arrRow($('#chMax'),rm.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:cut?'ans':'cur'}}); tickSound(); st.innerHTML=`i=${i}: runningMax=${mx} ${cut?`== ${i} → <span style="color:var(--found)">cut! chunk ${chunks}</span>`:`≠ ${i} → extend chunk`}.`; stats.innerHTML=`<span class="pill blue">chunks so far = ${chunks}</span>`; await sleep(+sp.value); }
+    st.innerHTML=`🧩 Maximum chunks to make sorted = <span class="k">${chunks}</span>!`; ANIM=false; celebrate($('#chArr'));
+  }
+  $('#chPlay').onclick=play; $('#chReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. rotate ================= */
+(function(){
+  const st=$('#roStatus'),sp=$('#roSpeed'),stats=$('#roStats'); const K=3;
+  function build(){ arrRow($('#roArr'),[1,2,3,4,5,6,7],{idx:[0,1,2,3,4,5,6]}); stats.innerHTML=''; st.textContent='Press play to rotate [1..7] right by 3.'; }
+  build();
+  async function reverse(a,l,r,label){ while(l<r){ const cls={[l]:'cur',[r]:'cur'}; arrRow($('#roArr'),a,{idx:a.map((_,i)=>i),cls}); tickSound(); await sleep(+sp.value*0.6); [a[l],a[r]]=[a[r],a[l]]; arrRow($('#roArr'),a,{idx:a.map((_,i)=>i),cls:{[l]:'dep',[r]:'dep'}}); await sleep(+sp.value*0.4); l++; r--; } }
+  async function play(){ if(ANIM)return; ANIM=true; const a=[1,2,3,4,5,6,7]; const n=a.length;
+    st.innerHTML=`Step 1: reverse the whole array.`; await sleep(+sp.value*0.8); await reverse(a,0,n-1);
+    st.innerHTML=`Step 2: reverse the first ${K}.`; await sleep(+sp.value*0.8); await reverse(a,0,K-1);
+    st.innerHTML=`Step 3: reverse the last ${n-K}.`; await sleep(+sp.value*0.8); await reverse(a,K,n-1);
+    arrRow($('#roArr'),a,{idx:a.map((_,i)=>i),cls:Object.fromEntries(a.map((_,i)=>[i,'done']))}); stats.innerHTML=`<span class="pill green">[${a.join(', ')}]</span>`; st.innerHTML=`🔄 Rotated right by ${K} → <span class="k">[${a.join(', ')}]</span> in O(1) space!`; ANIM=false; celebrate($('#roArr'));
+  }
+  $('#roPlay').onclick=play; $('#roReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. sliding window ================= */
+(function(){
+  const A=[2,1,5,1,3,2]; const K=3; const st=$('#swStatus'),sp=$('#swSpeed'),stats=$('#swStats'); const idx=A.map((_,i)=>i);
+  function win(l,r,cls){ const c={}; for(let i=l;i<=r;i++)c[i]='win'; Object.assign(c,cls||{}); arrRow($('#swArr'),A,{idx,cls:c}); }
+  function build(){ arrRow($('#swArr'),A,{idx}); stats.innerHTML=''; st.textContent='Press play to find the max sum window of size 3.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let sum=0; for(let i=0;i<K;i++)sum+=A[i]; let best=sum,bl=0; win(0,K-1); tickSound(); st.innerHTML=`First window [0,${K-1}] sum = <span class="k">${sum}</span>.`; stats.innerHTML=`<span class="pill blue">max = ${best}</span>`; await sleep(+sp.value);
+    for(let r=K;r<A.length;r++){ const l=r-K; sum+=A[r]-A[l]; win(l+1,r,{[r]:'cur',[l]:'bad'}); tickSound(); if(sum>best){ best=sum; bl=l+1; } st.innerHTML=`Slide: +a[${r}]=${A[r]} −a[${l}]=${A[l]} → sum ${sum} (max ${best}).`; stats.innerHTML=`<span class="pill blue">max = ${best}</span>`; await sleep(+sp.value); }
+    win(bl,bl+K-1,Object.fromEntries([...Array(K).keys()].map(k=>[bl+k,'done']))); st.innerHTML=`🪟 Max sum of a size-${K} window = <span class="k">${best}</span>!`; ANIM=false; celebrate($('#swArr'));
+  }
+  $('#swPlay').onclick=play; $('#swReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. reverse lookup 1D ================= */
+(function(){
+  const A=[3,7,2,8,5]; const st=$('#r1Status'),sp=$('#r1Speed'),stats=$('#r1Stats'); const idx=A.map((_,i)=>i);
+  function build(){ arrRow($('#r1Arr'),A,{idx}); arrRow($('#r1Suf'),A.map(()=>null),{idx}); stats.innerHTML=''; st.textContent='Press play to build the suffix-max array.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const rm=Array(A.length).fill(null);
+    for(let i=A.length-1;i>=0;i--){ rm[i]= i===A.length-1? A[i] : Math.max(A[i],rm[i+1]); arrRow($('#r1Arr'),A,{idx,cls:{[i]:'cur'}}); arrRow($('#r1Suf'),rm,{idx,cls:{[i]:'done',[i+1<A.length?i+1:i]:i<A.length-1?'dep':''}}); tickSound(); st.innerHTML=`rightMax[${i}] = max(a[${i}]=${A[i]}${i<A.length-1?`, rightMax[${i+1}]=${rm[i+1]}`:''}) = <span class="k">${rm[i]}</span>.`; await sleep(+sp.value); }
+    arrRow($('#r1Suf'),rm,{idx,cls:Object.fromEntries(rm.map((_,i)=>[i,'done']))}); stats.innerHTML=`<span class="pill green">rightMax = [${rm.join(', ')}]</span>`; st.innerHTML=`⬅️ Suffix-max built by scanning right→left — "max to the right" is now O(1)!`; ANIM=false; celebrate($('#r1Suf'));
+  }
+  $('#r1Play').onclick=play; $('#r1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. reverse lookup 2D ================= */
+(function(){
+  const A=[[1,2,3],[4,5,6],[7,8,9]]; const R=3,C=3; const st=$('#r2Status'),sp=$('#r2Speed'),stats=$('#r2Stats');
+  function build(){ matGrid($('#r2Mat'),A); matGrid($('#r2Suf'),Array.from({length:R},()=>Array(C).fill(null))); stats.innerHTML=''; st.textContent='Press play to build the 2D suffix-sum matrix.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const S=Array.from({length:R+1},()=>Array(C+1).fill(0)); const disp=Array.from({length:R},()=>Array(C).fill(null));
+    for(let i=R-1;i>=0;i--)for(let j=C-1;j>=0;j--){ S[i][j]=A[i][j]+S[i+1][j]+S[i][j+1]-S[i+1][j+1]; disp[i][j]=S[i][j]; const cls={[i+','+j]:'cur'}; matGrid($('#r2Mat'),A,{cls:{[i+','+j]:'cur'}}); matGrid($('#r2Suf'),disp,{cls}); tickSound(); st.innerHTML=`S[${i}][${j}] = ${A[i][j]} + below + right − diag = <span class="k">${S[i][j]}</span>.`; await sleep(+sp.value); matGrid($('#r2Suf'),disp,{cls:{[i+','+j]:'done'}}); await sleep(+sp.value*0.2); }
+    matGrid($('#r2Suf'),disp,{cls:{'0,0':'ans'}}); stats.innerHTML=`<span class="pill green">S[0][0] = ${S[0][0]} (whole matrix)</span>`; st.innerHTML=`↙️ 2D suffix sum built bottom-right → top-left; S[0][0] = <span class="k">${S[0][0]}</span>!`; ANIM=false; celebrate($('#r2Suf'));
+  }
+  $('#r2Play').onclick=play; $('#r2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. query processing (2D prefix) ================= */
+(function(){
+  const A=[[1,2,3],[4,5,6],[7,8,9]]; const R=3,C=3; const st=$('#qzStatus'),sp=$('#qzSpeed'),stats=$('#qzStats');
+  const r1=1,c1=1,r2=2,c2=2;
+  function build(){ matGrid($('#qzMat'),A); matGrid($('#qzPre'),Array.from({length:R},()=>Array(C).fill(null))); stats.innerHTML=''; st.textContent='Press play to build P[][] and answer a submatrix query.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const P=Array.from({length:R+1},()=>Array(C+1).fill(0)); const disp=Array.from({length:R},()=>Array(C).fill(null));
+    for(let i=0;i<R;i++)for(let j=0;j<C;j++){ P[i+1][j+1]=A[i][j]+P[i][j+1]+P[i+1][j]-P[i][j]; disp[i][j]=P[i+1][j+1]; matGrid($('#qzMat'),A,{cls:{[i+','+j]:'cur'}}); matGrid($('#qzPre'),disp,{cls:{[i+','+j]:'cur'}}); tickSound(); st.innerHTML=`P[${i+1}][${j+1}] = ${A[i][j]} + top + left − diag = <span class="k">${P[i+1][j+1]}</span>.`; await sleep(+sp.value*0.8); matGrid($('#qzPre'),disp,{cls:{[i+','+j]:'done'}}); await sleep(+sp.value*0.15); }
+    // query (r1,c1)-(r2,c2)
+    const ans=P[r2+1][c2+1]-P[r1][c2+1]-P[r2+1][c1]+P[r1][c1];
+    const qcls={}; for(let i=r1;i<=r2;i++)for(let j=c1;j<=c2;j++)qcls[i+','+j]='region'; matGrid($('#qzMat'),A,{cls:qcls}); matGrid($('#qzPre'),disp,{cls:{[r2+','+c2]:'ans'}});
+    stats.innerHTML=`<span class="pill green">sum(1,1)-(2,2) = ${ans}</span>`; st.innerHTML=`⚡ Submatrix (1,1)→(2,2) sum = <span class="k">${ans}</span> via 4 corner lookups!`; ANIM=false; celebrate($('#qzMat'));
+  }
+  $('#qzPlay').onclick=play; $('#qzReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. special search ================= */
+(function(){
+  const M=[[1,4,7,11],[2,5,8,12],[3,6,9,16],[10,13,14,17]]; const R=4,C=4; const TARGET=9; const st=$('#seStatus'),sp=$('#seSpeed'),stats=$('#seStats');
+  function build(){ matGrid($('#seMat'),M); stats.innerHTML=''; st.textContent='Press play to search for 9 via the staircase walk.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let i=0,j=C-1; const path={};
+    while(i<R&&j>=0){ path[i+','+j]='path'; const cls={...path,[i+','+j]:'cur'}; matGrid($('#seMat'),M,{cls}); tickSound(); if(M[i][j]===TARGET){ matGrid($('#seMat'),M,{cls:{...path,[i+','+j]:'ans'}}); stats.innerHTML=`<span class="pill green">found at (${i},${j})</span>`; st.innerHTML=`🔍 Found <span class="k">${TARGET}</span> at (${i},${j}) — staircase in ${Object.keys(path).length} steps!`; ANIM=false; celebrate($('#seMat')); return; } else if(M[i][j]>TARGET){ st.innerHTML=`${M[i][j]} &gt; ${TARGET} → move left.`; j--; } else { st.innerHTML=`${M[i][j]} &lt; ${TARGET} → move down.`; i++; } await sleep(+sp.value); }
+    st.innerHTML=`Not found.`; ANIM=false;
+  }
+  $('#sePlay').onclick=play; $('#seReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. max gap (bucketing) ================= */
+(function(){
+  const A=[1,10,5,3,8]; const st=$('#gpStatus'),sp=$('#gpSpeed'),stats=$('#gpStats'); const idx=A.map((_,i)=>i);
+  function build(){ arrRow($('#gpArr'),A,{idx}); $('#gpBuckets').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to bucket the values and find the max gap.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const n=A.length; const mn=Math.min(...A),mx=Math.max(...A); const size=Math.max(1,Math.ceil((mx-mn)/(n-1))); const nb=Math.floor((mx-mn)/size)+1;
+    const bmin=Array(nb).fill(Infinity),bmax=Array(nb).fill(-Infinity),bhas=Array(nb).fill(false);
+    st.innerHTML=`min=${mn}, max=${mx}, bucket size = ⌈${mx-mn}/${n-1}⌉ = ${size} → ${nb} buckets.`; await sleep(+sp.value);
+    function render(curB){ $('#gpBuckets').innerHTML=Array.from({length:nb},(_,b)=>`<div class="bucket ${curB===b?'cur':''}"><span class="bh">[${mn+b*size}..${mn+(b+1)*size-1}]</span>${bhas[b]?`<span class="bv">${bmin[b]===bmax[b]?bmin[b]:bmin[b]+'..'+bmax[b]}</span>`:'<span class="bh">∅</span>'}</div>`).join(''); }
+    render(-1);
+    for(let i=0;i<n;i++){ const b=Math.floor((A[i]-mn)/size); bmin[b]=Math.min(bmin[b],A[i]); bmax[b]=Math.max(bmax[b],A[i]); bhas[b]=true; arrRow($('#gpArr'),A,{idx,cls:{[i]:'cur'}}); render(b); tickSound(); st.innerHTML=`${A[i]} → bucket ${b}.`; await sleep(+sp.value); }
+    // max gap across buckets
+    let prevMax=mn,gap=0,ga=0,gb=0; for(let b=0;b<nb;b++){ if(!bhas[b])continue; if(bmin[b]-prevMax>gap){ gap=bmin[b]-prevMax; ga=prevMax; gb=bmin[b]; } prevMax=bmax[b]; render(b); await sleep(+sp.value*0.5); }
+    stats.innerHTML=`<span class="pill green">max gap = ${gap} (${ga}→${gb})</span>`; st.innerHTML=`🪣 Maximum gap = <span class="k">${gap}</span> (between ${ga} and ${gb}) — found in O(n) via buckets!`; ANIM=false; celebrate($('#gpBuckets'));
+  }
+  $('#gpPlay').onclick=play; $('#gpReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. rearrangement ================= */
+(function(){
+  const A=[1,2,3,4,5,6]; const st=$('#rrStatus'),sp=$('#rrSpeed'),stats=$('#rrStats'); const idx=A.map((_,i)=>i);
+  function build(){ arrRow($('#rrArr'),A,{idx}); arrRow($('#rrOut'),A.map(()=>null),{idx}); stats.innerHTML=''; st.textContent='Press play to rearrange into max-min form.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let l=0,r=A.length-1; const out=Array(A.length).fill(null); let k=0; let takeRight=true;
+    while(l<=r){ let v,src; if(takeRight){ v=A[r]; src=r; r--; } else { v=A[l]; src=l; l++; } out[k]=v; arrRow($('#rrArr'),A,{idx,cls:{[src]:'cur'}}); arrRow($('#rrOut'),out,{idx,cls:{[k]:'done'}}); tickSound(); st.innerHTML=`Take ${takeRight?'max':'min'} a[${src}]=${v} → out[${k}].`; stats.innerHTML=`<span class="pill blue">out = [${out.filter(x=>x!==null).join(', ')}]</span>`; await sleep(+sp.value); k++; takeRight=!takeRight; }
+    arrRow($('#rrOut'),out,{idx,cls:Object.fromEntries(out.map((_,i)=>[i,'done']))}); st.innerHTML=`🔀 Max-min rearrangement → <span class="k">[${out.join(', ')}]</span>!`; ANIM=false; celebrate($('#rrOut'));
+  }
+  $('#rrPlay').onclick=play; $('#rrReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. difference array ================= */
+(function(){
+  const N=5; const UPDATES=[[1,3,5],[0,2,3]]; const st=$('#dfStatus'),sp=$('#dfSpeed'),stats=$('#dfStats'); const idx=[...Array(N).keys()];
+  function build(){ arrRow($('#dfDiff'),Array(N).fill(0),{idx}); arrRow($('#dfArr'),Array(N).fill(null),{idx}); stats.innerHTML=''; st.textContent='Press play to apply two range updates via a difference array.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const diff=Array(N+1).fill(0);
+    for(const [l,r,x] of UPDATES){ diff[l]+=x; const cls={[l]:'cur'}; if(r+1<N)cls[r+1]='cur'; arrRow($('#dfDiff'),diff.slice(0,N),{idx,cls}); tickSound(); st.innerHTML=`Add ${x} to [${l},${r}]: diff[${l}] += ${x}${r+1<N?`, diff[${r+1}] −= ${x}`:''}.`; await sleep(+sp.value); if(r+1<N)diff[r+1]-=x; arrRow($('#dfDiff'),diff.slice(0,N),{idx,cls:{[l]:'done',[r+1<N?r+1:l]:r+1<N?'done':''}}); stats.innerHTML=`<span class="pill blue">diff = [${diff.slice(0,N).join(', ')}]</span>`; await sleep(+sp.value*0.7); }
+    st.innerHTML=`Now prefix-sum diff[] to get the final array…`; await sleep(+sp.value);
+    const arr=[]; let run=0; for(let i=0;i<N;i++){ run+=diff[i]; arr[i]=run; arrRow($('#dfDiff'),diff.slice(0,N),{idx,cls:{[i]:'dep'}}); arrRow($('#dfArr'),arr.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'done'}}); tickSound(); st.innerHTML=`final[${i}] = running sum = <span class="k">${run}</span>.`; await sleep(+sp.value); }
+    arrRow($('#dfArr'),arr,{idx,cls:Object.fromEntries(arr.map((_,i)=>[i,'done']))}); stats.innerHTML=`<span class="pill green">final = [${arr.join(', ')}]</span>`; st.innerHTML=`🎛️ Two range updates in O(1) each, then one sweep → <span class="k">[${arr.join(', ')}]</span>!`; ANIM=false; celebrate($('#dfArr'));
+  }
+  $('#dfPlay').onclick=play; $('#dfReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hashing &amp; HashMaps — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:720px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:7px; justify-content:center;
+      padding:12px; background:rgba(11,16,32,.8); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12px; font-weight:600; padding:6px 10px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .cellrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:22px 0 28px; min-height:64px}
+  .cell{position:relative; min-width:48px; height:50px; padding:0 8px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:16px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .35s cubic-bezier(.2,.8,.2,1)}
+  .cell .idx{position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--muted); font-weight:700}
+  .cell .ptr{position:absolute; bottom:-23px; left:50%; transform:translateX(-50%); font-size:11.5px; font-weight:800; white-space:nowrap; color:var(--accent); background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 6px}
+  .cell.in-range{border-color:var(--accent); background:#22345f}
+  .cell.lo{border-color:var(--lo); background:#182a5a; box-shadow:0 0 0 3px rgba(67,97,238,.4)}
+  .cell.hi{border-color:var(--hi); background:#3a1d2a; box-shadow:0 0 0 3px rgba(247,37,133,.4)}
+  .cell.mid{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 4px rgba(255,209,102,.45); transform:scale(1.1) translateY(-4px)}
+  .cell.found{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 4px rgba(6,214,160,.55)}
+  .cell.dead{opacity:.3; filter:grayscale(.5)}
+
+  .buckets{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:18px 0}
+  .bucket{min-width:54px; border:1px solid var(--line); border-radius:10px; background:var(--bg2); padding:6px; text-align:center}
+  .bucket .bk{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:4px}
+  .bucket .items{display:flex; flex-direction:column; gap:4px; min-height:26px}
+  .bucket .it{background:#22345f;border:1px solid var(--accent);border-radius:6px;padding:3px 7px;font-weight:700;font-size:13px;animation:pop .3s ease}
+  .bucket.active{border-color:var(--mid);box-shadow:0 0 0 3px rgba(255,209,102,.3)}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  .hashpanel{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:8px 0 6px; min-height:44px; padding:8px; background:#0a1330; border:1px solid var(--line); border-radius:12px}
+  .hashpanel .label{align-self:center; color:var(--muted); font-weight:700; font-size:13px; margin-right:6px}
+  .hentry{display:inline-flex; align-items:center; gap:5px; background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:5px 10px; font-weight:700; font-size:13px; animation:pop .3s ease}
+  .hentry b{color:var(--accent)} .hentry span{color:var(--mid)}
+  .hentry.hit{border-color:var(--found); box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .hentry.new{border-color:var(--mid)}
+  .hashpanel .empty{color:var(--muted); font-style:italic; align-self:center}
+
+  .mwrap{text-align:center;margin:16px 0}
+  .mgrid{display:inline-grid;gap:6px}
+  .mcell{width:46px;height:46px;border-radius:9px;border:2px solid #2c3d6e;background:#1d2a52;display:flex;align-items:center;justify-content:center;font-weight:700;transition:.3s;font-family:'Consolas',monospace}
+  .mcell.zero{background:#3a1d2a;border-color:var(--hi);color:#ff9ecb}
+  .mcell.hl{box-shadow:0 0 0 3px rgba(255,209,102,.55);border-color:var(--mid)}
+  .mcell.mark{box-shadow:0 0 0 3px rgba(76,201,240,.5);border-color:var(--accent)}
+  .mcell.changed{background:#0d3b30;border-color:var(--found);color:#8affd8}
+
+  .pgrid{display:inline-grid;gap:6px}
+  .pcell{width:42px;height:42px;border-radius:8px;border:2px solid #21305a;background:#101a36;position:relative;transition:.3s}
+  .pcell.pt::after{content:'';width:15px;height:15px;border-radius:50%;background:radial-gradient(circle,#6ee7ff,#2f7fb0);position:absolute;inset:0;margin:auto}
+  .pcell.anchor::after{background:radial-gradient(circle,#ffe6a8,var(--mid));box-shadow:0 0 10px var(--mid)}
+  .pcell.line{border-color:var(--found);box-shadow:0 0 0 3px rgba(6,214,160,.5)}
+  .pcell.line.pt::after{background:radial-gradient(circle,#8affd8,var(--found))}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Hashing &amp; HashMaps — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch keys hash into buckets, chains form, and maps power dozens of problems. Built so hashing sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#whathash">#️⃣ What is Hashing</a>
+  <a href="#howtables">🔗 How Hashtables Work</a>
+  <a href="#hashvstree">🌳 Hash vs TreeMap</a>
+  <a href="#queries">📊 Processing Queries</a>
+  <a href="#checkpair">👥 Check for a Pair</a>
+  <a href="#subsum">📦 Subarray = Sum</a>
+  <a href="#longsubsum">📏 Longest Subarray = Sum</a>
+  <a href="#countsub">🔢 Count of Subarrays</a>
+  <a href="#consec">🔀 Consecutive Elements</a>
+  <a href="#longconsec">🧵 Longest Consecutive</a>
+  <a href="#longconsec2">⚡ Longest Consecutive II</a>
+  <a href="#boolmatrix">▦ Boolean Matrix</a>
+  <a href="#boolmatrix2">▩ Boolean Matrix II</a>
+  <a href="#maxpoints">📐 Max Points on Line</a>
+  <a href="#substrwords">🧩 Substring of Words</a>
+  <a href="#palin1">🔁 Making Palindromes</a>
+  <a href="#palin2">🔂 Making Palindrome II</a>
+</nav>
+
+<main>
+
+  <!-- WHAT IS HASHING -->
+  <section id="whathash">
+    <h2>#️⃣ What is Hashing? <span class="badge">Foundation</span></h2>
+    <p class="lead">A <b>hash function</b> turns a key into an array index, so you can store &amp; find it in O(1) — no scanning.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Cloakroom tickets:</span> instead of searching every coat, a formula (<code>hash(key)</code>) tells you exactly which peg holds it. Store there, fetch from there — constant time, no matter how many coats.</div>
+      <div class="steps-flow"><span class="chip">index = hash(key) % size</span><span class="arrow">→</span><span class="chip">store at that bucket</span><span class="arrow">→</span><span class="chip">look up in O(1)</span></div>
+      <div class="oneliner">🔒 Keep forever: "A hash function is a shortcut from key → slot. No search, just compute the address."</div>
+    </div>
+    <div class="note">Insert keys <code>[23, 45, 12, 8, 91]</code> into a size-7 table: index = key % 7.</div>
+    <div class="buckets" id="whBuckets"></div>
+    <div class="status" id="whStatus">Press play to hash each key into its bucket.</div>
+    <div class="controls"><button class="btn" id="whPlay">▶ Hash Keys</button><button class="btn ghost" id="whReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="whSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> lookup = compute hash → jump to bucket → O(1) average. The whole point is avoiding a linear scan.</div></div>
+    <pre><code><span class="kw">int</span> index = hash(key) % capacity;   <span class="cm">// key → slot</span>
+table[index] = value;                <span class="cm">// store</span>
+value = table[hash(key) % capacity]; <span class="cm">// O(1) fetch</span></code></pre>
+  </section>
+
+  <!-- HOW HASHTABLES WORK -->
+  <section id="howtables">
+    <h2>🔗 How Hashtables Work — Collisions &amp; Chaining <span class="badge">Internals</span></h2>
+    <p class="lead">When two keys hash to the same bucket, we <b>chain</b> them in a list so nothing is lost.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Shared pegs:</span> if two coats map to the same peg, hang them on the same hook as a little chain. Lookups walk that short chain. Keep chains short (low <b>load factor</b>) by resizing, and average lookup stays O(1).</div>
+      <div class="steps-flow"><span class="chip">collision → same bucket</span><span class="arrow">→</span><span class="chip">append to that bucket's chain</span><span class="arrow">→</span><span class="chip">resize when too full</span></div>
+      <div class="oneliner">🔒 Keep forever: "Collisions are normal — chain them; keep the load factor low to stay O(1)."</div>
+    </div>
+    <div class="note">Insert <code>[10, 15, 20, 7, 12]</code> into size-5 table (index = key % 5). Watch chains grow.</div>
+    <div class="buckets" id="htBuckets"></div>
+    <div class="status" id="htStatus">Press play. Keys colliding pile into the same bucket.</div>
+    <div class="controls"><button class="btn" id="htPlay">▶ Insert with Chaining</button><button class="btn ghost" id="htReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="htSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> worst case (all collide) is O(n); good hash + resizing keeps it O(1) average. Load factor = entries / buckets.</div></div>
+    <pre><code>bucket = table[hash(key) % capacity];
+bucket.add(key);            <span class="cm">// chaining on collision</span>
+<span class="kw">if</span> (size / capacity &gt; <span class="num">0.75</span>) resize(); <span class="cm">// keep chains short</span></code></pre>
+  </section>
+
+  <!-- HASH vs TREEMAP -->
+  <section id="hashvstree">
+    <h2>🌳 Using HashMaps &amp; TreeMaps <span class="badge">Choose wisely</span></h2>
+    <p class="lead"><b>HashMap</b>: O(1), unordered. <b>TreeMap</b>: O(log n), always sorted — enabling floor/ceiling &amp; range queries.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pile vs bookshelf:</span> a HashMap is a labelled pile — instant grab, no order. A TreeMap is an alphabetized shelf — a bit slower, but you can ask "what's just below 25?" (floor) or "just above?" (ceiling). Order costs a log, but unlocks range powers.</div>
+      <div class="steps-flow"><span class="chip">need speed, no order → HashMap</span><span class="arrow">·</span><span class="chip">need sorted / floor / ceiling → TreeMap</span></div>
+      <div class="oneliner">🔒 Keep forever: "HashMap for O(1) lookup; TreeMap when you need order, floor, ceiling, or ranges."</div>
+    </div>
+    <div class="note">Insert <code>[50, 20, 80, 10, 30]</code>. TreeMap keeps them sorted; then floor(25) &amp; ceiling(25).</div>
+    <h3 style="margin:8px 0 0">HashMap (buckets, unordered)</h3>
+    <div class="buckets" id="hvBuckets"></div>
+    <h3 style="margin:8px 0 0">TreeMap (kept sorted)</h3>
+    <div class="cellrow" id="hvTree"></div>
+    <div class="status" id="hvStatus">Press play. Compare unordered vs sorted, then floor/ceiling of 25.</div>
+    <div class="controls"><button class="btn" id="hvPlay">▶ Insert &amp; Query</button><button class="btn ghost" id="hvReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="hvSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> <code>floor(x)</code> = largest key ≤ x; <code>ceiling(x)</code> = smallest key ≥ x. Only ordered maps (TreeMap) give these.</div></div>
+    <pre><code>HashMap: put/get O(1), no order.
+TreeMap: put/get O(log n), sorted.
+tree.floorKey(<span class="num">25</span>);   <span class="cm">// 20</span>
+tree.ceilingKey(<span class="num">25</span>); <span class="cm">// 30</span></code></pre>
+  </section>
+
+  <!-- PROCESSING QUERIES -->
+  <section id="queries">
+    <h2>📊 Processing Queries (Frequency Map) <span class="badge">Streaming</span></h2>
+    <p class="lead">A hashmap of counts answers add / remove / "how many?" queries in O(1) each.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A running tally sheet:</span> keep a count next to each value. Add → bump the count; remove → drop it; ask "how many 5s?" → read the count instantly. No re-scanning the data each query.</div>
+      <div class="oneliner">🔒 Keep forever: "Maintain counts in a map; every add/remove/query is O(1)."</div>
+    </div>
+    <div class="note">Query stream: add 5, add 5, add 3, count 5, remove 5, add 7, distinct?</div>
+    <div class="hashpanel" id="qHash"><span class="label">counts:</span></div>
+    <div class="status" id="qStatus">Press play to process the query stream.</div>
+    <div class="stats" id="qStats"></div>
+    <div class="controls"><button class="btn" id="qPlay">▶ Run Queries</button><button class="btn ghost" id="qReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="qSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> map size = distinct count. Frequency maps power "top-K", "first unique", "anagrams", and window problems.</div></div>
+    <pre><code>count.merge(x, <span class="num">1</span>, Integer::sum);          <span class="cm">// add</span>
+<span class="kw">if</span> (count.merge(x, -<span class="num">1</span>, Integer::sum) == <span class="num">0</span>) count.remove(x); <span class="cm">// remove</span>
+count.getOrDefault(x, <span class="num">0</span>);              <span class="cm">// query</span></code></pre>
+  </section>
+
+  <!-- CHECK FOR A PAIR -->
+  <section id="checkpair">
+    <h2>👥 Check for a Pair (Two-Sum) <span class="badge">Hash set</span></h2>
+    <p class="lead">Does any pair add to the target? Ask each element if its complement was already seen.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Looking for your other half:</span> as you meet each number, check the "seen" set for <code>target − x</code>. If it's there, you found the pair; if not, remember <code>x</code> and move on.</div>
+      <div class="oneliner">🔒 Keep forever: "Store what you've seen; each element asks for its complement — O(n)."</div>
+    </div>
+    <div class="note">Array <code>[8, 3, 5, 2, 7]</code>, target <b>10</b>.</div>
+    <div class="cellrow" id="cpRow"></div>
+    <div class="hashpanel" id="cpHash"><span class="label">seen:</span></div>
+    <div class="status" id="cpStatus">Press play to find a pair summing to 10.</div>
+    <div class="controls"><button class="btn" id="cpPlay">▶ Find Pair</button><button class="btn ghost" id="cpReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cpSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> hashing beats the O(n²) double loop and the O(n log n) sort — one pass, O(n).</div></div>
+    <pre><code>Set&lt;Integer&gt; seen = <span class="kw">new</span> HashSet&lt;&gt;();
+<span class="kw">for</span> (<span class="kw">int</span> x : a) { <span class="kw">if</span> (seen.contains(T - x)) <span class="kw">return</span> <span class="kw">true</span>; seen.add(x); }</code></pre>
+  </section>
+
+  <!-- SUBARRAY = SUM -->
+  <section id="subsum">
+    <h2>📦 Subarray with Given Sum <span class="badge">Prefix + Hash</span></h2>
+    <p class="lead">Find a contiguous subarray summing to K — even with negatives — via prefix sums in a hashmap.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Mile markers:</span> track the running total. A stretch sums to K whenever a previous total equals <code>current − K</code> — the road between those two markers is exactly K.</div>
+      <div class="oneliner">🔒 Keep forever: "Subarray = difference of two prefix sums; hash the sums you've seen."</div>
+    </div>
+    <div class="note">Array <code>[10, 2, -2, -20, 10]</code>, K = <b>-10</b>.</div>
+    <div class="cellrow" id="ssRow"></div>
+    <div class="hashpanel" id="ssHash"><span class="label">prefix→idx:</span></div>
+    <div class="status" id="ssStatus">Press play. Running total meets a seen (prefix − K).</div>
+    <div class="controls"><button class="btn" id="ssPlay">▶ Find Subarray</button><button class="btn ghost" id="ssReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ssSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> seed with <code>{0 → −1}</code>. Sliding window only works for all-positive arrays; prefix+hash handles negatives.</div></div>
+    <pre><code>map.put(<span class="num">0</span>, -<span class="num">1</span>); <span class="kw">int</span> pre=<span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++){ pre+=a[i];
+  <span class="kw">if</span> (map.containsKey(pre-K)) <span class="kw">return</span> {map.get(pre-K)+<span class="num">1</span>, i};
+  map.putIfAbsent(pre, i); }</code></pre>
+  </section>
+
+  <!-- LONGEST SUBARRAY = SUM -->
+  <section id="longsubsum">
+    <h2>📏 Longest Subarray with Given Sum <span class="badge">First-occurrence hash</span></h2>
+    <p class="lead">Maximize length by storing only the <b>earliest</b> index of each prefix sum.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Reach back as far as possible:</span> for the longest stretch, when you need a prefix, you want its <b>earliest</b> occurrence. So never overwrite a prefix already in the map — the first index gives the widest subarray.</div>
+      <div class="oneliner">🔒 Keep forever: "Store the FIRST index of each prefix — earliest match = longest subarray."</div>
+    </div>
+    <div class="note">Array <code>[1, -1, 5, -2, 3]</code>, K = <b>3</b> → longest length 4.</div>
+    <div class="cellrow" id="lsRow"></div>
+    <div class="hashpanel" id="lsHash"><span class="label">prefix→first idx:</span></div>
+    <div class="status" id="lsStatus">Press play to find the longest subarray summing to 3.</div>
+    <div class="stats" id="lsStats"></div>
+    <div class="controls"><button class="btn" id="lsPlay">▶ Longest Subarray</button><button class="btn ghost" id="lsReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lsSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> use <code>putIfAbsent</code> — keeping the first index is the whole trick for maximizing length.</div></div>
+    <pre><code>map.put(<span class="num">0</span>, -<span class="num">1</span>); <span class="kw">int</span> pre=<span class="num">0</span>, best=<span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++){ pre+=a[i];
+  <span class="kw">if</span> (map.containsKey(pre-K)) best=max(best, i-map.get(pre-K));
+  map.putIfAbsent(pre, i); }</code></pre>
+  </section>
+
+  <!-- COUNT OF SUBARRAYS -->
+  <section id="countsub">
+    <h2>🔢 Count of Subarrays with Sum K <span class="badge">Prefix counts</span></h2>
+    <p class="lead">Count <b>all</b> subarrays summing to K by hashing how many times each prefix sum occurred.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Every earlier match counts:</span> at each index, every previous prefix equal to <code>current − K</code> starts a valid subarray. So store the <b>count</b> of each prefix sum and add it in — not just whether it exists.</div>
+      <div class="oneliner">🔒 Keep forever: "Count subarrays = sum of frequencies of (prefix − K) seen so far."</div>
+    </div>
+    <div class="note">Array <code>[1, 2, 3]</code>, K = <b>3</b> → 2 subarrays ([1,2] and [3]).</div>
+    <div class="cellrow" id="csRow"></div>
+    <div class="hashpanel" id="csHash"><span class="label">prefix→count:</span></div>
+    <div class="status" id="csStatus">Press play to count subarrays summing to 3.</div>
+    <div class="stats" id="csStats"></div>
+    <div class="controls"><button class="btn" id="csPlay">▶ Count Subarrays</button><button class="btn ghost" id="csReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="csSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> store counts (not indices), seed <code>{0:1}</code>, and <b>add</b> <code>map[pre−K]</code> to the answer each step.</div></div>
+    <pre><code>map.put(<span class="num">0</span>, <span class="num">1</span>); <span class="kw">int</span> pre=<span class="num">0</span>, count=<span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">int</span> x : a){ pre+=x; count += map.getOrDefault(pre-K, <span class="num">0</span>);
+  map.merge(pre, <span class="num">1</span>, Integer::sum); }</code></pre>
+  </section>
+
+  <!-- CONSECUTIVE ELEMENTS -->
+  <section id="consec">
+    <h2>🔀 Consecutive Elements Check <span class="badge">Hash set</span></h2>
+    <p class="lead">Do the numbers form one unbroken run (like 2,3,4,5,6)? A set answers it in O(n).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A complete staircase:</span> dump everything in a set, find the min and max. If they're all distinct and <code>max − min + 1 == n</code>, no step is missing — it's a perfect consecutive run.</div>
+      <div class="oneliner">🔒 Keep forever: "All distinct + (max − min + 1 == n) ⇒ consecutive."</div>
+    </div>
+    <div class="note">Array <code>[5, 3, 4, 6, 2]</code> → consecutive? (min 2, max 6).</div>
+    <div class="cellrow" id="ceRow"></div>
+    <div class="status" id="ceStatus">Press play to check for a consecutive run.</div>
+    <div class="stats" id="ceStats"></div>
+    <div class="controls"><button class="btn" id="cePlay">▶ Check Consecutive</button><button class="btn ghost" id="ceReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ceSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the set also guards against duplicates — a repeat breaks "all distinct" and fails the run.</div></div>
+    <pre><code><span class="kw">int</span> mn=min(a), mx=max(a);
+<span class="kw">if</span> (mx - mn + <span class="num">1</span> != n) <span class="kw">return</span> <span class="kw">false</span>;
+<span class="kw">for</span> (v <span class="kw">in</span> mn..mx) <span class="kw">if</span> (!set.contains(v)) <span class="kw">return</span> <span class="kw">false</span>;
+<span class="kw">return</span> <span class="kw">true</span>;</code></pre>
+  </section>
+
+  <!-- LONGEST CONSECUTIVE -->
+  <section id="longconsec">
+    <h2>🧵 Longest Consecutive Sequence <span class="badge">O(n)</span></h2>
+    <p class="lead">Find the longest run of consecutive integers — only start counting from run <b>beginnings</b>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Only start at the bottom step:</span> put all numbers in a set. A number begins a run only if <code>x−1</code> is absent. From each true start, walk x+1, x+2, … The "start-only" rule means every number is visited once → O(n), no sorting.</div>
+      <div class="steps-flow"><span class="chip">no x−1? it's a start</span><span class="arrow">→</span><span class="chip">extend x+1, x+2 …</span><span class="arrow">→</span><span class="chip">track longest</span></div>
+      <div class="oneliner">🔒 Keep forever: "Count runs only from their start (no x−1) — each number touched once."</div>
+    </div>
+    <div class="note">Array <code>[100, 4, 200, 1, 3, 2]</code> → longest run [1,2,3,4] = 4.</div>
+    <div class="cellrow" id="lcRow"></div>
+    <div class="status" id="lcStatus">Press play. Runs grow only from their starting number.</div>
+    <div class="stats" id="lcStats"></div>
+    <div class="controls"><button class="btn" id="lcPlay">▶ Longest Run</button><button class="btn ghost" id="lcReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lcSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the "start-only" check is what makes it O(n); without it you'd re-walk runs and hit O(n²).</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">int</span> x : set)
+  <span class="kw">if</span> (!set.contains(x-<span class="num">1</span>)) {          <span class="cm">// start of a run</span>
+    <span class="kw">int</span> len=<span class="num">1</span>, cur=x;
+    <span class="kw">while</span> (set.contains(cur+<span class="num">1</span>)){ cur++; len++; }
+    best = max(best, len);
+  }</code></pre>
+  </section>
+
+  <!-- LONGEST CONSECUTIVE 2 -->
+  <section id="longconsec2">
+    <h2>⚡ Longest Consecutive II (Streaming) <span class="badge">Boundary merge</span></h2>
+    <p class="lead">Numbers arrive one at a time — merge runs on the fly by tracking each run's length at its ends.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Bridging islands:</span> a HashMap stores the length of the run ending/starting at each boundary value. When <code>x</code> arrives, look left (<code>x−1</code>) and right (<code>x+1</code>): join their runs through <code>x</code>, then update only the two <b>new endpoints</b>. No re-scan — pure streaming.</div>
+      <div class="steps-flow"><span class="chip">left = len[x−1]</span><span class="arrow">·</span><span class="chip">right = len[x+1]</span><span class="arrow">→</span><span class="chip">newLen = left+right+1</span><span class="arrow">→</span><span class="chip">update both ends</span></div>
+      <div class="oneliner">🔒 Keep forever: "Store run length at boundaries; a new number bridges left &amp; right runs instantly."</div>
+    </div>
+    <div class="note">Stream <code>[1, 3, 2, 5, 4]</code> → grows to one run of length 5.</div>
+    <div class="cellrow" id="l2Row"></div>
+    <div class="hashpanel" id="l2Hash"><span class="label">value→runLen:</span></div>
+    <div class="status" id="l2Status">Press play. Each arrival merges neighbouring runs.</div>
+    <div class="stats" id="l2Stats"></div>
+    <div class="controls"><button class="btn" id="l2Play">▶ Stream &amp; Merge</button><button class="btn ghost" id="l2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="l2Speed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> only the two endpoints of a run need correct values — the interior is never queried again.</div></div>
+    <pre><code><span class="kw">int</span> left=len.getOrDefault(x-<span class="num">1</span>,<span class="num">0</span>), right=len.getOrDefault(x+<span class="num">1</span>,<span class="num">0</span>);
+<span class="kw">int</span> cur=left+right+<span class="num">1</span>;
+len.put(x, cur);
+len.put(x-left, cur); len.put(x+right, cur); <span class="cm">// new endpoints</span>
+best=max(best, cur);</code></pre>
+  </section>
+
+  <!-- BOOLEAN MATRIX -->
+  <section id="boolmatrix">
+    <h2>▦ Boolean Matrix (Set Zeroes) <span class="badge">Row/Col sets</span></h2>
+    <p class="lead">If a cell is 0, zero out its whole row and column — record which rows/cols first, then apply.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Mark then wipe:</span> if you zero as you scan, one zero triggers a cascade of false zeros. So first <b>note</b> every row and column that contains a 0 (in two sets), <i>then</i> wipe them all at once.</div>
+      <div class="steps-flow"><span class="chip">scan → record zero rows &amp; cols</span><span class="arrow">→</span><span class="chip">then zero those rows &amp; cols</span></div>
+      <div class="oneliner">🔒 Keep forever: "Record first, mutate later — never let a fresh zero cause new zeros."</div>
+    </div>
+    <div class="note">4×4 grid with two zeros. Watch their rows &amp; columns get wiped.</div>
+    <div class="mwrap"><div class="mgrid" id="bmGrid"></div></div>
+    <div class="status" id="bmStatus">Press play. Find zeros, record rows/cols, then wipe.</div>
+    <div class="stats" id="bmStats"></div>
+    <div class="controls"><button class="btn" id="bmPlay">▶ Zero Matrix</button><button class="btn ghost" id="bmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bmSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the two-set approach uses O(rows+cols) extra space. The next section shrinks that to O(1).</div></div>
+    <pre><code>Set rows, cols;
+<span class="kw">for</span> (i,j) <span class="kw">if</span> (m[i][j]==<span class="num">0</span>){ rows.add(i); cols.add(j); }
+<span class="kw">for</span> (i,j) <span class="kw">if</span> (rows.has(i) || cols.has(j)) m[i][j]=<span class="num">0</span>;</code></pre>
+  </section>
+
+  <!-- BOOLEAN MATRIX 2 -->
+  <section id="boolmatrix2">
+    <h2>▩ Boolean Matrix II (O(1) Space) <span class="badge">In-place markers</span></h2>
+    <p class="lead">Same task, but use the matrix's own <b>first row &amp; column</b> as the record — no extra sets.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Notes in the margins:</span> instead of separate sets, stamp a 0 into the first cell of that row and column. The margins now remember which rows/cols to wipe. Handle the first row/col with two flags, then apply — O(1) extra space.</div>
+      <div class="steps-flow"><span class="chip">mark zeros into row 0 &amp; col 0</span><span class="arrow">→</span><span class="chip">wipe body using markers</span><span class="arrow">→</span><span class="chip">fix row 0 &amp; col 0</span></div>
+      <div class="oneliner">🔒 Keep forever: "Reuse the first row/column as the marker board — record in place, no extra memory."</div>
+    </div>
+    <div class="note">Same 4×4 grid — now the first row &amp; column store the flags (cyan markers).</div>
+    <div class="mwrap"><div class="mgrid" id="b2Grid"></div></div>
+    <div class="status" id="b2Status">Press play. Mark in the margins, then wipe the body.</div>
+    <div class="controls"><button class="btn" id="b2Play">▶ Zero In-Place</button><button class="btn ghost" id="b2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="b2Speed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> track the first row &amp; first column separately (they'd otherwise be corrupted), then process the interior before them.</div></div>
+    <pre><code><span class="cm">// use m[i][0] and m[0][j] as the "sets"</span>
+<span class="kw">for</span> (i,j in body) <span class="kw">if</span> (m[i][j]==<span class="num">0</span>){ m[i][<span class="num">0</span>]=<span class="num">0</span>; m[<span class="num">0</span>][j]=<span class="num">0</span>; }
+<span class="kw">for</span> (i,j in body) <span class="kw">if</span> (m[i][<span class="num">0</span>]==<span class="num">0</span> || m[<span class="num">0</span>][j]==<span class="num">0</span>) m[i][j]=<span class="num">0</span>;
+<span class="cm">// then handle row 0 &amp; col 0 via saved flags</span></code></pre>
+  </section>
+
+  <!-- MAX POINTS ON LINE -->
+  <section id="maxpoints">
+    <h2>📐 Maximum Points on a Line <span class="badge">Slope hashing</span></h2>
+    <p class="lead">Fix a point, hash the <b>slope</b> to every other point — the biggest slope group is the longest line.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Same direction, same line:</span> from an anchor point, any two other points on the same line share the exact same slope. Group all points by their slope to the anchor; the largest group (+ the anchor) is the most collinear points through it.</div>
+      <div class="steps-flow"><span class="chip">for each anchor</span><span class="arrow">→</span><span class="chip">slope to every other point</span><span class="arrow">→</span><span class="chip">hash slopes, take max group</span></div>
+      <div class="oneliner">🔒 Keep forever: "Points on a line share a slope to any anchor — hash slopes, count the biggest bucket."</div>
+    </div>
+    <div class="note">Points <code>(0,0),(1,1),(2,2),(3,1),(1,0)</code> → line y=x holds 3 points.</div>
+    <div class="mwrap"><div class="pgrid" id="mpGrid"></div></div>
+    <div class="hashpanel" id="mpHash"><span class="label">slope→count:</span></div>
+    <div class="status" id="mpStatus">Press play. Anchor at (0,0); group points by slope.</div>
+    <div class="stats" id="mpStats"></div>
+    <div class="controls"><button class="btn" id="mpPlay">▶ Max Collinear</button><button class="btn ghost" id="mpReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mpSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> use a reduced fraction (dy/gcd, dx/gcd) as the slope key to avoid float errors. Overall O(n²).</div></div>
+    <pre><code><span class="kw">for</span> anchor i:
+  map.clear();
+  <span class="kw">for</span> j != i: map[slope(i,j)]++;
+  best = max(best, max(map.values()) + <span class="num">1</span>); <span class="cm">// +1 for anchor</span></code></pre>
+  </section>
+
+  <!-- SUBSTRING OF WORDS -->
+  <section id="substrwords">
+    <h2>🧩 Substring with Concatenation of All Words <span class="badge">Word window</span></h2>
+    <p class="lead">Find start indices where a substring is exactly all the words joined in some order.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Matching a recipe:</span> all words have equal length, so slide a window of size (word_len × word_count). Split it into word-sized chunks and check their counts against the required <b>word-frequency map</b>. Exact match → a valid start.</div>
+      <div class="steps-flow"><span class="chip">need = word counts</span><span class="arrow">→</span><span class="chip">slide fixed window</span><span class="arrow">→</span><span class="chip">chunk &amp; match counts</span></div>
+      <div class="oneliner">🔒 Keep forever: "Equal-length words ⇒ chunk the window and compare frequency maps."</div>
+    </div>
+    <div class="note">s = <code>"foobarfoo"</code>, words = <code>["foo","bar"]</code> → starts at 0 and 3.</div>
+    <div class="cellrow" id="swRow"></div>
+    <div class="status" id="swStatus">Press play. Check each window as word chunks.</div>
+    <div class="stats" id="swStats"></div>
+    <div class="controls"><button class="btn" id="swPlay">▶ Find Starts</button><button class="btn ghost" id="swReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="swSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> all words are the same length — that's what lets you chunk cleanly and compare a frequency map per window.</div></div>
+    <pre><code>Map need = counts(words); <span class="kw">int</span> L=wordLen, total=L*words.length;
+<span class="kw">for</span> start=<span class="num">0</span>..n-total:
+  Map seen = {};
+  <span class="kw">for</span> k=<span class="num">0</span>..words.length-<span class="num">1</span>: seen[ s.substr(start+k*L, L) ]++;
+  <span class="kw">if</span> (seen.equals(need)) result.add(start);</code></pre>
+  </section>
+
+  <!-- MAKING PALINDROMES -->
+  <section id="palin1">
+    <h2>🔁 Making Palindromes (Rearrangeable?) <span class="badge">Char frequency</span></h2>
+    <p class="lead">Can a string's letters be rearranged into a palindrome? Count how many letters appear an odd number of times.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Mirror pairs + one center:</span> a palindrome mirrors around its middle, so every letter must appear an even number of times — except at most one that sits in the exact center. Count odd frequencies: 0 or 1 → yes, more → no.</div>
+      <div class="oneliner">🔒 Keep forever: "At most one odd count ⇒ a palindrome permutation exists."</div>
+    </div>
+    <div class="note">s = <code>"aabbc"</code> → freq a:2, b:2, c:1 → one odd → YES.</div>
+    <div class="cellrow" id="p1Row"></div>
+    <div class="hashpanel" id="p1Hash"><span class="label">char→count:</span></div>
+    <div class="status" id="p1Status">Press play. Build frequencies, count odd ones.</div>
+    <div class="stats" id="p1Stats"></div>
+    <div class="controls"><button class="btn" id="p1Play">▶ Check Palindrome</button><button class="btn ghost" id="p1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p1Speed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> even-length strings need <b>zero</b> odd counts; odd-length allows exactly one (the center).</div></div>
+    <pre><code>Map freq = counts(s);
+<span class="kw">int</span> odd = <span class="num">0</span>;
+<span class="kw">for</span> (c : freq.values()) <span class="kw">if</span> (c % <span class="num">2</span> == <span class="num">1</span>) odd++;
+<span class="kw">return</span> odd &lt;= <span class="num">1</span>;</code></pre>
+  </section>
+
+  <!-- MAKING PALINDROME 2 -->
+  <section id="palin2">
+    <h2>🔂 Making Palindrome II (Longest Buildable) <span class="badge">Counts → length</span></h2>
+    <p class="lead">What's the <b>longest</b> palindrome you can build from the letters? Use pairs, plus one odd center.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Spend letters in pairs:</span> each letter contributes as many mirror pairs as it can (<code>count/2 × 2</code>). If any letter has a leftover, you may place one single letter in the very center — a free +1.</div>
+      <div class="steps-flow"><span class="chip">sum floor(count/2)×2</span><span class="arrow">→</span><span class="chip">+1 if any odd count exists</span></div>
+      <div class="oneliner">🔒 Keep forever: "Longest palindrome = all pairs, plus one odd letter as the center."</div>
+    </div>
+    <div class="note">s = <code>"abccccdd"</code> → freq c:4, d:2, a:1, b:1 → length 7.</div>
+    <div class="cellrow" id="p2Row"></div>
+    <div class="hashpanel" id="p2Hash"><span class="label">char→count:</span></div>
+    <div class="status" id="p2Status">Press play. Add pairs, then one center if possible.</div>
+    <div class="stats" id="p2Stats"></div>
+    <div class="controls"><button class="btn" id="p2Play">▶ Longest Palindrome</button><button class="btn ghost" id="p2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p2Speed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> add <code>(count/2)*2</code> for every letter; add 1 at the end if <b>any</b> letter had an odd count.</div></div>
+    <pre><code><span class="kw">int</span> len=<span class="num">0</span>; <span class="kw">boolean</span> odd=<span class="kw">false</span>;
+<span class="kw">for</span> (c : freq.values()){ len += (c/<span class="num">2</span>)*<span class="num">2</span>; <span class="kw">if</span> (c%<span class="num">2</span>==<span class="num">1</span>) odd=<span class="kw">true</span>; }
+<span class="kw">return</span> len + (odd ? <span class="num">1</span> : <span class="num">0</span>);</code></pre>
+
+    <div class="note key">🏆 <b>Hashing mastered!</b> A hash function is a shortcut key→slot · chaining tames collisions · frequency &amp; prefix maps crack subarray/sum/count problems · sets power consecutive-run tricks · and slope/word/char maps solve geometry and strings. Picture the buckets lighting up and no hashing problem can hide. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Hashing &amp; HashMaps — Animated Guide • Replay any animation, turn on 🎵 sound • Learn by watching the buckets fill 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.1 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(430+Math.random()*110,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- Cells ---- */
+function cellViz(container){
+  let cells=[];
+  function ensure(n){ if(cells.length!==n){ container.innerHTML=''; cells=[]; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='cell'; container.appendChild(c); cells.push(c);} } }
+  function render(arr,o={}){ ensure(arr.length); arr.forEach((v,i)=>{ const c=cells[i]; c.className='cell'; c.innerHTML = `${o.sub&&o.sub[i]!=null?`<span class="idx">${o.sub[i]}</span>`:''}${v}${o.ptr&&o.ptr[i]!=null?`<span class="ptr">${o.ptr[i]}</span>`:''}`; if(o.compare&&o.compare.includes(i))c.classList.add('mid'); if(o.groupA&&o.groupA.includes(i))c.classList.add('lo'); if(o.groupB&&o.groupB.includes(i))c.classList.add('hi'); if(o.done&&o.done.has(i))c.classList.add('found'); if(o.dead&&o.dead.has(i))c.classList.add('dead'); if(o.range&&i>=o.range[0]&&i<=o.range[1])c.classList.add('in-range'); }); }
+  return { render };
+}
+function hashPanel(container,label){ return { render(entries){ container.innerHTML=`<span class="label">${label}</span>`+(entries.length?'':'<span class="empty">∅ empty</span>'); entries.forEach(e=>{ const d=document.createElement('div'); d.className='hentry'+(e.state?(' '+e.state):''); d.innerHTML=`<b>${e.k}</b>${e.v!=null?`<span>${e.v}</span>`:''}`; container.appendChild(d); }); } }; }
+function bucketRender(container, buckets, active, labelFn){ container.innerHTML=''; buckets.forEach((items,i)=>{ const d=document.createElement('div'); d.className='bucket'+(i===active?' active':''); d.innerHTML=`<div class="bk">${labelFn?labelFn(i):i}</div><div class="items">${items.map(x=>`<div class="it">${x}</div>`).join('')}</div>`; container.appendChild(d); }); }
+function idxSub(n){ return Array.from({length:n},(_,i)=>i); }
+
+/* ================= 1. What is hashing ================= */
+(function(){
+  const keys=[23,45,12,8,91], size=7; const C=$('#whBuckets'); const st=$('#whStatus'); const sp=$('#whSpeed');
+  function build(){ bucketRender(C, Array.from({length:size},()=>[]), -1); st.textContent='Press play to hash each key into its bucket.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const buckets=Array.from({length:size},()=>[]);
+    for(const k of keys){ const idx=k%size; buckets[idx].push(k); bucketRender(C,buckets,idx); st.innerHTML=`hash(${k}) = ${k} % ${size} = <span class="k">${idx}</span> → bucket ${idx}.`; tickSound(); await sleep(+sp.value); }
+    // lookup
+    const q=12, qi=q%size; bucketRender(C,buckets,qi); st.innerHTML=`Lookup ${q}: hash = ${qi} → jump to bucket ${qi} → <span class="k">found</span> in O(1)!`; await sleep(+sp.value*1.3);
+    bucketRender(C,buckets,-1); st.innerHTML='#️⃣ Each key computed its own slot — no scanning needed!'; ANIM=false; celebrate(C);
+  }
+  $('#whPlay').onclick=play; $('#whReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. How hashtables work ================= */
+(function(){
+  const keys=[10,15,20,7,12], size=5; const C=$('#htBuckets'); const st=$('#htStatus'); const sp=$('#htSpeed');
+  function build(){ bucketRender(C, Array.from({length:size},()=>[]), -1); st.textContent='Press play. Keys colliding pile into the same bucket.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const buckets=Array.from({length:size},()=>[]);
+    for(const k of keys){ const idx=k%size; const collide=buckets[idx].length>0; buckets[idx].push(k); bucketRender(C,buckets,idx); st.innerHTML=`hash(${k})=${idx}. ${collide?`<b style="color:#ff9ecb">Collision!</b> chain onto bucket ${idx}.`:`bucket ${idx} was empty.`}`; tickSound(); await sleep(+sp.value); }
+    bucketRender(C,buckets,-1); st.innerHTML='🔗 Collisions handled by chaining — bucket 0 holds 10→15→20.'; ANIM=false; celebrate(C);
+  }
+  $('#htPlay').onclick=play; $('#htReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Hash vs TreeMap ================= */
+(function(){
+  const keys=[50,20,80,10,30], size=7; const CB=$('#hvBuckets'); const CT=$('#hvTree'); const viz=cellViz(CT); const st=$('#hvStatus'); const sp=$('#hvSpeed');
+  function build(){ bucketRender(CB, Array.from({length:size},()=>[]), -1); viz.render([]); st.textContent='Press play. Compare unordered vs sorted, then floor/ceiling of 25.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const buckets=Array.from({length:size},()=>[]); const sorted=[];
+    for(const k of keys){ const idx=k%size; buckets[idx].push(k); bucketRender(CB,buckets,idx);
+      // insert into sorted list
+      let p=0; while(p<sorted.length && sorted[p]<k) p++; sorted.splice(p,0,k); viz.render(sorted,{compare:[p]});
+      st.innerHTML=`Insert ${k}: HashMap → bucket ${idx} (unordered). TreeMap keeps sorted order.`; tickSound(); await sleep(+sp.value); }
+    bucketRender(CB,buckets,-1); viz.render(sorted); st.innerHTML='HashMap is unordered; TreeMap is sorted. Now floor/ceiling of 25:'; await sleep(+sp.value);
+    let fl=-1,ce=-1; for(let i=0;i<sorted.length;i++){ if(sorted[i]<=25) fl=i; } for(let i=sorted.length-1;i>=0;i--){ if(sorted[i]>=25) ce=i; }
+    viz.render(sorted,{groupA:[fl],groupB:[ce]}); st.innerHTML=`floor(25) = <span class="k">${sorted[fl]}</span> (largest ≤ 25), ceiling(25) = <span class="k">${sorted[ce]}</span> (smallest ≥ 25).`; await sleep(+sp.value*1.4);
+    st.innerHTML='🌳 HashMap = O(1) unordered · TreeMap = O(log n) sorted with floor/ceiling.'; ANIM=false; celebrate(CT);
+  }
+  $('#hvPlay').onclick=play; $('#hvReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Processing queries ================= */
+(function(){
+  const hp=hashPanel($('#qHash'),'counts:'); const st=$('#qStatus'); const sp=$('#qSpeed'); const stats=$('#qStats');
+  const queries=[['add',5],['add',5],['add',3],['count',5],['remove',5],['add',7],['distinct',null]];
+  function build(){ hp.render([]); stats.innerHTML=''; st.textContent='Press play to process the query stream.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const m=new Map();
+    const ents=(hit)=>[...m.entries()].map(([k,v])=>({k,v,state:k===hit?'hit':''}));
+    for(const [op,x] of queries){ let msg;
+      if(op==='add'){ m.set(x,(m.get(x)||0)+1); msg=`add ${x} → count = ${m.get(x)}.`; }
+      else if(op==='remove'){ m.set(x,(m.get(x)||0)-1); if(m.get(x)<=0)m.delete(x); msg=`remove ${x} → count = ${m.get(x)||0}.`; }
+      else if(op==='count'){ msg=`count(${x}) = <span class="k">${m.get(x)||0}</span>.`; }
+      else { msg=`distinct values = <span class="k">${m.size}</span>.`; }
+      hp.render(ents(op==='count'||op==='add'||op==='remove'?x:null)); stats.innerHTML=`<span class="pill blue">distinct: ${m.size}</span>`; st.innerHTML=msg; tickSound(); await sleep(+sp.value); }
+    st.innerHTML='📊 Every add / remove / query answered in O(1) from the map.'; ANIM=false; celebrate($('#qHash'));
+  }
+  $('#qPlay').onclick=play; $('#qReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. Check for a pair ================= */
+(function(){
+  const a=[8,3,5,2,7], T=10; const viz=cellViz($('#cpRow')); const hp=hashPanel($('#cpHash'),'seen:'); const st=$('#cpStatus'); const sp=$('#cpSpeed');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); hp.render([]); st.textContent='Press play to find a pair summing to 10.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const seen=[];
+    for(let i=0;i<a.length;i++){ const need=T-a[i]; viz.render(a,{sub:idxSub(a.length),compare:[i]}); hp.render(seen.map(x=>({k:x,state:x===need?'hit':''}))); st.innerHTML=`x=<span class="k">${a[i]}</span>, need ${T}−${a[i]} = <span class="k">${need}</span>. Seen?`; tickSound(); await sleep(+sp.value);
+      if(seen.includes(need)){ const o=a.indexOf(need); viz.render(a,{sub:idxSub(a.length),done:new Set([o,i])}); st.innerHTML=`👥 Pair ${need} + ${a[i]} = ${T}!`; ANIM=false; celebrate($('#cpRow')); return; }
+      seen.push(a[i]); hp.render(seen.map((x,k)=>({k:x,state:k===seen.length-1?'new':''}))); await sleep(+sp.value*0.55); }
+    st.innerHTML='No pair found.'; ANIM=false;
+  }
+  $('#cpPlay').onclick=play; $('#cpReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. Subarray = sum ================= */
+(function(){
+  const a=[10,2,-2,-20,10], K=-10; const viz=cellViz($('#ssRow')); const hp=hashPanel($('#ssHash'),'prefix→idx:'); const st=$('#ssStatus'); const sp=$('#ssSpeed');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); hp.render([{k:0,v:-1,state:'new'}]); st.textContent='Press play. Running total meets a seen (prefix − K).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const map=new Map([[0,-1]]); let pre=0;
+    for(let i=0;i<a.length;i++){ pre+=a[i]; const need=pre-K; const ents=()=>[...map.entries()].map(([k,v])=>({k,v,state:k===need?'hit':''}));
+      viz.render(a,{sub:idxSub(a.length),compare:[i]}); hp.render(ents()); st.innerHTML=`prefix=<span class="k">${pre}</span>. need prefix−K = ${pre}−(${K}) = <span class="k">${need}</span>.`; tickSound(); await sleep(+sp.value);
+      if(map.has(need)){ const start=map.get(need)+1; const done=new Set(); for(let k=start;k<=i;k++)done.add(k); viz.render(a,{sub:idxSub(a.length),done}); st.innerHTML=`📦 Subarray [${start}..${i}] sums to ${K}!`; ANIM=false; celebrate($('#ssRow')); return; }
+      if(!map.has(pre)) map.set(pre,i); await sleep(+sp.value*0.5); }
+    st.innerHTML='No subarray sums to K.'; ANIM=false;
+  }
+  $('#ssPlay').onclick=play; $('#ssReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Longest subarray = sum ================= */
+(function(){
+  const a=[1,-1,5,-2,3], K=3; const viz=cellViz($('#lsRow')); const hp=hashPanel($('#lsHash'),'prefix→first idx:'); const st=$('#lsStatus'); const sp=$('#lsSpeed'); const stats=$('#lsStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); hp.render([{k:0,v:-1,state:'new'}]); stats.innerHTML=''; st.textContent='Press play to find the longest subarray summing to 3.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const map=new Map([[0,-1]]); let pre=0,best=0,bl=0,br=-1;
+    for(let i=0;i<a.length;i++){ pre+=a[i]; const need=pre-K; const ents=()=>[...map.entries()].map(([k,v])=>({k,v,state:k===need?'hit':''}));
+      viz.render(a,{sub:idxSub(a.length),compare:[i]}); hp.render(ents()); st.innerHTML=`prefix=<span class="k">${pre}</span>, need ${need}.`; tickSound(); await sleep(+sp.value);
+      if(map.has(need)){ const len=i-map.get(need); if(len>best){ best=len; bl=map.get(need)+1; br=i; } stats.innerHTML=`<span class="pill green">best length: ${best}</span>`; st.innerHTML=`Found earlier prefix ${need} at idx ${map.get(need)} → length ${len}.`; await sleep(+sp.value); }
+      if(!map.has(pre)) map.set(pre,i); await sleep(+sp.value*0.4); }
+    const done=new Set(); for(let k=bl;k<=br;k++)done.add(k); viz.render(a,{sub:idxSub(a.length),done}); st.innerHTML=`📏 Longest subarray = length <span class="k">${best}</span> ([${bl}..${br}]).`; ANIM=false; celebrate($('#lsRow'));
+  }
+  $('#lsPlay').onclick=play; $('#lsReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. Count of subarrays ================= */
+(function(){
+  const a=[1,2,3], K=3; const viz=cellViz($('#csRow')); const hp=hashPanel($('#csHash'),'prefix→count:'); const st=$('#csStatus'); const sp=$('#csSpeed'); const stats=$('#csStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); hp.render([{k:0,v:1,state:'new'}]); stats.innerHTML=''; st.textContent='Press play to count subarrays summing to 3.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const map=new Map([[0,1]]); let pre=0,count=0;
+    for(let i=0;i<a.length;i++){ pre+=a[i]; const need=pre-K; const add=map.get(need)||0; count+=add;
+      const ents=()=>[...map.entries()].map(([k,v])=>({k,v,state:k===need?'hit':''}));
+      viz.render(a,{sub:idxSub(a.length),compare:[i]}); hp.render(ents()); stats.innerHTML=`<span class="pill green">count = ${count}</span>`; st.innerHTML=`prefix=<span class="k">${pre}</span>, need ${need} appeared ${add}× → count += ${add}.`; tickSound(); await sleep(+sp.value);
+      map.set(pre,(map.get(pre)||0)+1); hp.render([...map.entries()].map(([k,v])=>({k,v,state:k===pre?'new':''}))); await sleep(+sp.value*0.5); }
+    viz.render(a,{sub:idxSub(a.length),done:new Set(idxSub(a.length))}); stats.innerHTML=`<span class="pill green">total subarrays = ${count}</span>`; st.innerHTML=`🔢 ${count} subarrays sum to ${K}!`; ANIM=false; celebrate($('#csRow'));
+  }
+  $('#csPlay').onclick=play; $('#csReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. Consecutive elements ================= */
+(function(){
+  const a=[5,3,4,6,2]; const viz=cellViz($('#ceRow')); const st=$('#ceStatus'); const sp=$('#ceSpeed'); const stats=$('#ceStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); stats.innerHTML=''; st.textContent='Press play to check for a consecutive run.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const set=new Set(a); const mn=Math.min(...a), mx=Math.max(...a);
+    st.innerHTML=`Set built. min=<span class="k">${mn}</span>, max=<span class="k">${mx}</span>. Need max−min+1 = ${mx-mn+1} == n = ${a.length}?`; stats.innerHTML=`<span class="pill blue">range span: ${mx-mn+1}</span>`; await sleep(+sp.value*1.3);
+    let ok=(mx-mn+1===a.length && set.size===a.length);
+    for(let v=mn; v<=mx && ok; v++){ const idx=a.indexOf(v); viz.render(a,{sub:idxSub(a.length),compare:idx>=0?[idx]:[]}); st.innerHTML=`Is ${v} present? ${set.has(v)?'yes ✓':'no ✗'}`; tickSound(); await sleep(+sp.value*0.8); if(!set.has(v)) ok=false; }
+    if(ok){ viz.render(a,{sub:idxSub(a.length),done:new Set(idxSub(a.length))}); st.innerHTML=`🔀 YES — [${mn}..${mx}] all present, forms a consecutive run!`; }
+    else st.innerHTML='🔀 Not consecutive (a gap or duplicate breaks the run).';
+    ANIM=false; celebrate($('#ceRow'));
+  }
+  $('#cePlay').onclick=play; $('#ceReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. Longest consecutive ================= */
+(function(){
+  const a=[100,4,200,1,3,2]; const viz=cellViz($('#lcRow')); const st=$('#lcStatus'); const sp=$('#lcSpeed'); const stats=$('#lcStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); stats.innerHTML=''; st.textContent='Press play. Runs grow only from their starting number.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const set=new Set(a); let best=0, bestSet=new Set();
+    for(let i=0;i<a.length;i++){ const x=a[i];
+      if(!set.has(x-1)){ let cur=x,len=1; const run=new Set([a.indexOf(x)]);
+        viz.render(a,{sub:idxSub(a.length),groupA:[i]}); st.innerHTML=`${x} is a run START (no ${x-1}). Extend →`; tickSound(); await sleep(+sp.value);
+        while(set.has(cur+1)){ cur++; len++; const ix=a.indexOf(cur); run.add(ix); viz.render(a,{sub:idxSub(a.length),groupA:[...run]}); st.innerHTML=`…${cur} present → run length ${len}.`; tickSound(); await sleep(+sp.value*0.8); }
+        if(len>best){ best=len; bestSet=new Set(run); } stats.innerHTML=`<span class="pill green">longest: ${best}</span>`;
+      } else { viz.render(a,{sub:idxSub(a.length),dead:new Set([i])}); st.innerHTML=`${x} is NOT a start (${x-1} exists) → skip.`; await sleep(+sp.value*0.6); }
+    }
+    viz.render(a,{sub:idxSub(a.length),done:bestSet}); st.innerHTML=`🧵 Longest consecutive run = <span class="k">${best}</span>!`; ANIM=false; celebrate($('#lcRow'));
+  }
+  $('#lcPlay').onclick=play; $('#lcReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. Longest consecutive II (streaming) ================= */
+(function(){
+  const stream=[1,3,2,5,4]; const viz=cellViz($('#l2Row')); const hp=hashPanel($('#l2Hash'),'value→runLen:'); const st=$('#l2Status'); const sp=$('#l2Speed'); const stats=$('#l2Stats');
+  function build(){ viz.render(stream,{sub:idxSub(stream.length)}); hp.render([]); stats.innerHTML=''; st.textContent='Press play. Each arrival merges neighbouring runs.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const len=new Map(); let best=0;
+    for(let i=0;i<stream.length;i++){ const x=stream[i]; const left=len.get(x-1)||0, right=len.get(x+1)||0; const cur=left+right+1;
+      len.set(x,cur); len.set(x-left,cur); len.set(x+right,cur); best=Math.max(best,cur);
+      viz.render(stream,{sub:idxSub(stream.length),groupA:stream.map((v,k)=>k<=i?k:-1).filter(k=>k>=0),compare:[i]});
+      hp.render([...len.entries()].sort((a,b)=>a[0]-b[0]).map(([k,v])=>({k,v,state:k===x?'new':''})));
+      stats.innerHTML=`<span class="pill green">best run: ${best}</span>`; st.innerHTML=`Add ${x}: left run ${left}, right run ${right} → merged length <span class="k">${cur}</span>.`; tickSound(); await sleep(+sp.value); }
+    st.innerHTML=`⚡ Streaming merge → longest consecutive run = <span class="k">${best}</span>!`; ANIM=false; celebrate($('#l2Row'));
+  }
+  $('#l2Play').onclick=play; $('#l2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. Boolean matrix ================= */
+(function(){
+  const orig=[[1,1,1,1],[1,0,1,1],[1,1,1,1],[1,1,0,1]]; const G=$('#bmGrid'); const st=$('#bmStatus'); const sp=$('#bmSpeed'); const stats=$('#bmStats');
+  const R=4,C=4; let map={};
+  function draw(grid,opts={}){ G.style.gridTemplateColumns=`repeat(${C},46px)`; G.innerHTML=''; map={}; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ const d=document.createElement('div'); d.className='mcell'; d.textContent=grid[r][c]; if(grid[r][c]===0)d.classList.add('zero'); if(opts.hl&&opts.hl.some(([a,b])=>a===r&&b===c))d.classList.add('hl'); if(opts.changed&&opts.changed.some(([a,b])=>a===r&&b===c))d.classList.add('changed'); G.appendChild(d); map[r+'-'+c]=d; } }
+  function build(){ draw(orig.map(row=>row.slice())); stats.innerHTML=''; st.textContent='Press play. Find zeros, record rows/cols, then wipe.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=orig.map(r=>r.slice()); const rows=new Set(), cols=new Set();
+    for(let r=0;r<R;r++)for(let c=0;c<C;c++){ if(g[r][c]===0){ rows.add(r); cols.add(c); draw(g,{hl:[[r,c]]}); st.innerHTML=`Zero at (${r},${c}) → record row ${r}, col ${c}.`; tickSound(); await sleep(+sp.value); } }
+    stats.innerHTML=`<span class="pill pink">zero rows: {${[...rows]}}</span><span class="pill pink">zero cols: {${[...cols]}}</span>`; st.innerHTML='Recorded. Now wipe those rows &amp; columns:'; await sleep(+sp.value);
+    const changed=[]; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ if((rows.has(r)||cols.has(c))&&g[r][c]!==0){ g[r][c]=0; changed.push([r,c]); } }
+    draw(g,{changed}); st.innerHTML='▦ Rows &amp; columns of every zero are wiped!'; ANIM=false; celebrate(G);
+  }
+  $('#bmPlay').onclick=play; $('#bmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. Boolean matrix II (in-place) ================= */
+(function(){
+  const orig=[[1,1,1,1],[1,0,1,1],[1,1,1,1],[1,1,0,1]]; const G=$('#b2Grid'); const st=$('#b2Status'); const sp=$('#b2Speed');
+  const R=4,C=4;
+  function draw(grid,opts={}){ G.style.gridTemplateColumns=`repeat(${C},46px)`; G.innerHTML=''; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ const d=document.createElement('div'); d.className='mcell'; d.textContent=grid[r][c]; if(grid[r][c]===0)d.classList.add('zero'); if(opts.mark&&opts.mark.some(([a,b])=>a===r&&b===c))d.classList.add('mark'); if(opts.hl&&opts.hl.some(([a,b])=>a===r&&b===c))d.classList.add('hl'); if(opts.changed&&opts.changed.some(([a,b])=>a===r&&b===c))d.classList.add('changed'); G.appendChild(d); } }
+  function build(){ draw(orig.map(r=>r.slice())); st.textContent='Press play. Mark in the margins, then wipe the body.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=orig.map(r=>r.slice());
+    st.innerHTML='Scan the body; stamp a 0 into first row &amp; first column as markers.'; await sleep(+sp.value);
+    const marks=[]; for(let r=1;r<R;r++)for(let c=1;c<C;c++){ if(g[r][c]===0){ g[r][0]=0; g[0][c]=0; marks.push([r,0]); marks.push([0,c]); draw(g,{hl:[[r,c]],mark:marks.slice()}); st.innerHTML=`Zero at (${r},${c}) → mark (${r},0) and (0,${c}).`; tickSound(); await sleep(+sp.value); } }
+    st.innerHTML='Markers set in the margins. Now wipe the body using them:'; await sleep(+sp.value);
+    const changed=[]; for(let r=1;r<R;r++)for(let c=1;c<C;c++){ if((g[r][0]===0||g[0][c]===0)&&g[r][c]!==0){ g[r][c]=0; changed.push([r,c]); } }
+    draw(g,{changed,mark:marks}); st.innerHTML='▩ Same result with O(1) extra space — margins were the record!'; ANIM=false; celebrate(G);
+  }
+  $('#b2Play').onclick=play; $('#b2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 14. Max points on line ================= */
+(function(){
+  const pts=[[0,0],[1,1],[2,2],[3,1],[1,0]]; const maxY=2, maxX=3; const G=$('#mpGrid'); const hp=hashPanel($('#mpHash'),'slope→count:'); const st=$('#mpStatus'); const sp=$('#mpSpeed'); const stats=$('#mpStats');
+  const rows=maxY+1, cols=maxX+1;
+  function has(x,y){ return pts.some(p=>p[0]===x&&p[1]===y); }
+  function draw(opts={}){ G.style.gridTemplateColumns=`repeat(${cols},42px)`; G.innerHTML=''; for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ const x=c, y=maxY-r; const d=document.createElement('div'); d.className='pcell'; if(has(x,y)) d.classList.add('pt'); if(opts.anchor&&opts.anchor[0]===x&&opts.anchor[1]===y)d.classList.add('anchor'); if(opts.line&&opts.line.some(p=>p[0]===x&&p[1]===y))d.classList.add('line'); G.appendChild(d); } }
+  function build(){ draw(); hp.render([]); stats.innerHTML=''; st.textContent='Press play. Anchor at (0,0); group points by slope.'; }
+  build();
+  function gcd(a,b){ return b===0?a:gcd(b,a%b); }
+  function slopeKey(dx,dy){ if(dx===0)return 'inf'; if(dy===0)return '0'; const g=gcd(Math.abs(dx),Math.abs(dy)); let sx=dx/g, sy=dy/g; if(sx<0){sx=-sx;sy=-sy;} return sy+'/'+sx; }
+  async function play(){ if(ANIM)return; ANIM=true; build(); const anchor=pts[0]; draw({anchor}); st.innerHTML='Anchor = (0,0). Compute slope to each other point.'; await sleep(+sp.value);
+    const map=new Map(); const bySlope={};
+    for(let i=1;i<pts.length;i++){ const [x,y]=pts[i]; const dx=x-anchor[0], dy=y-anchor[1]; const key=slopeKey(dx,dy); map.set(key,(map.get(key)||0)+1); (bySlope[key]=bySlope[key]||[]).push([x,y]);
+      draw({anchor,line:[anchor,[x,y]]}); hp.render([...map.entries()].map(([k,v])=>({k,v}))); st.innerHTML=`slope to (${x},${y}) = <span class="k">${key}</span>.`; tickSound(); await sleep(+sp.value); }
+    let bestKey=null,bestN=0; for(const [k,v] of map) if(v>bestN){bestN=v;bestKey=k;}
+    const line=[anchor,...bySlope[bestKey]]; draw({anchor,line}); stats.innerHTML=`<span class="pill green">max collinear = ${bestN+1}</span>`; st.innerHTML=`📐 Most points on a line through (0,0): slope ${bestKey} → <span class="k">${bestN+1}</span> points!`; ANIM=false; celebrate(G);
+  }
+  $('#mpPlay').onclick=play; $('#mpReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. Substring with all words ================= */
+(function(){
+  const s="foobarfoo".split(''); const words=["foo","bar"]; const L=3, total=L*words.length; const viz=cellViz($('#swRow')); const st=$('#swStatus'); const sp=$('#swSpeed'); const stats=$('#swStats');
+  function build(){ viz.render(s,{sub:idxSub(s.length)}); stats.innerHTML=''; st.textContent='Press play. Check each window as word chunks.'; }
+  build();
+  function need(){ const m={}; words.forEach(w=>m[w]=(m[w]||0)+1); return m; }
+  async function play(){ if(ANIM)return; ANIM=true; build(); const N=s.length; const founds=[]; const req=need();
+    for(let start=0; start+total<=N; start++){ const seen={}; let ok=true; const chunks=[];
+      for(let k=0;k<words.length;k++){ const w=s.slice(start+k*L, start+k*L+L).join(''); chunks.push(w); seen[w]=(seen[w]||0)+1; }
+      viz.render(s,{sub:idxSub(s.length),range:[start,start+total-1]}); st.innerHTML=`Window [${start}..${start+total-1}] → chunks [${chunks.join(', ')}]`; tickSound(); await sleep(+sp.value);
+      for(const w of Object.keys(req)){ if((seen[w]||0)!==req[w]) ok=false; }
+      if(ok){ founds.push(start); const done=new Set(); for(let k=start;k<start+total;k++)done.add(k); viz.render(s,{sub:idxSub(s.length),done}); st.innerHTML=`✅ Match at start ${start}! chunks = all words.`; await sleep(+sp.value); }
+    }
+    stats.innerHTML=`<span class="pill green">start indices: {${founds.join(', ')}}</span>`; st.innerHTML=`🧩 Valid starts: {${founds.join(', ')}}`; ANIM=false; celebrate($('#swRow'));
+  }
+  $('#swPlay').onclick=play; $('#swReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 16. Making palindromes ================= */
+(function(){
+  const s="aabbc".split(''); const viz=cellViz($('#p1Row')); const hp=hashPanel($('#p1Hash'),'char→count:'); const st=$('#p1Status'); const sp=$('#p1Speed'); const stats=$('#p1Stats');
+  function build(){ viz.render(s,{sub:idxSub(s.length)}); hp.render([]); stats.innerHTML=''; st.textContent='Press play. Build frequencies, count odd ones.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const m=new Map();
+    for(let i=0;i<s.length;i++){ m.set(s[i],(m.get(s[i])||0)+1); viz.render(s,{sub:idxSub(s.length),compare:[i]}); hp.render([...m.entries()].map(([k,v])=>({k,v,state:k===s[i]?'new':''}))); st.innerHTML=`count '${s[i]}' = ${m.get(s[i])}.`; tickSound(); await sleep(+sp.value); }
+    let odd=0; for(const v of m.values()) if(v%2===1) odd++;
+    stats.innerHTML=`<span class="pill blue">odd counts: ${odd}</span>`;
+    viz.render(s,{sub:idxSub(s.length),done:new Set(idxSub(s.length))}); st.innerHTML=`🔁 ${odd} odd count(s) ≤ 1 → <span class="k">${odd<=1?'YES':'NO'}</span>, can form a palindrome!`; ANIM=false; celebrate($('#p1Row'));
+  }
+  $('#p1Play').onclick=play; $('#p1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 17. Making palindrome II ================= */
+(function(){
+  const s="abccccdd".split(''); const viz=cellViz($('#p2Row')); const hp=hashPanel($('#p2Hash'),'char→count:'); const st=$('#p2Status'); const sp=$('#p2Speed'); const stats=$('#p2Stats');
+  function build(){ viz.render(s,{sub:idxSub(s.length)}); hp.render([]); stats.innerHTML=''; st.textContent='Press play. Add pairs, then one center if possible.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const m=new Map();
+    for(let i=0;i<s.length;i++){ m.set(s[i],(m.get(s[i])||0)+1); viz.render(s,{sub:idxSub(s.length),compare:[i]}); hp.render([...m.entries()].map(([k,v])=>({k,v,state:k===s[i]?'new':''}))); tickSound(); await sleep(+sp.value*0.7); }
+    let len=0, odd=false;
+    for(const [k,v] of m){ const pairs=Math.floor(v/2)*2; len+=pairs; if(v%2===1) odd=true; hp.render([...m.entries()].map(([kk,vv])=>({k:kk,v:vv,state:kk===k?'hit':''}))); st.innerHTML=`'${k}' contributes ${pairs} (pairs). Running length = <span class="k">${len}</span>.`; tickSound(); await sleep(+sp.value); }
+    const ans=len+(odd?1:0); stats.innerHTML=`<span class="pill green">longest palindrome = ${ans}</span>`; viz.render(s,{sub:idxSub(s.length),done:new Set(idxSub(s.length))}); st.innerHTML=`🔂 Longest palindrome buildable = ${len} pairs ${odd?'+ 1 center':''} = <span class="k">${ans}</span>!`; ANIM=false; celebrate($('#p2Row'));
+  }
+  $('#p2Play').onclick=play; $('#p2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

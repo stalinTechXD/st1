@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Backtracking Puzzles — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(26px,5vw,48px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12px; font-weight:600; padding:6px 11px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(19px,3.3vw,28px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12px; margin:8px 0 4px}
+  .vwrap{overflow-x:auto; display:flex; justify-content:center; margin:12px 0; padding:4px}
+  .tsvg .tedge{stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .tsvg .tedge.on{stroke:var(--accent)}
+  .tsvg .tnode{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .tsvg .tnode.cur{fill:#3a3620; stroke:var(--mid); stroke-width:3.5}
+  .tsvg .tnode.done{fill:#22345f; stroke:var(--accent)}
+  .tsvg .tnode.leaf{fill:#0d3b30; stroke:var(--found); stroke-width:3.5}
+  .tsvg .tnode.dup{fill:#3a1d2a; stroke:var(--accent2)}
+  .tsvg .tnode.fade{opacity:.12}
+  .tsvg .tlbl{fill:var(--ink); font-weight:800; font-size:11px; text-anchor:middle; dominant-baseline:central; font-family:'Consolas',monospace}
+  .tsvg .tlbl.fade{opacity:.12}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0; min-height:34px}
+  .chip2{background:#22345f; border:2px solid var(--accent); border-radius:9px; padding:5px 11px; font-weight:800; font-family:'Consolas',monospace; font-size:13px; color:var(--accent)}
+  .chip2.gold{border-color:var(--mid); color:var(--mid); background:#3a3620}
+  .row{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; min-height:42px; margin:6px 0}
+  .cell{min-width:38px; height:40px; padding:0 6px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:16px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s; font-family:'Consolas',monospace}
+  .cell.cur{border-color:var(--mid); background:#3a3620}
+  .cell.used{opacity:.35}
+  .cell.pick{border-color:var(--found); background:#0d3b30}
+  .grid{display:inline-grid; gap:4px}
+  .gc{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:800;font-size:17px;background:#1d2a52;border:2px solid #2c3d6e;font-family:'Consolas',monospace;transition:.3s}
+  .gc.wall{background:#0a1020;border-color:#1a2440}
+  .gc.cur{border-color:var(--mid);background:#3a3620}
+  .gc.path{border-color:var(--found);background:#0d3b30;color:var(--found)}
+  .gc.dead{border-color:var(--accent2);background:#3a1d2a;opacity:.55}
+  .gc.given{background:#22345f;border-color:var(--accent);color:var(--accent)}
+  .gc.try{border-color:var(--mid);background:#3a3620}
+  .gc.bad{border-color:var(--accent2);background:#3a1d2a}
+  .gc.ok{border-color:var(--found);background:#0d3b30}
+  .gc.queen{background:#2a1f3a;border-color:#b5179e;color:#ffd166}
+  .gc.attack{border-color:var(--accent2);background:#3a1d2a}
+  .qgrid{display:inline-grid;gap:0;border:2px solid #2c3d6e;border-radius:8px;overflow:hidden}
+  .qgrid .gc{border-radius:0;border:1px solid #223055}
+  .qgrid .gc.dark{background:#141d38}
+  .sgrid .gc.box{border-width:1px}
+  .work{font-family:'Consolas',monospace; font-size:14px; background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:8px auto; max-width:600px; text-align:center}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Backtracking Puzzles — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Permutations, maze paths, N-Queens &amp; Sudoku — watch backtracking choose, explore, and undo its way to every solution. Built so backtracking sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#p1">🔀 Permutations I (swap)</a>
+  <a href="#p2">🎰 Permutations II (used)</a>
+  <a href="#p3">🎭 Permutations III (dupes)</a>
+  <a href="#mz">🐀 Maze Paths</a>
+  <a href="#nq">👑 N-Queens</a>
+  <a href="#su">🔢 Sudoku Solver</a>
+</nav>
+
+<main>
+
+  <!-- 1 PERMUTATIONS SWAP -->
+  <section id="p1">
+    <h2>🔀 Permutations of a String I — Swapping <span class="badge">fix &amp; swap</span></h2>
+    <p class="lead">Generate every arrangement by fixing each position in turn: swap the current index with each later index, recurse, then swap back to restore.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Choose who sits here:</span> at index <code>i</code>, try each character from <code>i</code> to the end in that slot (swap it in), recurse on <code>i+1</code>, then swap back (backtrack). When <code>i</code> reaches the end, the string is one permutation. "ABC" → <b>6</b> permutations.</div>
+      <div class="steps-flow"><span class="chip">for j = i … n−1: swap(i, j)</span><span class="arrow">→</span><span class="chip">recurse i+1</span><span class="arrow">→</span><span class="chip">swap back</span></div>
+      <div class="oneliner">🔒 Keep forever: "Swap-permutations: fix each index by swapping in each candidate, recurse, then swap back."</div>
+    </div>
+    <div class="vwrap" id="p1Tree"></div>
+    <div class="lbl">permutations</div><div class="chips" id="p1Out"></div>
+    <div class="status" id="p1Status">Press play to permute "ABC" by swapping.</div>
+    <div class="stats" id="p1Stats"></div>
+    <div class="controls"><button class="btn" id="p1Play">▶ Permute "ABC"</button><button class="btn ghost" id="p1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p1Speed" min="300" max="2200" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the swap-back is the backtrack — omit it and the string stays scrambled for sibling branches.</div></div>
+  </section>
+
+  <!-- 2 PERMUTATIONS USED -->
+  <section id="p2">
+    <h2>🎰 Permutations of a String II — Used Array <span class="badge">build &amp; mark</span></h2>
+    <p class="lead">Build the permutation one character at a time in a separate buffer, tracking which characters are already used with a boolean array.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pick an unused letter:</span> at each depth, loop over all characters; skip the ones marked <code>used</code>, otherwise append it, mark used, recurse, then un-mark (backtrack). When the buffer is full, record it. "ABC" → <b>6</b> permutations.</div>
+      <div class="steps-flow"><span class="chip">for each char: if used skip</span><span class="arrow">→</span><span class="chip">pick, mark used, recurse</span><span class="arrow">→</span><span class="chip">un-mark to backtrack</span></div>
+      <div class="oneliner">🔒 Keep forever: "Used-array permutations: build a buffer, pick each unused char, mark/un-mark around the recursion."</div>
+    </div>
+    <div class="lbl">characters (dim = used)</div><div class="row" id="p2Chars"></div>
+    <div class="lbl">current buffer</div><div class="row" id="p2Buf"></div>
+    <div class="lbl">permutations</div><div class="chips" id="p2Out"></div>
+    <div class="status" id="p2Status">Press play to permute "ABC" with a used-array.</div>
+    <div class="stats" id="p2Stats"></div>
+    <div class="controls"><button class="btn" id="p2Play">▶ Permute (used array)</button><button class="btn ghost" id="p2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p2Speed" min="300" max="2200" value="750" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> this version needs O(n) extra space (buffer + used array) but keeps the input untouched.</div></div>
+  </section>
+
+  <!-- 3 PERMUTATIONS DUPES -->
+  <section id="p3">
+    <h2>🎭 Permutations of a String III — With Duplicates <span class="badge">skip repeats</span></h2>
+    <p class="lead">When characters repeat, naive permutation produces duplicates. Sort first, then skip a character if it equals the previous one that's still unused.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Use each duplicate once per level:</span> sort the letters. At each depth skip <code>c[i]</code> if <code>c[i] == c[i−1]</code> and <code>c[i−1]</code> wasn't used at this level — that guarantees each distinct arrangement is generated once. "AAB" → only <b>3</b> unique: AAB, ABA, BAA.</div>
+      <div class="steps-flow"><span class="chip">sort the characters</span><span class="arrow">→</span><span class="chip">skip c[i] if == c[i−1] &amp; prev unused</span><span class="arrow">→</span><span class="chip">unique perms only</span></div>
+      <div class="oneliner">🔒 Keep forever: "Unique permutations: sort, then skip equal-to-previous chars whose twin is unused at this level."</div>
+    </div>
+    <div class="vwrap" id="p3Tree"></div>
+    <div class="lbl">unique permutations</div><div class="chips" id="p3Out"></div>
+    <div class="status" id="p3Status">Press play to generate unique permutations of "AAB".</div>
+    <div class="stats" id="p3Stats"></div>
+    <div class="controls"><button class="btn" id="p3Play">▶ Unique perms of "AAB"</button><button class="btn ghost" id="p3Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p3Speed" min="350" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the number of distinct permutations of a multiset is n! / (product of each letter's factorial). "AAB" = 3!/2! = 3.</div></div>
+  </section>
+
+  <!-- 4 MAZE PATHS -->
+  <section id="mz">
+    <h2>🐀 Maze Paths (Rat in a Maze) <span class="badge">DFS + backtrack</span></h2>
+    <p class="lead">Find a path through a maze from start to goal. Explore a direction; if it leads to a dead end, backtrack (un-mark the cell) and try another.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Explore, dead-end, retreat:</span> mark the current cell as part of the path and recurse into open, unvisited neighbours. If none reach the goal, this cell is a dead end — un-mark it and return so a different route can be tried. Watch it enter the top corridor, hit a dead end, and back out.</div>
+      <div class="steps-flow"><span class="chip">mark cell &amp; recurse neighbours</span><span class="arrow">→</span><span class="chip">reached goal? done</span><span class="arrow">·</span><span class="chip">dead end? un-mark &amp; retreat</span></div>
+      <div class="oneliner">🔒 Keep forever: "Maze solving = DFS that marks the path and un-marks on dead ends (that un-mark is the backtrack)."</div>
+    </div>
+    <div class="vwrap" id="mzGrid"></div>
+    <div class="status" id="mzStatus">Press play to find a path through the maze.</div>
+    <div class="stats" id="mzStats"></div>
+    <div class="controls"><button class="btn" id="mzPlay">▶ Solve the maze</button><button class="btn ghost" id="mzReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mzSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> mark a cell visited <b>before</b> recursing and unmark <b>after</b> — otherwise you loop or block valid routes.</div></div>
+  </section>
+
+  <!-- 5 N-QUEENS -->
+  <section id="nq">
+    <h2>👑 N-Queens <span class="badge">place · check · backtrack</span></h2>
+    <p class="lead">Place N queens on an N×N board so none attack each other. Try each row in the current column; if it's safe place a queen, else backtrack.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One queen per column:</span> go column by column. In each column, try each row — if no earlier queen shares that row or diagonal, place it and move to the next column. If a column has no safe row, remove the previous queen and try its next row (backtrack). 4×4 → <b>2</b> solutions.</div>
+      <div class="steps-flow"><span class="chip">for each row in column</span><span class="arrow">→</span><span class="chip">safe? place &amp; next column</span><span class="arrow">·</span><span class="chip">stuck? remove &amp; try next row</span></div>
+      <div class="oneliner">🔒 Keep forever: "N-Queens: one queen per column; place where safe, backtrack when a column is blocked."</div>
+    </div>
+    <div class="vwrap" id="nqBoard"></div>
+    <div class="status" id="nqStatus">Press play to solve the 4-Queens puzzle.</div>
+    <div class="stats" id="nqStats"></div>
+    <div class="controls"><button class="btn" id="nqPlay">▶ Solve 4-Queens</button><button class="btn ghost" id="nqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="nqSpeed" min="250" max="2000" value="600" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> track attacked rows &amp; both diagonals in sets for O(1) safety checks — column index ± row gives the diagonals.</div></div>
+  </section>
+
+  <!-- 6 SUDOKU -->
+  <section id="su">
+    <h2>🔢 Sudoku Solver <span class="badge">constraint backtracking</span></h2>
+    <p class="lead">Fill each empty cell with a digit that doesn't clash in its row, column, or box. If no digit fits, backtrack and change an earlier choice.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Try, validate, retreat:</span> find the next empty cell, try digits 1..N, and keep one only if it's valid in the row, column, and sub-box. Recurse to the next empty cell; if it hits a wall, undo (set the cell back to empty) and try the next digit. Here a 4×4 puzzle solves fully.</div>
+      <div class="steps-flow"><span class="chip">next empty cell</span><span class="arrow">→</span><span class="chip">try digit if valid</span><span class="arrow">→</span><span class="chip">recurse · dead end → erase &amp; retry</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sudoku = backtracking with row/col/box constraints; erase the cell to backtrack."</div>
+    </div>
+    <div class="vwrap" id="suGrid"></div>
+    <div class="status" id="suStatus">Press play to solve the 4×4 Sudoku.</div>
+    <div class="stats" id="suStats"></div>
+    <div class="controls"><button class="btn" id="suPlay">▶ Solve Sudoku</button><button class="btn ghost" id="suReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="suSpeed" min="200" max="1800" value="500" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> choosing the empty cell with the <b>fewest</b> valid options first (MRV heuristic) makes real 9×9 solvers dramatically faster.</div></div>
+
+    <div class="note key">🏆 <b>Backtracking mastered!</b> The universal recipe: <b>choose → explore → un-choose</b>. Permutations (swap, used-array, duplicate-skipping) · maze paths (DFS that un-marks dead ends) · N-Queens (one queen per column, backtrack when blocked) · and Sudoku (constraint checks + erase to retreat). Prune early, undo cleanly, and let the recursion find every solution. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Backtracking Puzzles — Animated Guide • Replay any animation, turn on 🎵 sound • Choose, explore, un-choose 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- renderers ---- */
+function rowR(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>`<div class="cell ${(opt.cls&&opt.cls[i])||''}">${v}</div>`).join(''); }
+function chipsR(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>`<span class="chip2 ${(opt.cls&&opt.cls[i])||''}">${v}</span>`).join(''); }
+function gridR(cont, grid, opt={}){ const R=grid.length,C=grid[0].length; let h=`<div class="grid ${opt.klass||''}" style="grid-template-columns:repeat(${C},1fr)">`; for(let i=0;i<R;i++)for(let j=0;j<C;j++){ const cls=(opt.cls&&opt.cls(i,j,grid[i][j]))||''; const txt=(opt.text&&opt.text(i,j,grid[i][j]))!==undefined?opt.text(i,j,grid[i][j]):grid[i][j]; h+=`<div class="gc ${cls}">${txt}</div>`; } h+='</div>'; cont.innerHTML=h; }
+let TID=0;
+function tnode(label){ return {label, ch:[], _id:TID++, _cls:''}; }
+function treeSVG(cont, root, opt={}){ let leaf=0; (function lay(n,d){ n._d=d; if(!n.ch.length){ n._x=leaf++; } else { n.ch.forEach(c=>lay(c,d+1)); n._x=(n.ch[0]._x+n.ch[n.ch.length-1]._x)/2; } })(root,0);
+  const leaves=Math.max(leaf,1); const maxD=(function md(n){ let m=n._d; n.ch.forEach(c=>m=Math.max(m,md(c))); return m; })(root);
+  const W=Math.max(300,44+leaves*50), lh=56, H=28+maxD*lh+28; const px=n=>26+(leaves<=1?0.5:n._x/(leaves-1))*(W-52), py=n=>26+n._d*lh; let e='',ns='';
+  (function draw(n){ n.ch.forEach(c=>{ const on=(c._cls&&c._cls!=='fade')?'on':''; e+=`<line class="tedge ${on}" x1="${px(n)}" y1="${py(n)}" x2="${px(c)}" y2="${py(c)}"/>`; draw(c); }); })(root);
+  (function draw(n){ const cls=n._cls||''; const fade=cls.includes('fade')?'fade':''; ns+=`<circle class="tnode ${cls}" cx="${px(n)}" cy="${py(n)}" r="15"/><text class="tlbl ${fade}" x="${px(n)}" y="${py(n)}">${n.label}</text>`; n.ch.forEach(draw); })(root);
+  cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="tsvg">${e}${ns}</svg>`;
+}
+function fadeAll(root){ (function f(n){ n._cls='fade'; n.ch.forEach(f); })(root); }
+function preorder(root){ const out=[]; (function go(n){ out.push(n); n.ch.forEach(go); })(root); return out; }
+
+/* ================= 1. permutations swap ================= */
+(function(){
+  const S='ABC'; const st=$('#p1Status'),sp=$('#p1Speed'),stats=$('#p1Stats'),cont=$('#p1Tree');
+  function build(arr,i){ const nd=tnode(arr.join('')); if(i<arr.length){ nd.ch=[]; for(let j=i;j<arr.length;j++){ const na=arr.slice(); [na[i],na[j]]=[na[j],na[i]]; nd.ch.push(build(na,i+1)); } } return nd; }
+  let root;
+  function setup(){ TID=0; root=build(S.split(''),0); fadeAll(root); treeSVG(cont,root); chipsR($('#p1Out'),[]); stats.innerHTML=''; st.textContent='Press play to permute "ABC" by swapping.'; }
+  setup();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=build(S.split(''),0); fadeAll(root); const order=preorder(root); const out=[];
+    for(const nd of order){ const isLeaf=!nd.ch.length; nd._cls=isLeaf?'leaf':'cur'; treeSVG(cont,root); tickSound(); if(isLeaf){ out.push(nd.label); chipsR($('#p1Out'),out,{[out.length-1]:'gold'}); st.innerHTML=`Permutation <span class="k">${nd.label}</span>.`; } else st.innerHTML=`Swap a char into position → "${nd.label}".`; stats.innerHTML=`<span class="pill blue">${out.length} perms</span>`; await sleep(+sp.value); if(!isLeaf)nd._cls='done'; }
+    st.innerHTML=`🔀 "ABC" → <span class="k">${out.length}</span> permutations: ${out.join(', ')}!`; ANIM=false; celebrate(cont);
+  }
+  $('#p1Play').onclick=play; $('#p1Reset').onclick=()=>{ if(!ANIM) setup(); };
+})();
+
+/* ================= 2. permutations used array ================= */
+(function(){
+  const S='ABC'; const st=$('#p2Status'),sp=$('#p2Speed'),stats=$('#p2Stats');
+  function setup(){ rowR($('#p2Chars'),S.split('')); rowR($('#p2Buf'),['_','_','_']); chipsR($('#p2Out'),[]); stats.innerHTML=''; st.textContent='Press play to permute "ABC" with a used-array.'; }
+  setup();
+  async function play(){ if(ANIM)return; ANIM=true; const used=[false,false,false]; const buf=['_','_','_']; const out=[];
+    function drawChars(cur){ rowR($('#p2Chars'),S.split(''),{cls:Object.fromEntries(S.split('').map((_,i)=>[i, cur===i?'cur':(used[i]?'used':'')]))}); }
+    async function solve(depth){ if(depth===S.length){ out.push(buf.join('')); chipsR($('#p2Out'),out,{[out.length-1]:'gold'}); rowR($('#p2Buf'),buf.slice(),{0:'pick',1:'pick',2:'pick'}); blip(680,0.09,'sine',0.1); st.innerHTML=`Buffer full → record <span class="k">${buf.join('')}</span>.`; await sleep(+sp.value); return; }
+      for(let i=0;i<S.length;i++){ if(used[i])continue; used[i]=true; buf[depth]=S[i]; drawChars(i); rowR($('#p2Buf'),buf.slice(),{[depth]:'cur'}); tickSound(); st.innerHTML=`Depth ${depth}: pick '${S[i]}' (mark used) → buffer [${buf.join('')}].`; await sleep(+sp.value); await solve(depth+1); used[i]=false; buf[depth]='_'; } }
+    await solve(0);
+    drawChars(-1); rowR($('#p2Buf'),['_','_','_']); stats.innerHTML=`<span class="pill green">${out.length} perms</span>`; st.innerHTML=`🎰 "ABC" → <span class="k">${out.length}</span> permutations via the used-array!`; ANIM=false; celebrate($('#p2Out'));
+  }
+  $('#p2Play').onclick=play; $('#p2Reset').onclick=()=>{ if(!ANIM) setup(); };
+})();
+
+/* ================= 3. permutations with duplicates ================= */
+(function(){
+  const S='AAB'.split('').sort(); const st=$('#p3Status'),sp=$('#p3Speed'),stats=$('#p3Stats'),cont=$('#p3Tree');
+  // build tree with duplicate-skip pruning; skipped children omitted
+  function build(used, path){ const nd=tnode(path.length?path.join(''):'ε'); if(path.length<S.length){ nd.ch=[]; for(let i=0;i<S.length;i++){ if(used[i])continue; if(i>0 && S[i]===S[i-1] && !used[i-1])continue; const nu=used.slice(); nu[i]=true; nd.ch.push(build(nu,[...path,S[i]])); } } return nd; }
+  let root;
+  function setup(){ TID=0; root=build([false,false,false],[]); fadeAll(root); treeSVG(cont,root); chipsR($('#p3Out'),[]); stats.innerHTML=''; st.textContent='Press play to generate unique permutations of "AAB".'; }
+  setup();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=build([false,false,false],[]); fadeAll(root); const order=preorder(root); const out=[];
+    for(const nd of order){ const isLeaf=!nd.ch.length && nd.label.replace('ε','').length===S.length; nd._cls=isLeaf?'leaf':'cur'; treeSVG(cont,root); tickSound(); if(isLeaf){ out.push(nd.label); chipsR($('#p3Out'),out,{[out.length-1]:'gold'}); st.innerHTML=`Unique permutation <span class="k">${nd.label}</span>.`; } else st.innerHTML=`Extend "${nd.label}" (duplicates already pruned).`; stats.innerHTML=`<span class="pill blue">${out.length} unique</span>`; await sleep(+sp.value); if(!isLeaf)nd._cls='done'; }
+    st.innerHTML=`🎭 "AAB" → only <span class="k">${out.length}</span> unique permutations: ${out.join(', ')} (not 6)!`; ANIM=false; celebrate(cont);
+  }
+  $('#p3Play').onclick=play; $('#p3Reset').onclick=()=>{ if(!ANIM) setup(); };
+})();
+
+/* ================= 4. maze paths ================= */
+(function(){
+  const M=[[1,1,1],[1,0,0],[1,1,1]]; const R=3,C=3; const st=$('#mzStatus'),sp=$('#mzSpeed'),stats=$('#mzStats'),cont=$('#mzGrid');
+  const DIRS=[[0,1],[1,0],[0,-1],[-1,0]]; // right, down, left, up
+  let state; // 0 unvisited, 1 on-path, 2 dead
+  function draw(cur){ gridR(cont,M,{klass:'', cls:(i,j,v)=>{ if(v===0)return 'wall'; if(cur&&cur[0]===i&&cur[1]===j)return 'cur'; if(state[i][j]===1)return 'path'; if(state[i][j]===2)return 'dead'; return ''; }, text:(i,j,v)=>{ if(v===0)return '▒'; if(i===0&&j===0)return 'S'; if(i===R-1&&j===C-1)return 'E'; if(state[i][j]===1)return '●'; if(state[i][j]===2)return '×'; return ''; }}); }
+  function setup(){ state=Array.from({length:R},()=>Array(C).fill(0)); draw(); stats.innerHTML=''; st.textContent='Press play to find a path through the maze.'; }
+  setup();
+  async function play(){ if(ANIM)return; ANIM=true; state=Array.from({length:R},()=>Array(C).fill(0));
+    async function dfs(i,j){ state[i][j]=1; draw([i,j]); tickSound(); st.innerHTML=`Enter (${i},${j}); mark on path.`; await sleep(+sp.value); if(i===R-1&&j===C-1){ return true; }
+      for(const [di,dj] of DIRS){ const ni=i+di,nj=j+dj; if(ni<0||nj<0||ni>=R||nj>=C||M[ni][nj]===0||state[ni][nj]!==0)continue; if(await dfs(ni,nj))return true; }
+      state[i][j]=2; draw([i,j]); blip(320,0.12,'sawtooth',0.08); st.innerHTML=`Dead end at (${i},${j}) → un-mark &amp; backtrack.`; await sleep(+sp.value); return false; }
+    const ok=await dfs(0,0);
+    // clear dead marks, keep path
+    for(let i=0;i<R;i++)for(let j=0;j<C;j++) if(state[i][j]===2)state[i][j]=0; draw();
+    const plen=state.flat().filter(x=>x===1).length; stats.innerHTML=ok?`<span class="pill green">path found (${plen} cells)</span>`:`<span class="pill pink">no path</span>`; st.innerHTML=`🐀 ${ok?`Path found through the maze (${plen} cells) — it backtracked out of the top-right dead end!`:'No path exists.'}`; ANIM=false; celebrate(cont);
+  }
+  $('#mzPlay').onclick=play; $('#mzReset').onclick=()=>{ if(!ANIM) setup(); };
+})();
+
+/* ================= 5. N-Queens ================= */
+(function(){
+  const N=4; const st=$('#nqStatus'),sp=$('#nqSpeed'),stats=$('#nqStats'),cont=$('#nqBoard');
+  let pos; // pos[col] = row or -1
+  function draw(hi){ const grid=Array.from({length:N},()=>Array(N).fill('')); for(let c=0;c<N;c++) if(pos[c]>=0)grid[pos[c]][c]='♛'; gridR(cont,grid,{klass:'qgrid', cls:(i,j,v)=>{ let cl=((i+j)%2)?'dark':''; if(v==='♛')cl+=' queen'; if(hi&&hi.r===i&&hi.c===j)cl+=' '+(hi.bad?'attack':'try'); return cl; }, text:(i,j,v)=>v||''}); }
+  function safe(r,c){ for(let cc=0;cc<c;cc++){ const rr=pos[cc]; if(rr===r||Math.abs(rr-r)===Math.abs(cc-c))return false; } return true; }
+  function setup(){ pos=Array(N).fill(-1); draw(); stats.innerHTML=''; st.textContent='Press play to solve the 4-Queens puzzle.'; }
+  setup();
+  async function play(){ if(ANIM)return; ANIM=true; pos=Array(N).fill(-1); let sols=0;
+    async function solve(c){ if(c===N){ sols++; draw(); blip(700,0.14,'sine',0.11); st.innerHTML=`✔ Solution ${sols} found!`; stats.innerHTML=`<span class="pill green">${sols} solution(s)</span>`; await sleep(+sp.value*1.6); return; }
+      for(let r=0;r<N;r++){ const ok=safe(r,c); draw({r,c,bad:!ok}); tickSound(); st.innerHTML=`Column ${c}: try row ${r} → ${ok?'safe, place ♛':'attacked, skip'}.`; await sleep(+sp.value); if(ok){ pos[c]=r; draw(); await solve(c+1); pos[c]=-1; draw(); if(!ANIM)return; } }
+    }
+    await solve(0); draw();
+    st.innerHTML=`👑 4-Queens has <span class="k">${sols}</span> solutions — place per column, backtrack when a column is blocked!`; stats.innerHTML=`<span class="pill green">${sols} solutions</span>`; ANIM=false; celebrate(cont);
+  }
+  $('#nqPlay').onclick=play; $('#nqReset').onclick=()=>{ if(!ANIM) setup(); };
+})();
+
+/* ================= 6. Sudoku (4x4) ================= */
+(function(){
+  const PUZZLE=[[1,2,0,4],[0,4,1,0],[2,0,4,3],[4,0,0,1]]; const N=4,B=2; const st=$('#suStatus'),sp=$('#suSpeed'),stats=$('#suStats'),cont=$('#suGrid');
+  let g, given;
+  function draw(hi){ gridR(cont,g,{klass:'sgrid', cls:(i,j,v)=>{ let cl='box'; if((Math.floor(i/B)+Math.floor(j/B))%2)cl+=' dark'; if(given[i][j])cl+=' given'; if(hi&&hi.i===i&&hi.j===j)cl+=' '+(hi.type); return cl; }, text:(i,j,v)=>v||''}); }
+  function valid(r,c,d){ for(let x=0;x<N;x++){ if(g[r][x]===d||g[x][c]===d)return false; } const br=Math.floor(r/B)*B, bc=Math.floor(c/B)*B; for(let i=0;i<B;i++)for(let j=0;j<B;j++) if(g[br+i][bc+j]===d)return false; return true; }
+  function setup(){ g=PUZZLE.map(r=>r.slice()); given=PUZZLE.map(r=>r.map(v=>v!==0)); draw(); stats.innerHTML=''; st.textContent='Press play to solve the 4×4 Sudoku.'; }
+  setup();
+  async function play(){ if(ANIM)return; ANIM=true; g=PUZZLE.map(r=>r.slice()); given=PUZZLE.map(r=>r.map(v=>v!==0));
+    async function solve(){ let er=-1,ec=-1; for(let i=0;i<N&&er<0;i++)for(let j=0;j<N;j++) if(g[i][j]===0){ er=i;ec=j; break; } if(er<0)return true;
+      for(let d=1;d<=N;d++){ const ok=valid(er,ec,d); draw({i:er,j:ec,type:ok?'try':'bad'}); tickSound(); st.innerHTML=`Cell (${er},${ec}): try ${d} → ${ok?'valid, place':'clashes, skip'}.`; await sleep(+sp.value); if(ok){ g[er][ec]=d; draw({i:er,j:ec,type:'ok'}); await sleep(+sp.value*0.4); if(await solve())return true; g[er][ec]=0; draw({i:er,j:ec,type:'bad'}); blip(320,0.1,'sawtooth',0.07); st.innerHTML=`Dead end → erase (${er},${ec}) and backtrack.`; await sleep(+sp.value); } }
+      return false; }
+    const ok=await solve(); draw();
+    stats.innerHTML=ok?`<span class="pill green">solved!</span>`:`<span class="pill pink">unsolvable</span>`; st.innerHTML=`🔢 ${ok?'Sudoku solved — every empty cell filled by constraint backtracking!':'No solution.'}`; ANIM=false; celebrate(cont);
+  }
+  $('#suPlay').onclick=play; $('#suReset').onclick=()=>{ if(!ANIM) setup(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

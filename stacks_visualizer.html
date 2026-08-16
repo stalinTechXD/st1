@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stacks — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:720px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:7px; justify-content:center;
+      padding:12px; background:rgba(11,16,32,.8); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12px; font-weight:600; padding:6px 10px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .cellrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:22px 0 28px; min-height:64px}
+  .cell{position:relative; min-width:48px; height:50px; padding:0 8px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:16px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .35s cubic-bezier(.2,.8,.2,1)}
+  .cell .idx{position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--muted); font-weight:700}
+  .cell .ptr{position:absolute; bottom:-23px; left:50%; transform:translateX(-50%); font-size:11.5px; font-weight:800; white-space:nowrap; color:var(--accent); background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 6px}
+  .cell.in-range{border-color:var(--accent); background:#22345f}
+  .cell.lo{border-color:var(--lo); background:#182a5a; box-shadow:0 0 0 3px rgba(67,97,238,.4)}
+  .cell.hi{border-color:var(--hi); background:#3a1d2a; box-shadow:0 0 0 3px rgba(247,37,133,.4)}
+  .cell.mid{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 4px rgba(255,209,102,.45); transform:scale(1.1) translateY(-4px)}
+  .cell.found{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 4px rgba(6,214,160,.55)}
+  .cell.dead{opacity:.3; filter:grayscale(.5)}
+  .cell.empty{color:var(--muted); font-style:italic; background:#141d3a}
+
+  /* stack */
+  .stackwrap{display:flex; gap:26px; justify-content:center; align-items:flex-end; flex-wrap:wrap; margin:22px 0}
+  .stackcol{display:flex; flex-direction:column; align-items:center}
+  .slabel{font-weight:800; color:var(--accent); margin-bottom:8px; font-size:14px}
+  .stack{display:flex; flex-direction:column-reverse; gap:6px; width:100px; min-height:236px; border:2px solid var(--line); border-top:none; border-radius:0 0 14px 14px; padding:8px; background:rgba(10,19,48,.5); justify-content:flex-start}
+  .sitem{height:40px; border-radius:8px; background:#22345f; border:2px solid var(--accent); color:var(--ink); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; animation:pop .3s ease}
+  .sitem.top{border-color:var(--mid); box-shadow:0 0 0 3px rgba(255,209,102,.45)}
+  .sitem.minv{border-color:var(--found); box-shadow:0 0 0 3px rgba(6,214,160,.45)}
+  .sitem.hl{border-color:var(--hi); box-shadow:0 0 0 3px rgba(247,37,133,.45)}
+  .sempty{color:var(--muted); font-style:italic; align-self:center; margin:auto 0}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  /* histogram bars */
+  .bars{display:flex; align-items:flex-end; justify-content:center; gap:8px; height:230px; padding:26px 10px 34px; margin:8px 0}
+  .bar{width:46px; min-width:22px; border-radius:8px 8px 4px 4px; position:relative; background:linear-gradient(180deg,#3a4d80,#26356a); border:1px solid #2c3d6e; transition:height .35s, background .3s, box-shadow .3s}
+  .bar .bval{position:absolute; top:-22px; left:0; right:0; text-align:center; font-size:12.5px; font-weight:800; color:var(--muted)}
+  .bar.hl{background:linear-gradient(180deg,var(--mid),#caa02a); box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  .bar.instack{background:linear-gradient(180deg,#4361ee,#2b3f9e)}
+  .bar.area{background:linear-gradient(180deg,var(--found),#04b085); box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+
+  /* matrix */
+  .mwrap{text-align:center;margin:16px 0}
+  .mgrid{display:inline-grid;gap:6px}
+  .mcell{width:46px;height:46px;border-radius:9px;border:2px solid #2c3d6e;background:#141d3a;display:flex;align-items:center;justify-content:center;font-weight:700;transition:.3s;font-family:'Consolas',monospace;color:#4a5a86}
+  .mcell.one{background:#22345f;border-color:var(--accent);color:#8ff0ff}
+  .mcell.row{box-shadow:0 0 0 3px rgba(255,209,102,.45);border-color:var(--mid)}
+  .mcell.area{background:#0d3b30;border-color:var(--found);color:#8affd8;box-shadow:0 0 0 3px rgba(6,214,160,.5)}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Stacks — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch items push, pop, and monotonic stacks solve rectangles &amp; spans. Built so every stack pattern sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#whatstack">📚 What is a Stack</a>
+  <a href="#twostacks">↔️ Two Stacks, One Array</a>
+  <a href="#pushbottom">⬇️ Push at Bottom</a>
+  <a href="#reversestack">🔄 Reverse a Stack</a>
+  <a href="#nge">📈 Next Greater Element</a>
+  <a href="#histogram">🏙️ Largest Rectangle</a>
+  <a href="#binmat1">▦ Binary Matrix I</a>
+  <a href="#binmat2">▩ Binary Matrix II</a>
+  <a href="#summin">➕ Sum of Minimums</a>
+  <a href="#removedup">🧹 Remove Duplicates</a>
+  <a href="#minstack">🔻 Min Stack</a>
+  <a href="#minstackeff">⚡ Min Stack (O(1))</a>
+</nav>
+
+<main>
+
+  <!-- WHAT IS STACK -->
+  <section id="whatstack">
+    <h2>📚 What is a Stack? <span class="badge">LIFO</span></h2>
+    <p class="lead">A stack is a Last-In-First-Out pile — you can only add or remove from the <b>top</b>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A stack of plates:</span> you add a plate on top (<b>push</b>) and take one off the top (<b>pop</b>). The last plate placed is the first one removed — you can't pull from the middle.</div>
+      <div class="steps-flow"><span class="chip">push → add on top</span><span class="arrow">·</span><span class="chip">pop → remove top</span><span class="arrow">·</span><span class="chip">peek → read top</span></div>
+      <div class="oneliner">🔒 Keep forever: "Only the top is reachable — Last In, First Out."</div>
+    </div>
+    <div class="note">Operations: push 3, push 7, push 5, pop, push 9, pop.</div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">Stack</div><div class="stack" id="wsStack"></div></div></div>
+    <div class="status" id="wsStatus">Press play to watch push &amp; pop from the top.</div>
+    <div class="controls"><button class="btn" id="wsPlay">▶ Run Operations</button><button class="btn ghost" id="wsReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="wsSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> push, pop, peek, isEmpty — all O(1). Stacks power recursion, undo, expression parsing, and monotonic tricks below.</div></div>
+    <pre><code>stack.push(x);        <span class="cm">// add on top</span>
+<span class="kw">int</span> t = stack.peek();  <span class="cm">// read top</span>
+stack.pop();          <span class="cm">// remove top</span></code></pre>
+  </section>
+
+  <!-- TWO STACKS IN ONE ARRAY -->
+  <section id="twostacks">
+    <h2>↔️ Two Stacks in One Array <span class="badge">Space share</span></h2>
+    <p class="lead">Pack two stacks into a single array — one grows from the left, the other from the right.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two diggers, one tunnel:</span> start one stack at the far left (top1 moves right) and the other at the far right (top2 moves left). They only clash if they meet in the middle — until then, both share the same array with zero waste.</div>
+      <div class="steps-flow"><span class="chip">stack1: top1 from index 0 →</span><span class="arrow">·</span><span class="chip">stack2: top2 from n−1 ←</span><span class="arrow">·</span><span class="chip">full when top1+1 == top2</span></div>
+      <div class="oneliner">🔒 Keep forever: "Grow from both ends toward the middle — one array, two stacks."</div>
+    </div>
+    <div class="note">Array size 8. Push 1,2,3 to Stack1 (left) and 9,8 to Stack2 (right).</div>
+    <div class="cellrow" id="tsRow"></div>
+    <div class="status" id="tsStatus">Press play. Blue = Stack1, pink = Stack2.</div>
+    <div class="controls"><button class="btn" id="tsPlay">▶ Push Both</button><button class="btn ghost" id="tsReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tsSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> top1 starts at −1 (grows +), top2 starts at n (grows −). Overflow only when <code>top1 + 1 == top2</code>.</div></div>
+    <pre><code>push1(x){ <span class="kw">if</span> (top1+<span class="num">1</span>==top2) overflow; a[++top1]=x; }
+push2(x){ <span class="kw">if</span> (top1+<span class="num">1</span>==top2) overflow; a[--top2]=x; }</code></pre>
+  </section>
+
+  <!-- PUSH AT BOTTOM -->
+  <section id="pushbottom">
+    <h2>⬇️ Push an Element at the Bottom <span class="badge">Recursion</span></h2>
+    <p class="lead">A stack only exposes its top — to insert at the bottom, empty it recursively, place the item, then rebuild.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Slip a plate underneath:</span> you can't reach the bottom directly, so lift every plate off (recursion holds them), set the new plate down, then put the others back in the same order. The call stack remembers them for you.</div>
+      <div class="steps-flow"><span class="chip">pop all (recurse)</span><span class="arrow">→</span><span class="chip">push the new item</span><span class="arrow">→</span><span class="chip">push held items back</span></div>
+      <div class="oneliner">🔒 Keep forever: "Can't reach the bottom? Recurse to empty it, insert, then unwind."</div>
+    </div>
+    <div class="note">Stack [1, 2, 3] (top 3). Insert <b>9</b> at the bottom → [9, 1, 2, 3].</div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">Stack</div><div class="stack" id="pbStack"></div></div><div class="stackcol"><div class="slabel">Held (call stack)</div><div class="stack" id="pbHeld"></div></div></div>
+    <div class="status" id="pbStatus">Press play to insert 9 at the bottom.</div>
+    <div class="controls"><button class="btn" id="pbPlay">▶ Insert at Bottom</button><button class="btn ghost" id="pbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pbSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the recursion IS the temporary storage — no extra array needed. Base case: empty stack → push the item.</div></div>
+    <pre><code><span class="kw">void</span> <span class="fn">insertBottom</span>(stack, x){
+  <span class="kw">if</span> (stack.isEmpty()){ stack.push(x); <span class="kw">return</span>; }
+  <span class="kw">int</span> t = stack.pop();
+  <span class="fn">insertBottom</span>(stack, x);
+  stack.push(t);   <span class="cm">// unwind in original order</span>
+}</code></pre>
+  </section>
+
+  <!-- REVERSE A STACK -->
+  <section id="reversestack">
+    <h2>🔄 Reverse a Stack <span class="badge">Recursion</span></h2>
+    <p class="lead">Reverse a stack in place using only stack operations — pop everything, then re-insert each at the bottom.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Flip the pile:</span> pop the top and hold it, reverse the rest, then slide that held item to the <b>bottom</b>. Doing this for every element flips the whole stack — the old top ends up at the bottom.</div>
+      <div class="steps-flow"><span class="chip">pop top, hold it</span><span class="arrow">→</span><span class="chip">reverse the rest</span><span class="arrow">→</span><span class="chip">insert held at bottom</span></div>
+      <div class="oneliner">🔒 Keep forever: "Reverse = pop each and re-insert it at the bottom."</div>
+    </div>
+    <div class="note">Stack [1, 2, 3, 4] (top 4) → reversed [4, 3, 2, 1] (top 1).</div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">Stack</div><div class="stack" id="rvStack"></div></div></div>
+    <div class="status" id="rvStatus">Press play to reverse the stack.</div>
+    <div class="controls"><button class="btn" id="rvPlay">▶ Reverse</button><button class="btn ghost" id="rvReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rvSpeed" min="200" max="1800" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> reuses "insert at bottom" — the whole trick is layering two recursions. O(n²) but pure stack ops.</div></div>
+    <pre><code><span class="kw">void</span> <span class="fn">reverse</span>(stack){
+  <span class="kw">if</span> (stack.isEmpty()) <span class="kw">return</span>;
+  <span class="kw">int</span> t = stack.pop();
+  <span class="fn">reverse</span>(stack);
+  <span class="fn">insertBottom</span>(stack, t);
+}</code></pre>
+  </section>
+
+  <!-- NEXT GREATER ELEMENT -->
+  <section id="nge">
+    <h2>📈 Next Greater Element <span class="badge">Monotonic stack</span></h2>
+    <p class="lead">For each element, find the next larger value to its right — one pass with a decreasing stack.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Waiting for a taller friend:</span> keep a stack of elements still "waiting" for someone taller. When a bigger number arrives, it resolves everyone shorter on the stack (they found their next-greater), then joins the queue.</div>
+      <div class="steps-flow"><span class="chip">while stack top &lt; current → pop &amp; answer = current</span><span class="arrow">→</span><span class="chip">push current</span></div>
+      <div class="oneliner">🔒 Keep forever: "A bigger arrival resolves every smaller one waiting on the stack."</div>
+    </div>
+    <div class="note">Array <code>[2, 1, 2, 4, 3]</code> → next greater = [4, 2, 4, -1, -1].</div>
+    <div class="cellrow" id="ngeRow"></div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">Stack (waiting)</div><div class="stack" id="ngeStack"></div></div></div>
+    <div class="cellrow" id="ngeRes"></div>
+    <div class="status" id="ngeStatus">Press play. A larger element resolves the waiting ones.</div>
+    <div class="controls"><button class="btn" id="ngePlay">▶ Next Greater</button><button class="btn ghost" id="ngeReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ngeSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> each element is pushed and popped once → O(n). Same skeleton solves next-smaller, stock span, and daily temperatures.</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++){
+  <span class="kw">while</span> (!st.isEmpty() &amp;&amp; a[st.peek()] &lt; a[i]) res[st.pop()] = a[i];
+  st.push(i);
+}  <span class="cm">// leftovers have no greater → -1</span></code></pre>
+  </section>
+
+  <!-- LARGEST RECTANGLE -->
+  <section id="histogram">
+    <h2>🏙️ Largest Rectangle in a Histogram <span class="badge">Monotonic stack</span></h2>
+    <p class="lead">Find the biggest rectangle fitting under a skyline — a monotonic stack finds each bar's span in O(n).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">How wide can each bar stretch?</span> a bar can extend left/right until it hits a shorter bar. Keep an increasing stack; when a shorter bar appears, pop the taller ones and compute their rectangle (height × the width they can now claim).</div>
+      <div class="steps-flow"><span class="chip">increasing stack of bars</span><span class="arrow">→</span><span class="chip">shorter bar? pop &amp; compute area</span><span class="arrow">→</span><span class="chip">track max</span></div>
+      <div class="oneliner">🔒 Keep forever: "Pop a bar when a shorter one arrives — its width is bounded by both shorter neighbours."</div>
+    </div>
+    <div class="note">Heights <code>[2, 1, 5, 6, 2, 3]</code> → largest area = 10 (5 &amp; 6, width 2).</div>
+    <div class="bars" id="hgBars"></div>
+    <div class="status" id="hgStatus">Press play. Green shows the winning rectangle span.</div>
+    <div class="stats" id="hgStats"></div>
+    <div class="controls"><button class="btn" id="hgPlay">▶ Largest Rectangle</button><button class="btn ghost" id="hgReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="hgSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> width = (current index − stack-below − 1). Add a height-0 sentinel at the end to flush the stack.</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">0</span>; i&lt;=n; i++){
+  <span class="kw">int</span> h = (i==n) ? <span class="num">0</span> : height[i];
+  <span class="kw">while</span> (!st.isEmpty() &amp;&amp; height[st.peek()] &gt;= h){
+    <span class="kw">int</span> top = st.pop();
+    <span class="kw">int</span> w = st.isEmpty() ? i : i - st.peek() - <span class="num">1</span>;
+    best = max(best, height[top] * w);
+  }
+  st.push(i);
+}</code></pre>
+  </section>
+
+  <!-- BINARY MATRIX 1 -->
+  <section id="binmat1">
+    <h2>▦ Binary Matrix I — Build Histograms <span class="badge">Row heights</span></h2>
+    <p class="lead">To find the largest all-1s rectangle, turn each row into a histogram of consecutive 1s above it.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Stacking bricks upward:</span> walk the matrix row by row. For each column, if the cell is 1, the bar grows one taller than the row above; if it's 0, the bar resets to the ground. Each row becomes a skyline of 1-heights.</div>
+      <div class="steps-flow"><span class="chip">cell 1 → height += 1</span><span class="arrow">·</span><span class="chip">cell 0 → height = 0</span></div>
+      <div class="oneliner">🔒 Keep forever: "Each row is a histogram: 1 stacks the bar taller, 0 knocks it to zero."</div>
+    </div>
+    <div class="note">Watch heights accumulate down the rows of this binary matrix.</div>
+    <div class="mwrap"><div class="mgrid" id="bm1Grid"></div></div>
+    <div class="cellrow" id="bm1Hist"></div>
+    <div class="status" id="bm1Status">Press play to build each row's histogram.</div>
+    <div class="controls"><button class="btn" id="bm1Play">▶ Build Histograms</button><button class="btn ghost" id="bm1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bm1Speed" min="300" max="2400" value="1250" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> <code>height[c] = matrix[r][c]==1 ? height[c]+1 : 0</code>. This reduces a 2-D problem to n one-dimensional histograms.</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">int</span> c=<span class="num">0</span>; c&lt;cols; c++)
+  height[c] = (matrix[r][c]==<span class="num">1</span>) ? height[c]+<span class="num">1</span> : <span class="num">0</span>;</code></pre>
+  </section>
+
+  <!-- BINARY MATRIX 2 -->
+  <section id="binmat2">
+    <h2>▩ Binary Matrix II — Maximal Rectangle <span class="badge">Histogram + stack</span></h2>
+    <p class="lead">Run the largest-rectangle-in-histogram on <b>every</b> row's heights and keep the global best.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Best skyline of all:</span> each row's histogram (from part I) hides its own biggest rectangle. Solve the histogram problem per row and take the maximum across all rows — that's the largest all-1s rectangle in the matrix.</div>
+      <div class="steps-flow"><span class="chip">for each row histogram</span><span class="arrow">→</span><span class="chip">largest rectangle</span><span class="arrow">→</span><span class="chip">track global max</span></div>
+      <div class="oneliner">🔒 Keep forever: "Maximal rectangle = best of every row's histogram rectangle."</div>
+    </div>
+    <div class="note">Same matrix — find the maximum all-1s rectangle (answer = 6).</div>
+    <div class="mwrap"><div class="mgrid" id="bm2Grid"></div></div>
+    <div class="bars" id="bm2Bars"></div>
+    <div class="status" id="bm2Status">Press play. Each row's histogram is measured; best wins.</div>
+    <div class="stats" id="bm2Stats"></div>
+    <div class="controls"><button class="btn" id="bm2Play">▶ Maximal Rectangle</button><button class="btn ghost" id="bm2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bm2Speed" min="250" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(rows × cols) total — building heights is O(cols) per row and each histogram scan is O(cols).</div></div>
+    <pre><code>best = <span class="num">0</span>;
+<span class="kw">for</span> each row: {
+  updateHeights(row);
+  best = max(best, largestRectangle(height));
+}</code></pre>
+  </section>
+
+  <!-- SUM OF MINIMUMS -->
+  <section id="summin">
+    <h2>➕ Sum of Subarray Minimums <span class="badge">Contribution</span></h2>
+    <p class="lead">Sum the minimum of every subarray by counting, for each element, how many subarrays it dominates.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Who rules each subarray?</span> instead of scanning all subarrays, ask: for how many is element <code>a[i]</code> the minimum? That's <code>(distance to previous smaller) × (distance to next smaller)</code>. Add <code>a[i] × left × right</code> for every element.</div>
+      <div class="steps-flow"><span class="chip">left = span to previous smaller</span><span class="arrow">·</span><span class="chip">right = span to next smaller</span><span class="arrow">→</span><span class="chip">contribution = a[i]·left·right</span></div>
+      <div class="oneliner">🔒 Keep forever: "Each element rules left×right subarrays — sum a[i]·left·right."</div>
+    </div>
+    <div class="note">Array <code>[3, 1, 2, 4]</code> → sum of subarray minimums = 17.</div>
+    <div class="cellrow" id="smRow"></div>
+    <div class="status" id="smStatus">Press play. Each element's ruling span &amp; contribution.</div>
+    <div class="stats" id="smStats"></div>
+    <div class="controls"><button class="btn" id="smPlay">▶ Sum of Minimums</button><button class="btn ghost" id="smReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="smSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> use monotonic stacks to get previous/next smaller in O(n). Break ties consistently (strict one side) to avoid double-counting.</div></div>
+    <pre><code>ans += a[i] * (i - prevSmaller[i]) * (nextSmaller[i] - i);
+<span class="cm">// prevSmaller / nextSmaller found with monotonic stacks</span></code></pre>
+  </section>
+
+  <!-- REMOVE DUPLICATES -->
+  <section id="removedup">
+    <h2>🧹 Remove Adjacent Duplicates <span class="badge">Stack cancel</span></h2>
+    <p class="lead">Repeatedly cancel neighbouring equal characters — a stack does it in one pass.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Annihilating pairs:</span> push each character; if it matches the top, they cancel — pop instead of push. Whatever remains on the stack is the fully reduced string, with every adjacent duplicate removed (including new ones exposed by removals).</div>
+      <div class="steps-flow"><span class="chip">char == top? pop (cancel)</span><span class="arrow">/</span><span class="chip">else push</span></div>
+      <div class="oneliner">🔒 Keep forever: "Matches the top? cancel it. The stack holds the reduced result."</div>
+    </div>
+    <div class="note">String <code>"abbaca"</code> → "ca" (b-b cancel, then a-a cancel).</div>
+    <div class="cellrow" id="rdRow"></div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">Stack (result)</div><div class="stack" id="rdStack"></div></div></div>
+    <div class="status" id="rdStatus">Press play. Equal-to-top characters annihilate.</div>
+    <div class="stats" id="rdStats"></div>
+    <div class="controls"><button class="btn" id="rdPlay">▶ Remove Duplicates</button><button class="btn ghost" id="rdReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rdSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the stack automatically exposes newly-adjacent duplicates after a cancel — one pass, O(n).</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">char</span> c : s){
+  <span class="kw">if</span> (!st.isEmpty() &amp;&amp; st.peek()==c) st.pop(); <span class="cm">// cancel</span>
+  <span class="kw">else</span> st.push(c);
+}  <span class="cm">// stack bottom→top = answer</span></code></pre>
+  </section>
+
+  <!-- MIN STACK -->
+  <section id="minstack">
+    <h2>🔻 Design a Min Stack <span class="badge">Two stacks</span></h2>
+    <p class="lead">Support push, pop, top, and <b>getMin</b> — all in O(1) — using a second stack that tracks the running minimum.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A shadow that remembers the smallest:</span> alongside the main stack, keep a "min stack". Each push also pushes the smaller of (new value, current min). The min stack's top is always the minimum of everything currently stored.</div>
+      <div class="steps-flow"><span class="chip">push x → minStack.push(min(x, curMin))</span><span class="arrow">·</span><span class="chip">getMin = minStack.top</span></div>
+      <div class="oneliner">🔒 Keep forever: "Mirror the stack with a running-min stack — getMin is just its top."</div>
+    </div>
+    <div class="note">Push 5, 3, 7, 2, 8 → getMin tracks the smallest so far.</div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">Main</div><div class="stack" id="msMain"></div></div><div class="stackcol"><div class="slabel">Min Stack</div><div class="stack" id="msMin"></div></div></div>
+    <div class="status" id="msStatus">Press play. The min stack mirrors the running minimum.</div>
+    <div class="stats" id="msStats"></div>
+    <div class="controls"><button class="btn" id="msPlay">▶ Push &amp; Track Min</button><button class="btn ghost" id="msReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="msSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> on pop, pop <b>both</b> stacks together so the minimum stays in sync. Extra space O(n).</div></div>
+    <pre><code>push(x){ main.push(x); min.push(min.isEmpty()? x : Math.min(x, min.peek())); }
+getMin(){ <span class="kw">return</span> min.peek(); }
+pop(){ main.pop(); min.pop(); }</code></pre>
+  </section>
+
+  <!-- MIN STACK EFFICIENT -->
+  <section id="minstackeff">
+    <h2>⚡ Min Stack in O(1) Space <span class="badge">Encoding trick</span></h2>
+    <p class="lead">One stack, no extra min stack — encode the old minimum inside the pushed value when a new min appears.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Hide a note under the new record:</span> keep a single <code>min</code> variable. When a value smaller than <code>min</code> arrives, push an <b>encoded</b> value <code>2·x − min</code> (always below the real x) and update <code>min = x</code>. On pop, if the top is below <code>min</code>, it's an encoded marker — the real value is <code>min</code>, and you decode the previous min as <code>2·min − top</code>.</div>
+      <div class="steps-flow"><span class="chip">x &lt; min? push 2x−min, min=x</span><span class="arrow">·</span><span class="chip">pop encoded → restore min = 2·min − top</span></div>
+      <div class="oneliner">🔒 Keep forever: "Encode the previous min into the pushed value — O(1) space, no second stack."</div>
+    </div>
+    <div class="note">Push 5, 3, 7, 2 with encoding, then pop to decode the min.</div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">Stack (encoded)</div><div class="stack" id="meStack"></div></div></div>
+    <div class="status" id="meStatus">Press play. Watch encoded markers and the min variable.</div>
+    <div class="stats" id="meStats"></div>
+    <div class="controls"><button class="btn" id="mePlay">▶ Encode &amp; Decode</button><button class="btn ghost" id="meReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="meSpeed" min="300" max="2400" value="1350" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> an encoded value is always <b>less than the real x</b>, so "top &lt; min" flags it on pop. O(1) extra space.</div></div>
+    <pre><code>push(x){ <span class="kw">if</span> (st.isEmpty()){ min=x; st.push(x); }
+  <span class="kw">else if</span> (x&lt;min){ st.push(<span class="num">2</span>*x-min); min=x; } <span class="kw">else</span> st.push(x); }
+pop(){ <span class="kw">int</span> t=st.pop(); <span class="kw">if</span> (t&lt;min) min = <span class="num">2</span>*min - t; }
+getMin(){ <span class="kw">return</span> min; }</code></pre>
+
+    <div class="note key">🏆 <b>Stacks mastered!</b> LIFO push/pop · two stacks share one array · recursion inserts at the bottom &amp; reverses · monotonic stacks crack next-greater, histograms, matrices &amp; subarray-minimums · and clever encoding gives an O(1) min stack. Picture the pile growing and shrinking and no stack problem can surprise you. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Stacks — Animated Guide • Replay any animation, turn on 🎵 sound • Learn by watching the pile 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.1 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function pushSound(){ blip(520,0.05,'triangle',0.06); }
+function popSound(){ blip(300,0.05,'sine',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- Viz helpers ---- */
+function cellViz(container){
+  let cells=[];
+  function ensure(n){ if(cells.length!==n){ container.innerHTML=''; cells=[]; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='cell'; container.appendChild(c); cells.push(c);} } }
+  function render(arr,o={}){ ensure(arr.length); arr.forEach((v,i)=>{ const c=cells[i]; c.className='cell'; c.innerHTML = `${o.sub&&o.sub[i]!=null?`<span class="idx">${o.sub[i]}</span>`:''}${v}${o.ptr&&o.ptr[i]!=null?`<span class="ptr">${o.ptr[i]}</span>`:''}`; if(o.compare&&o.compare.includes(i))c.classList.add('mid'); if(o.groupA&&o.groupA.includes(i))c.classList.add('lo'); if(o.groupB&&o.groupB.includes(i))c.classList.add('hi'); if(o.done&&o.done.has(i))c.classList.add('found'); if(o.dead&&o.dead.has(i))c.classList.add('dead'); if(o.range&&i>=o.range[0]&&i<=o.range[1])c.classList.add('in-range'); if(o.emptyIdx&&o.emptyIdx.includes(i))c.classList.add('empty'); }); }
+  return { render };
+}
+function stackViz(container){ return { render(items, o={}){ container.innerHTML=''; if(!items.length){ const e=document.createElement('div'); e.className='sempty'; e.textContent='(empty)'; container.appendChild(e); return; } items.forEach((v,i)=>{ const d=document.createElement('div'); d.className='sitem'+(i===items.length-1&&!o.noTop?' top':'')+((o.min===i)?' minv':'')+((o.hl&&o.hl.includes(i))?' hl':''); d.textContent=v; container.appendChild(d); }); } }; }
+function barViz(container){ let bars=[]; function ensure(n){ if(bars.length!==n){ container.innerHTML=''; bars=[]; for(let i=0;i<n;i++){ const b=document.createElement('div'); b.className='bar'; const v=document.createElement('span'); v.className='bval'; b.appendChild(v); container.appendChild(b); bars.push(b);} } } function render(arr,o={}){ ensure(arr.length); const max=Math.max(...arr,1); arr.forEach((val,i)=>{ const b=bars[i]; b.style.height=(20+(val/max)*170)+'px'; b.querySelector('.bval').textContent=val; b.className='bar'; if(o.hl&&o.hl.includes(i))b.classList.add('hl'); if(o.instack&&o.instack.includes(i))b.classList.add('instack'); if(o.area&&i>=o.area[0]&&i<=o.area[1])b.classList.add('area'); }); } return {render}; }
+function idxSub(n){ return Array.from({length:n},(_,i)=>i); }
+
+/* ================= 1. What is stack ================= */
+(function(){
+  const sv=stackViz($('#wsStack')); const st=$('#wsStatus'); const sp=$('#wsSpeed');
+  const ops=[['push',3],['push',7],['push',5],['pop',null],['push',9],['pop',null]];
+  function build(){ sv.render([]); st.textContent='Press play to watch push & pop from the top.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const s=[];
+    for(const [op,x] of ops){ if(op==='push'){ s.push(x); sv.render(s); st.innerHTML=`push(${x}) → added on top.`; pushSound(); } else { const t=s.pop(); sv.render(s); st.innerHTML=`pop() → removed <span class="k">${t}</span> from the top.`; popSound(); } await sleep(+sp.value); }
+    st.innerHTML='📚 Only the top moved — Last In, First Out!'; ANIM=false; celebrate($('#wsStack'));
+  }
+  $('#wsPlay').onclick=play; $('#wsReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Two stacks in one array ================= */
+(function(){
+  const N=8; const viz=cellViz($('#tsRow')); const st=$('#tsStatus'); const sp=$('#tsSpeed');
+  function render(arr,g1,g2,ptr){ viz.render(arr,{sub:idxSub(N),groupA:g1,groupB:g2,ptr,emptyIdx:arr.map((v,i)=>v==='·'?i:-1).filter(i=>i>=0)}); }
+  function build(){ render(Array(N).fill('·'),[],[],{}); st.textContent='Press play. Blue = Stack1, pink = Stack2.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const arr=Array(N).fill('·'); let t1=-1,t2=N; const g1=[],g2=[];
+    const s1=[1,2,3], s2=[9,8];
+    for(const x of s1){ t1++; arr[t1]=x; g1.push(t1); render(arr,g1.slice(),g2.slice(),{[t1]:'top1'}); st.innerHTML=`Stack1 push ${x} → index ${t1} (grows right ➡️).`; pushSound(); await sleep(+sp.value); }
+    for(const x of s2){ t2--; arr[t2]=x; g2.push(t2); render(arr,g1.slice(),g2.slice(),{[t2]:'top2'}); st.innerHTML=`Stack2 push ${x} → index ${t2} (grows left ⬅️).`; pushSound(); await sleep(+sp.value); }
+    render(arr,g1,g2,{[t1]:'top1',[t2]:'top2'}); st.innerHTML='↔️ Two stacks share one array, growing toward the middle!'; ANIM=false; celebrate($('#tsRow'));
+  }
+  $('#tsPlay').onclick=play; $('#tsReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Push at bottom ================= */
+(function(){
+  const S=stackViz($('#pbStack')); const H=stackViz($('#pbHeld')); const st=$('#pbStatus'); const sp=$('#pbSpeed');
+  function build(){ S.render([1,2,3]); H.render([]); st.textContent='Press play to insert 9 at the bottom.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const s=[1,2,3]; const held=[];
+    while(s.length){ const t=s.pop(); held.push(t); S.render(s); H.render(held); st.innerHTML=`Pop ${t}, hold it (recursion).`; popSound(); await sleep(+sp.value); }
+    s.push(9); S.render(s,{min:0}); st.innerHTML='Stack empty → push <span class="k">9</span> at the bottom.'; pushSound(); await sleep(+sp.value);
+    while(held.length){ const t=held.pop(); s.push(t); S.render(s); H.render(held); st.innerHTML=`Unwind: push ${t} back on top.`; pushSound(); await sleep(+sp.value); }
+    S.render(s,{min:0}); st.innerHTML='⬇️ 9 is now at the bottom → [9, 1, 2, 3]!'; ANIM=false; celebrate($('#pbStack'));
+  }
+  $('#pbPlay').onclick=play; $('#pbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Reverse a stack ================= */
+(function(){
+  const S=stackViz($('#rvStack')); const st=$('#rvStatus'); const sp=$('#rvSpeed');
+  function build(){ S.render([1,2,3,4]); st.textContent='Press play to reverse the stack.'; }
+  build();
+  async function insertBottom(s, x){ if(s.length===0){ s.push(x); return; } const t=s.pop(); await insertBottom(s,x); s.push(t); }
+  async function play(){ if(ANIM)return; ANIM=true; const s=[1,2,3,4];
+    // iterative reverse using insertBottom for animation clarity
+    async function reverse(arr){ if(arr.length===0) return; const t=arr.pop(); S.render(arr); st.innerHTML=`Hold ${t}, reverse the rest…`; popSound(); await sleep(+sp.value*0.7); await reverse(arr); // insert t at bottom
+        const held=[]; while(arr.length){ held.push(arr.pop()); } arr.push(t); while(held.length) arr.push(held.pop()); S.render(arr); st.innerHTML=`Insert ${t} at the bottom.`; pushSound(); await sleep(+sp.value); }
+    await reverse(s); S.render(s,{min:s.length-1}); st.innerHTML='🔄 Reversed → [4, 3, 2, 1] (top is now 1)!'; ANIM=false; celebrate($('#rvStack'));
+  }
+  $('#rvPlay').onclick=play; $('#rvReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. Next greater element ================= */
+(function(){
+  const a=[2,1,2,4,3]; const viz=cellViz($('#ngeRow')); const S=stackViz($('#ngeStack')); const rv=cellViz($('#ngeRes')); const st=$('#ngeStatus'); const sp=$('#ngeSpeed');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); S.render([]); rv.render(a.map(()=>'·'),{sub:idxSub(a.length)}); st.textContent='Press play. A larger element resolves the waiting ones.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const stack=[]; const res=a.map(()=>-1);
+    for(let i=0;i<a.length;i++){ viz.render(a,{sub:idxSub(a.length),compare:[i]}); st.innerHTML=`Arrive a[${i}] = <span class="k">${a[i]}</span>.`; await sleep(+sp.value);
+      while(stack.length && a[stack[stack.length-1]] < a[i]){ const idx=stack.pop(); res[idx]=a[i]; S.render(stack.map(k=>a[k])); rv.render(res.map(v=>v===-1?'·':v),{sub:idxSub(a.length),done:new Set([idx])}); st.innerHTML=`${a[i]} &gt; ${a[idx]} → a[${idx}]'s next greater = <span class="k">${a[i]}</span>.`; popSound(); await sleep(+sp.value); }
+      stack.push(i); S.render(stack.map(k=>a[k])); st.innerHTML=`Push ${a[i]} — waiting for a bigger one.`; pushSound(); await sleep(+sp.value*0.7); }
+    rv.render(res.map(v=>v===-1?'-1':v),{sub:idxSub(a.length),done:new Set(idxSub(a.length))}); st.innerHTML='📈 Next greater = [4, 2, 4, -1, -1]!'; ANIM=false; celebrate($('#ngeRes'));
+  }
+  $('#ngePlay').onclick=play; $('#ngeReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. Largest rectangle histogram ================= */
+(function(){
+  const h=[2,1,5,6,2,3]; const viz=barViz($('#hgBars')); const st=$('#hgStatus'); const sp=$('#hgSpeed'); const stats=$('#hgStats');
+  function build(){ viz.render(h); stats.innerHTML=''; st.textContent='Press play. Green shows the winning rectangle span.'; }
+  build();
+  async function largest(){ const stack=[]; let best=0, bl=0, br=0; const n=h.length;
+    for(let i=0;i<=n;i++){ const cur=(i===n)?0:h[i];
+      viz.render(h,{hl:[i<n?i:n-1],instack:stack.slice()}); st.innerHTML=`Scan bar ${i<n?i:'end'}${i<n?` (h=${h[i]})`:''}.`; await sleep(+sp.value*0.7);
+      while(stack.length && h[stack[stack.length-1]] >= cur){ const top=stack.pop(); const w=stack.length? i-stack[stack.length-1]-1 : i; const area=h[top]*w;
+        viz.render(h,{instack:stack.slice(),area:[i-w, i-1]}); st.innerHTML=`Pop bar ${top} (h=${h[top]}), width ${w} → area <span class="k">${area}</span>.`; popSound(); await sleep(+sp.value);
+        if(area>best){ best=area; bl=i-w; br=i-1; } stats.innerHTML=`<span class="pill green">best area: ${best}</span>`; }
+      stack.push(i);
+    }
+    return [best,bl,br];
+  }
+  async function play(){ if(ANIM)return; ANIM=true; build(); const [best,bl,br]=await largest();
+    viz.render(h,{area:[bl,br]}); stats.innerHTML=`<span class="pill green">largest area = ${best}</span>`; st.innerHTML=`🏙️ Largest rectangle = <span class="k">${best}</span> (bars ${bl}..${br})!`; ANIM=false; celebrate($('#hgBars'));
+  }
+  $('#hgPlay').onclick=play; $('#hgReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Binary matrix I (histograms) ================= */
+(function(){
+  const M=[[1,0,1,0,0],[1,0,1,1,1],[1,1,1,1,1],[1,0,0,1,0]]; const R=M.length, C=M[0].length;
+  const G=$('#bm1Grid'); const hist=cellViz($('#bm1Hist')); const st=$('#bm1Status'); const sp=$('#bm1Speed');
+  function draw(activeRow){ G.style.gridTemplateColumns=`repeat(${C},46px)`; G.innerHTML=''; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ const d=document.createElement('div'); d.className='mcell'+(M[r][c]===1?' one':'')+(r===activeRow?' row':''); d.textContent=M[r][c]; G.appendChild(d); } }
+  function build(){ draw(-1); hist.render(Array(C).fill(0),{sub:idxSub(C)}); st.textContent="Press play to build each row's histogram."; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const height=Array(C).fill(0);
+    for(let r=0;r<R;r++){ draw(r); for(let c=0;c<C;c++){ height[c]=M[r][c]===1? height[c]+1 : 0; }
+      hist.render(height.slice(),{sub:idxSub(C),compare:idxSub(C)}); st.innerHTML=`Row ${r}: heights = [${height.join(', ')}] (1 stacks up, 0 resets).`; pushSound(); await sleep(+sp.value); }
+    st.innerHTML='▦ Every row is now a histogram of consecutive 1s. Part II measures them →'; ANIM=false; celebrate($('#bm1Hist'));
+  }
+  $('#bm1Play').onclick=play; $('#bm1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. Binary matrix II (maximal rectangle) ================= */
+(function(){
+  const M=[[1,0,1,0,0],[1,0,1,1,1],[1,1,1,1,1],[1,0,0,1,0]]; const R=M.length, C=M[0].length;
+  const G=$('#bm2Grid'); const viz=barViz($('#bm2Bars')); const st=$('#bm2Status'); const sp=$('#bm2Speed'); const stats=$('#bm2Stats');
+  function draw(activeRow){ G.style.gridTemplateColumns=`repeat(${C},46px)`; G.innerHTML=''; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ const d=document.createElement('div'); d.className='mcell'+(M[r][c]===1?' one':'')+(r===activeRow?' row':''); d.textContent=M[r][c]; G.appendChild(d); } }
+  function build(){ draw(-1); viz.render(Array(C).fill(0)); stats.innerHTML=''; st.textContent="Press play. Each row's histogram is measured; best wins."; }
+  build();
+  function largestRect(h){ const stack=[]; let best=0; const n=h.length; for(let i=0;i<=n;i++){ const cur=(i===n)?0:h[i]; while(stack.length&&h[stack[stack.length-1]]>=cur){ const top=stack.pop(); const w=stack.length? i-stack[stack.length-1]-1 : i; best=Math.max(best,h[top]*w); } stack.push(i); } return best; }
+  async function play(){ if(ANIM)return; ANIM=true; const height=Array(C).fill(0); let best=0;
+    for(let r=0;r<R;r++){ draw(r); for(let c=0;c<C;c++){ height[c]=M[r][c]===1? height[c]+1 : 0; }
+      viz.render(height.slice()); const area=largestRect(height); if(area>best) best=area;
+      stats.innerHTML=`<span class="pill blue">row ${r} best: ${area}</span><span class="pill green">global best: ${best}</span>`; st.innerHTML=`Row ${r} histogram [${height.join(', ')}] → max rectangle <span class="k">${area}</span>.`; pushSound(); await sleep(+sp.value*1.4); }
+    stats.innerHTML=`<span class="pill green">maximal rectangle = ${best}</span>`; st.innerHTML=`▩ Largest all-1s rectangle = <span class="k">${best}</span>!`; ANIM=false; celebrate($('#bm2Bars'));
+  }
+  $('#bm2Play').onclick=play; $('#bm2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. Sum of subarray minimums ================= */
+(function(){
+  const a=[3,1,2,4]; const viz=cellViz($('#smRow')); const st=$('#smStatus'); const sp=$('#smSpeed'); const stats=$('#smStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); stats.innerHTML=''; st.textContent="Press play. Each element's ruling span & contribution."; }
+  build();
+  function prevSmaller(i){ let j=i-1; while(j>=0 && a[j]>=a[i]) j--; return j; }
+  function nextSmaller(i){ let j=i+1; while(j<a.length && a[j]>a[i]) j++; return j; }
+  async function play(){ if(ANIM)return; ANIM=true; build(); let sum=0;
+    for(let i=0;i<a.length;i++){ const ps=prevSmaller(i), ns=nextSmaller(i); const left=i-ps, right=ns-i; const contrib=a[i]*left*right; sum+=contrib;
+      viz.render(a,{sub:idxSub(a.length),compare:[i],range:[ps+1, ns-1]}); stats.innerHTML=`<span class="pill blue">running sum: ${sum}</span>`; st.innerHTML=`a[${i}]=<span class="k">${a[i]}</span> rules ${left}×${right} subarrays → contributes ${a[i]}·${left}·${right} = <span class="k">${contrib}</span>.`; pushSound(); await sleep(+sp.value*1.3); }
+    viz.render(a,{sub:idxSub(a.length),done:new Set(idxSub(a.length))}); stats.innerHTML=`<span class="pill green">sum of minimums = ${sum}</span>`; st.innerHTML=`➕ Sum of all subarray minimums = <span class="k">${sum}</span>!`; ANIM=false; celebrate($('#smRow'));
+  }
+  $('#smPlay').onclick=play; $('#smReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. Remove adjacent duplicates ================= */
+(function(){
+  const s="abbaca".split(''); const viz=cellViz($('#rdRow')); const S=stackViz($('#rdStack')); const st=$('#rdStatus'); const sp=$('#rdSpeed'); const stats=$('#rdStats');
+  function build(){ viz.render(s,{sub:idxSub(s.length)}); S.render([]); stats.innerHTML=''; st.textContent='Press play. Equal-to-top characters annihilate.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const stack=[];
+    for(let i=0;i<s.length;i++){ viz.render(s,{sub:idxSub(s.length),compare:[i]}); const top=stack[stack.length-1];
+      if(stack.length && top===s[i]){ stack.pop(); S.render(stack.slice()); st.innerHTML=`'${s[i]}' matches top '${top}' → <b style="color:#ff9ecb">cancel</b>!`; popSound(); }
+      else { stack.push(s[i]); S.render(stack.slice()); st.innerHTML=`'${s[i]}' pushed onto the stack.`; pushSound(); }
+      stats.innerHTML=`<span class="pill blue">result: "${stack.join('')}"</span>`; await sleep(+sp.value); }
+    viz.render(s,{sub:idxSub(s.length),dead:new Set(idxSub(s.length))}); stats.innerHTML=`<span class="pill green">result = "${stack.join('')}"</span>`; st.innerHTML=`🧹 After all cancellations → "<span class="k">${stack.join('')}</span>"!`; ANIM=false; celebrate($('#rdStack'));
+  }
+  $('#rdPlay').onclick=play; $('#rdReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. Min stack (two stacks) ================= */
+(function(){
+  const vals=[5,3,7,2,8]; const MA=stackViz($('#msMain')); const MI=stackViz($('#msMin')); const st=$('#msStatus'); const sp=$('#msSpeed'); const stats=$('#msStats');
+  function build(){ MA.render([]); MI.render([]); stats.innerHTML=''; st.textContent='Press play. The min stack mirrors the running minimum.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const main=[], mins=[];
+    for(const x of vals){ main.push(x); const m=mins.length? Math.min(x, mins[mins.length-1]) : x; mins.push(m); MA.render(main.slice()); MI.render(mins.slice(),{min:mins.length-1}); stats.innerHTML=`<span class="pill green">getMin() = ${mins[mins.length-1]}</span>`; st.innerHTML=`push ${x} → min stack tops <span class="k">${m}</span>.`; pushSound(); await sleep(+sp.value); }
+    // a pop
+    main.pop(); mins.pop(); MA.render(main.slice()); MI.render(mins.slice(),{min:mins.length-1}); stats.innerHTML=`<span class="pill green">getMin() = ${mins[mins.length-1]}</span>`; st.innerHTML=`pop() → both stacks pop together; min stays correct = <span class="k">${mins[mins.length-1]}</span>.`; popSound(); await sleep(+sp.value*1.3);
+    st.innerHTML='🔻 getMin() is always O(1) — just read the min stack top!'; ANIM=false; celebrate($('#msMin'));
+  }
+  $('#msPlay').onclick=play; $('#msReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. Min stack O(1) space ================= */
+(function(){
+  const pushes=[5,3,7,2]; const S=stackViz($('#meStack')); const st=$('#meStatus'); const sp=$('#meSpeed'); const stats=$('#meStats');
+  function build(){ S.render([]); stats.innerHTML=''; st.textContent='Press play. Watch encoded markers and the min variable.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const stack=[]; let min=null;
+    for(const x of pushes){ let stored, enc=false;
+      if(stack.length===0){ min=x; stored=x; }
+      else if(x<min){ stored=2*x-min; min=x; enc=true; }
+      else stored=x;
+      stack.push(stored); S.render(stack.slice(),{hl:enc?[stack.length-1]:[]}); stats.innerHTML=`<span class="pill green">min = ${min}</span>`; st.innerHTML=enc? `push ${x} &lt; min → store encoded <span class="k">${stored}</span> (=2·${x}−prevMin), min=${x}.` : `push ${x} (≥ min) → store as-is. min stays ${min}.`; pushSound(); await sleep(+sp.value); }
+    // pop to decode
+    const t=stack.pop(); let msg;
+    if(t<min){ const prev=2*min-t; msg=`pop encoded ${t} &lt; min → real value = ${min}, restore prevMin = 2·${min}−${t} = <span class="k">${prev}</span>.`; min=prev; }
+    else msg=`pop ${t} (normal). min stays ${min}.`;
+    S.render(stack.slice()); stats.innerHTML=`<span class="pill green">min = ${min}</span>`; st.innerHTML=msg; popSound(); await sleep(+sp.value*1.4);
+    st.innerHTML='⚡ One stack, O(1) extra space — the old min was hidden inside the encoded value!'; ANIM=false; celebrate($('#meStack'));
+  }
+  $('#mePlay').onclick=play; $('#meReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

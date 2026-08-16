@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GATE Aptitude Master — Digest Everything, Forget Nothing</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a33; --card:#161f3d; --card2:#1d2a52;
+    --ink:#e8ecff; --muted:#9fb0d8; --line:#2a3766;
+    --a:#6ea8fe; --b:#7bffbf; --c:#ffd166; --d:#ff8fa3; --e:#c792ea;
+    --good:#37e39b; --warn:#ffcf5c; --bad:#ff6b81;
+    --shadow:0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;font-family:"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+    color:var(--ink);background:linear-gradient(140deg,#080c1a,#0b1020 40%,#0a1330);
+    line-height:1.6;overflow-x:hidden;
+  }
+  /* animated star / grid background */
+  .bgfx{position:fixed;inset:0;z-index:-1;overflow:hidden}
+  .bgfx::before{
+    content:"";position:absolute;inset:-50%;
+    background:radial-gradient(circle at 20% 30%,rgba(110,168,254,.15),transparent 25%),
+               radial-gradient(circle at 80% 70%,rgba(199,146,234,.15),transparent 25%),
+               radial-gradient(circle at 50% 90%,rgba(123,255,191,.12),transparent 25%);
+    animation:spin 40s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  header{
+    text-align:center;padding:70px 20px 40px;position:relative;
+  }
+  header h1{
+    font-size:clamp(28px,6vw,58px);margin:0;letter-spacing:.5px;
+    background:linear-gradient(90deg,var(--a),var(--b),var(--c),var(--e),var(--a));
+    background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shine 8s linear infinite;
+  }
+  @keyframes shine{to{background-position:300% center}}
+  header p{color:var(--muted);max-width:760px;margin:14px auto 0;font-size:clamp(14px,2.2vw,18px)}
+  .pulse-badge{
+    display:inline-block;margin-top:22px;padding:10px 22px;border-radius:999px;
+    background:linear-gradient(90deg,var(--a),var(--e));color:#08122b;font-weight:700;
+    box-shadow:0 0 0 0 rgba(110,168,254,.7);animation:pulse 2.4s infinite;cursor:pointer;
+    text-decoration:none;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(110,168,254,.6)}
+    70%{box-shadow:0 0 0 22px rgba(110,168,254,0)}
+    100%{box-shadow:0 0 0 0 rgba(110,168,254,0)}
+  }
+
+  /* sticky nav */
+  nav{
+    position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);
+    background:rgba(9,13,28,.78);border-bottom:1px solid var(--line);
+    display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:10px;
+  }
+  nav a{
+    color:var(--muted);text-decoration:none;font-size:13px;padding:7px 13px;border-radius:999px;
+    border:1px solid transparent;transition:.25s;white-space:nowrap;
+  }
+  nav a:hover{color:var(--ink);border-color:var(--line);background:var(--card);transform:translateY(-2px)}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:30px 18px 90px}
+  section{margin:46px 0;scroll-margin-top:64px}
+  .sec-head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .sec-head .ico{
+    width:46px;height:46px;flex:0 0 46px;border-radius:14px;display:grid;place-items:center;font-size:24px;
+    background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--line);
+    animation:float 5s ease-in-out infinite;
+  }
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .sec-head h2{margin:0;font-size:clamp(20px,3.4vw,30px)}
+  .sec-sub{color:var(--muted);margin:2px 0 18px;font-size:14px}
+
+  .grid{display:grid;gap:16px}
+  @media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}.grid.three{grid-template-columns:1fr 1fr 1fr}}
+
+  .card{
+    background:linear-gradient(160deg,var(--card),#141d3a);border:1px solid var(--line);
+    border-radius:16px;padding:18px 18px 16px;box-shadow:var(--shadow);
+    opacity:0;transform:translateY(24px);transition:.6s cubic-bezier(.2,.7,.2,1);
+  }
+  .card.in{opacity:1;transform:none}
+  .card h3{margin:0 0 6px;font-size:17px}
+  .card h3 .tag{font-size:11px;color:#08122b;background:var(--b);padding:2px 8px;border-radius:8px;margin-left:8px;vertical-align:middle}
+
+  .analogy{
+    border-left:4px solid var(--c);background:rgba(255,209,102,.08);
+    padding:10px 14px;border-radius:0 12px 12px 0;margin:12px 0;font-size:14.5px;
+  }
+  .analogy b{color:var(--c)}
+  .formula{
+    font-family:"Cascadia Code",Consolas,monospace;background:#0a1230;
+    border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin:10px 0;
+    color:#bfe0ff;font-size:14px;overflow-x:auto;
+  }
+  .trick{border-left:4px solid var(--good);background:rgba(55,227,155,.08);padding:8px 13px;border-radius:0 10px 10px 0;margin:10px 0;font-size:14px}
+  .trap{border-left:4px solid var(--bad);background:rgba(255,107,129,.08);padding:8px 13px;border-radius:0 10px 10px 0;margin:10px 0;font-size:14px}
+  .ex{background:#0c142e;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0}
+  .ex .q{color:var(--a);font-weight:600}
+  .ex .steps{color:var(--muted);font-size:14px;margin:6px 0}
+  details.sol{margin-top:8px}
+  details.sol summary{cursor:pointer;color:var(--b);font-weight:600;font-size:14px;user-select:none}
+  details.sol[open] summary{margin-bottom:6px}
+  ul.tight{margin:8px 0;padding-left:20px}
+  ul.tight li{margin:4px 0}
+  .pill{display:inline-block;font-size:11px;padding:3px 9px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--muted);margin:2px 4px 2px 0}
+  .kbd{font-family:monospace;background:#0a1230;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-size:13px}
+
+  /* progress bar */
+  #prog{position:fixed;top:0;left:0;height:3px;width:0;z-index:99;
+    background:linear-gradient(90deg,var(--a),var(--b),var(--c));transition:width .1s}
+
+  /* interactive quiz */
+  .quiz{background:linear-gradient(160deg,#1a2350,#141d3a);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .quiz .opt{display:block;width:100%;text-align:left;margin:8px 0;padding:11px 14px;border-radius:10px;
+    background:var(--card);border:1px solid var(--line);color:var(--ink);cursor:pointer;transition:.2s;font-size:15px}
+  .quiz .opt:hover{border-color:var(--a);transform:translateX(4px)}
+  .quiz .opt.right{background:rgba(55,227,155,.2);border-color:var(--good)}
+  .quiz .opt.wrong{background:rgba(255,107,129,.2);border-color:var(--bad)}
+  .quiz .fb{margin-top:10px;font-size:14px;min-height:22px}
+
+  footer{text-align:center;color:var(--muted);padding:40px 20px;border-top:1px solid var(--line);font-size:14px}
+  .toTop{position:fixed;right:18px;bottom:18px;width:46px;height:46px;border-radius:50%;
+    background:linear-gradient(135deg,var(--a),var(--e));color:#08122b;border:none;font-size:20px;cursor:pointer;
+    box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.3s;z-index:60}
+  .toTop.show{opacity:1;pointer-events:auto}
+  .marker{color:var(--c);font-weight:700}
+  table.mini{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+  table.mini th,table.mini td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+  table.mini th{background:var(--card2)}
+</style>
+</head>
+<body>
+<div class="bgfx"></div>
+<div id="prog"></div>
+
+<header>
+  <h1>GATE Aptitude Master</h1>
+  <p>Every core concept of GATE General Aptitude — <b>Verbal, Numerical, Logical & Spatial</b> — turned into
+  vivid analogies, one-line formulas, traps to dodge, and worked solutions. Read it once, remember it forever.</p>
+  <a href="#verbal" class="pulse-badge">▶ Start Learning</a>
+</header>
+
+<nav>
+  <a href="#howto">🧭 How to use</a>
+  <a href="#verbal">📖 Verbal</a>
+  <a href="#numbers">🔢 Numbers</a>
+  <a href="#percent">％ Percent</a>
+  <a href="#ratio">⚖️ Ratio</a>
+  <a href="#average">📊 Average & Mixture</a>
+  <a href="#tsd">🚗 Time-Speed</a>
+  <a href="#work">🛠️ Time-Work</a>
+  <a href="#pc">🎲 P & C / Prob</a>
+  <a href="#series">🔁 Series</a>
+  <a href="#di">📈 Data Interp.</a>
+  <a href="#logic">🧩 Logic</a>
+  <a href="#spatial">🧊 Spatial</a>
+  <a href="#quiz">🏆 Quiz</a>
+</nav>
+
+<div class="wrap">
+
+<!-- HOW TO -->
+<section id="howto">
+  <div class="sec-head"><div class="ico">🧭</div><h2>How to digest this page</h2></div>
+  <p class="sec-sub">The learning method baked into every card below.</p>
+  <div class="grid three">
+    <div class="card"><h3>1 · Anchor with analogy 🪝</h3>Every concept has a <b class="marker">yellow analogy box</b>. Memory sticks to stories, not symbols. Picture the analogy first, the formula second.</div>
+    <div class="card"><h3>2 · Lock the formula 🔒</h3>The <span class="pill">monospace box</span> is the exact tool. Say it aloud. GATE rewards fast recall of ~40 tiny formulas.</div>
+    <div class="card"><h3>3 · Beat the trap ⚠️</h3><span class="pill">Red trap boxes</span> list the exact mistake examiners bait you with. Knowing the trap = free marks.</div>
+  </div>
+  <div class="analogy" style="margin-top:16px">🪝 <b>Master analogy:</b> Aptitude is a <b>toolbox</b>, not a memory test. Each topic is one tool. A problem is a broken pipe — your only job is to recognise <i>which tool</i> fits. This page hands you every tool, labelled.</div>
+</section>
+
+<!-- VERBAL -->
+<section id="verbal">
+  <div class="sec-head"><div class="ico">📖</div><h2>Verbal Aptitude</h2></div>
+  <p class="sec-sub">Grammar, vocabulary, analogies, and reading comprehension — ~1/3 of the aptitude marks.</p>
+
+  <div class="grid two">
+    <div class="card">
+      <h3>Subject–Verb Agreement</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Subject & verb are <b>dance partners</b> — both must be <i>singular</i> or both <i>plural</i>. If one steps small, the other steps small.</div>
+      <ul class="tight">
+        <li>"Each / every / neither / one of" → <b>singular</b> verb.</li>
+        <li>Ignore words between subject &amp; verb: <i>"The box <span style="text-decoration:line-through">of chocolates</span> <b>is</b>..."</i></li>
+        <li>"A number of" → plural; "The number of" → singular.</li>
+      </ul>
+      <div class="trap">⚠️ Trap: long phrase inserted to hide the real subject. Bracket it out.</div>
+    </div>
+
+    <div class="card">
+      <h3>Verbal Analogies <span class="tag">high yield</span></h3>
+      <div class="analogy">🪝 <b>Analogy:</b> It's a <b>lock &amp; key</b> — find the <i>relationship</i> in pair 1, cut the same key for pair 2.</div>
+      <div class="formula">A : B :: C : ? &nbsp;→&nbsp; "A is to B <b>as</b> C is to ?"</div>
+      Common relations: part→whole, cause→effect, worker→tool, degree (warm→hot), synonym, antonym.
+      <div class="trick">✅ Make a bridge sentence: "A <b>Doctor</b> works in a <b>Hospital</b>" → "A <b>Teacher</b> works in a <b>School</b>."</div>
+    </div>
+
+    <div class="card">
+      <h3>Vocabulary in Context</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> A word is a <b>chameleon</b> — its meaning takes the colour of the sentence around it.</div>
+      <ul class="tight">
+        <li>Use tone clues: positive vs negative charge of the sentence.</li>
+        <li>Prefix/root/suffix cracks unknowns: <i>bene</i>=good, <i>mal</i>=bad, <i>a/an</i>=without.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Reading Comprehension</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> The passage is a <b>house</b>; questions ask for a specific <i>room</i>. Don't re-read the whole house — go to the room.</div>
+      <ul class="tight">
+        <li>Read the question <b>first</b>, then scan for keywords.</li>
+        <li>Inference ≠ opinion: answer must be <i>provable from the text</i>.</li>
+      </ul>
+      <div class="trap">⚠️ Trap: options that are <i>true in real life</i> but not stated in the passage.</div>
+    </div>
+  </div>
+
+  <div class="ex">
+    <div class="q">Q. "Oar : Rowing :: Needle : ?"</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Bridge: an <b>oar</b> is the <b>tool used for rowing</b>. So we need the activity a <b>needle</b> is the tool for.</div>
+      <b>Answer: Sewing / Stitching.</b>
+    </details>
+  </div>
+</section>
+
+<!-- NUMBERS -->
+<section id="numbers">
+  <div class="sec-head"><div class="ico">🔢</div><h2>Number System</h2></div>
+  <p class="sec-sub">Divisibility, factors, HCF/LCM, remainders, units digit — the bedrock.</p>
+
+  <div class="grid two">
+    <div class="card">
+      <h3>Divisibility Shortcuts</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Each divisor is a <b>fussy doorman</b> checking one feature before letting a number in.</div>
+      <table class="mini">
+        <tr><th>÷ by</th><th>Rule</th></tr>
+        <tr><td>2</td><td>last digit even</td></tr>
+        <tr><td>3</td><td>digit sum ÷ 3</td></tr>
+        <tr><td>4</td><td>last 2 digits ÷ 4</td></tr>
+        <tr><td>8</td><td>last 3 digits ÷ 8</td></tr>
+        <tr><td>9</td><td>digit sum ÷ 9</td></tr>
+        <tr><td>11</td><td>alt-sum of digits ÷ 11</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>HCF &amp; LCM</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> <b>HCF</b> = biggest <i>tile</i> that paves two rooms exactly. <b>LCM</b> = soonest two <i>runners</i> meet again at the start line.</div>
+      <div class="formula">HCF × LCM = Product of the two numbers</div>
+      <div class="trick">✅ "Bells toll together again" / "tiles" / "min length" → LCM. "Largest tile / max people / exact groups" → HCF.</div>
+    </div>
+
+    <div class="card">
+      <h3>Units Digit &amp; Cyclicity</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Powers cycle like <b>days of the week</b> — the last digit repeats every 4 steps.</div>
+      <div class="formula">Cycle length divides 4 → take power mod 4</div>
+      <div class="steps" style="color:var(--muted);font-size:14px">2: 2,4,8,6 · 3: 3,9,7,1 · 7: 7,9,3,1 · 8: 8,4,2,6</div>
+    </div>
+
+    <div class="card">
+      <h3>Remainders</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Remainder is the <b>change left in your pocket</b> after buying as many items as possible.</div>
+      <div class="formula">Remainders multiply: rem(a·b) = rem(a)·rem(b) mod n</div>
+      <div class="trick">✅ Big remainders → replace each number by its own remainder first, then combine.</div>
+    </div>
+  </div>
+
+  <div class="ex">
+    <div class="q">Q. Find the units digit of 7¹⁵³.</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">7's cycle = 7,9,3,1 (length 4). 153 mod 4 = 1 → take the 1st in cycle.</div>
+      <b>Answer: 7.</b>
+    </details>
+  </div>
+</section>
+
+<!-- PERCENT -->
+<section id="percent">
+  <div class="sec-head"><div class="ico">％</div><h2>Percentages, Profit &amp; Interest</h2></div>
+  <p class="sec-sub">The single most reused idea across all of aptitude.</p>
+
+  <div class="grid two">
+    <div class="card">
+      <h3>Percentage Core</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> "Per-cent" = <b>out of 100</b>. Imagine everything scaled to a ₹100 pizza — 20% is simply 20 slices.</div>
+      <div class="formula">x% of N = (x/100)·N &nbsp;|&nbsp; change% = (new−old)/old ×100</div>
+      <div class="trap">⚠️ Trap: +20% then −20% ≠ 0. It's a <b>net −4%</b> (multiply 1.2 × 0.8 = 0.96). Successive % never add.</div>
+    </div>
+
+    <div class="card">
+      <h3>Profit &amp; Loss</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Cost Price is what you <b>paid the shop</b>; Selling Price is what the <b>next buyer paid you</b>. Profit% always rides on <b>CP</b>.</div>
+      <div class="formula">Profit% = (SP−CP)/CP ×100 &nbsp;|&nbsp; SP = CP·(1 + P%/100)</div>
+      <div class="trap">⚠️ Trap: discount % is on <b>marked price</b>, profit % is on <b>cost price</b> — different bases!</div>
+    </div>
+
+    <div class="card">
+      <h3>Simple vs Compound Interest</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> SI = a <b>flat salary</b> every year. CI = a <b>snowball</b> — interest earns its own interest.</div>
+      <div class="formula">SI = P·R·T/100 &nbsp;|&nbsp; CI: A = P(1 + R/100)ᵀ</div>
+      <div class="trick">✅ For 2 years: CI − SI = P·(R/100)². Instant one-liner.</div>
+    </div>
+
+    <div class="card">
+      <h3>Fraction ↔ % cheat table</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> These are your <b>speed-dial numbers</b> — memorise once, save 20 seconds each.</div>
+      <table class="mini">
+        <tr><th>1/2</th><th>1/3</th><th>1/4</th><th>1/5</th><th>1/8</th></tr>
+        <tr><td>50%</td><td>33.3%</td><td>25%</td><td>20%</td><td>12.5%</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="ex">
+    <div class="q">Q. A price rises 25% then falls 20%. Net change?</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Multiply factors: 1.25 × 0.80 = 1.00.</div>
+      <b>Answer: No net change (0%).</b> The rise and fall cancel exactly here.
+    </details>
+  </div>
+</section>
+
+<!-- RATIO -->
+<section id="ratio">
+  <div class="sec-head"><div class="ico">⚖️</div><h2>Ratio &amp; Proportion</h2></div>
+  <p class="sec-sub">The language of "for every…".</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>Ratio Basics</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> A ratio is a <b>recipe</b>: 2:3 flour to sugar. Double the cake → keep the recipe, scale both by <i>k</i>.</div>
+      <div class="formula">a:b = ka:kb &nbsp;|&nbsp; if a:b and b:c → a:b:c via common b</div>
+      <div class="trick">✅ Introduce a multiplier <span class="kbd">x</span>: ages 3:4 become 3x and 4x, then use the given condition to find x.</div>
+    </div>
+    <div class="card">
+      <h3>Proportion &amp; Variation</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Direct = <b>see-saw kids of equal weight</b> (up together). Inverse = <b>speed vs time</b> (faster → less time).</div>
+      <div class="formula">Direct: y = kx &nbsp;|&nbsp; Inverse: xy = k</div>
+      <div class="trap">⚠️ Trap: "more workers, less time" is <b>inverse</b> — don't blindly cross-multiply as direct.</div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="q">Q. Ages of A:B = 3:4, sum = 42. Find B's age.</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Let ages = 3x, 4x. Sum 7x = 42 → x = 6. B = 4x.</div>
+      <b>Answer: 24.</b>
+    </details>
+  </div>
+</section>
+
+<!-- AVERAGE -->
+<section id="average">
+  <div class="sec-head"><div class="ico">📊</div><h2>Averages, Mixtures &amp; Alligation</h2></div>
+  <p class="sec-sub">Balancing values around a centre.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>Average</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Average is a <b>see-saw pivot</b> — the balance point where highs and lows cancel.</div>
+      <div class="formula">Average = Sum / Count &nbsp;|&nbsp; Sum = Average × Count</div>
+      <div class="trick">✅ New person changes average by Δ across (n+1) people → their value = old avg + (n+1)Δ.</div>
+    </div>
+    <div class="card">
+      <h3>Alligation (Mixtures)</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Cheap tea &amp; costly tea meet at a <b>tug-of-war</b>; the ratio of quantities is the <i>inverse</i> of their distance from the mean price.</div>
+      <div class="formula">Cheap : Dear = (Dear − Mean) : (Mean − Cheap)</div>
+      <div class="trap">⚠️ Trap: the ratio comes out <b>swapped</b> — the quantity nearer the mean is larger.</div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="q">Q. Mix tea at ₹20 and ₹30 to get ₹24/kg. Ratio?</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Distances: |30−24|=6 and |24−20|=4. Ratio 20-tea : 30-tea = 6 : 4.</div>
+      <b>Answer: 3 : 2.</b>
+    </details>
+  </div>
+</section>
+
+<!-- TSD -->
+<section id="tsd">
+  <div class="sec-head"><div class="ico">🚗</div><h2>Time, Speed &amp; Distance</h2></div>
+  <p class="sec-sub">Trains, boats, and relative motion.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>The Master Triangle</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Cover the quantity you want with your thumb — the other two show the formula. D on top, S and T below.</div>
+      <div class="formula">D = S × T &nbsp;|&nbsp; S = D/T &nbsp;|&nbsp; T = D/S</div>
+      <div class="trick">✅ km/h → m/s: multiply by <b>5/18</b>. m/s → km/h: multiply by <b>18/5</b>.</div>
+    </div>
+    <div class="card">
+      <h3>Relative Speed</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Same direction = two runners → gap shrinks by the <i>difference</i>. Opposite = <i>sum</i> (they rush at each other).</div>
+      <div class="formula">Same dir: |S₁−S₂| &nbsp;|&nbsp; Opposite: S₁+S₂</div>
+      <div class="trap">⚠️ Trap: a train passing a <b>pole</b> covers its own length; passing a <b>platform</b> covers length + platform.</div>
+    </div>
+    <div class="card">
+      <h3>Boats &amp; Streams</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> The river is a <b>moving walkway</b>. Downstream = walkway helps; upstream = walkway fights you.</div>
+      <div class="formula">Down = b + s &nbsp;|&nbsp; Up = b − s &nbsp;|&nbsp; b = (Down+Up)/2</div>
+    </div>
+    <div class="card">
+      <h3>Average Speed</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Equal <i>distances</i> → NOT the plain average. Use the <b>harmonic mean</b> (time weights the slow leg more).</div>
+      <div class="formula">Equal distance: Avg = 2S₁S₂/(S₁+S₂)</div>
+      <div class="trap">⚠️ Trap: never just do (S₁+S₂)/2 for a round trip.</div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="q">Q. Go 60 km/h, return 40 km/h, same road. Average speed?</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Equal distance → harmonic mean: 2·60·40/(60+40) = 4800/100.</div>
+      <b>Answer: 48 km/h</b> (not 50!).
+    </details>
+  </div>
+</section>
+
+<!-- WORK -->
+<section id="work">
+  <div class="sec-head"><div class="ico">🛠️</div><h2>Time &amp; Work</h2></div>
+  <p class="sec-sub">Pipes, workers, and shared jobs.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>Rate Thinking</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Think in <b>work-per-day</b>, not days. If A finishes in 10 days, A does 1/10 of the job each day — a steady dripping tap.</div>
+      <div class="formula">Together: 1/T = 1/a + 1/b &nbsp;→&nbsp; T = ab/(a+b)</div>
+      <div class="trick">✅ LCM trick: let total work = LCM of the days. Then each person's rate is a clean integer.</div>
+    </div>
+    <div class="card">
+      <h3>Pipes &amp; Cisterns</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Filling pipe = income (+), leak/outlet = expense (−). Net rate is your <i>savings per day</i>.</div>
+      <div class="formula">Net rate = Σ(inlets) − Σ(outlets)</div>
+      <div class="trap">⚠️ Trap: an outlet's rate is <b>subtracted</b>. Sign errors kill this topic.</div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="q">Q. A does a job in 12 days, B in 6 days. Together?</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Let work = LCM(12,6)=12 units. A=1/day, B=2/day → together 3/day. 12 ÷ 3.</div>
+      <b>Answer: 4 days.</b>
+    </details>
+  </div>
+</section>
+
+<!-- P&C -->
+<section id="pc">
+  <div class="sec-head"><div class="ico">🎲</div><h2>Permutations, Combinations &amp; Probability</h2></div>
+  <p class="sec-sub">Counting without listing, and measuring chance.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>Permutation vs Combination</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Permutation = <b>a race podium</b> (order matters: gold≠silver). Combination = <b>a fruit basket</b> (order irrelevant).</div>
+      <div class="formula">nPr = n!/(n−r)! &nbsp;|&nbsp; nCr = n!/[r!(n−r)!]</div>
+      <div class="trick">✅ Keyword scan: "arrange / rank / seat / password" → P. "select / choose / team / handshake" → C.</div>
+    </div>
+    <div class="card">
+      <h3>Probability</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Probability = <b>(lucky doors) / (all doors)</b>. A fair coin has 1 lucky door out of 2.</div>
+      <div class="formula">P = favourable / total &nbsp;|&nbsp; P(A or B)=P(A)+P(B)−P(A∩B)</div>
+      <div class="trick">✅ "At least one" → compute 1 − P(none). Almost always faster.</div>
+      <div class="trap">⚠️ Trap: "and" (both) → multiply; "or" (either) → add (then subtract overlap).</div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="q">Q. In how many ways can 3 of 5 people stand in a row?</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Order matters (a row) → permutation. 5P3 = 5·4·3.</div>
+      <b>Answer: 60.</b>
+    </details>
+  </div>
+</section>
+
+<!-- SERIES -->
+<section id="series">
+  <div class="sec-head"><div class="ico">🔁</div><h2>Progressions &amp; Number Series</h2></div>
+  <p class="sec-sub">Spotting the hidden pattern.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>AP &amp; GP</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> AP = <b>climbing equal stairs</b> (add d). GP = <b>a rumour spreading</b> (multiply by r each round).</div>
+      <div class="formula">AP: Tₙ=a+(n−1)d, Sₙ=n/2·(2a+(n−1)d)</div>
+      <div class="formula">GP: Tₙ=a·r^(n−1), Sₙ=a(rⁿ−1)/(r−1)</div>
+    </div>
+    <div class="card">
+      <h3>Cracking a Series</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Be a <b>detective</b> — check the "gaps" between terms first; the difference often confesses the rule.</div>
+      <ul class="tight">
+        <li>Constant gap → AP.</li>
+        <li>Constant ratio → GP.</li>
+        <li>Gaps form their own pattern → 2nd-level difference.</li>
+        <li>Watch for squares, cubes, primes, ±alternating.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="q">Q. 2, 6, 12, 20, 30, ?</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Gaps: 4,6,8,10 → next gap 12. Also terms = n(n+1): 1·2, 2·3, 3·4… next = 6·7.</div>
+      <b>Answer: 42.</b>
+    </details>
+  </div>
+</section>
+
+<!-- DI -->
+<section id="di">
+  <div class="sec-head"><div class="ico">📈</div><h2>Data Interpretation</h2></div>
+  <p class="sec-sub">Reading tables, bar/pie/line charts fast and accurately.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>Reading Charts</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> A chart is a <b>map</b>. Read the <i>legend + axis units</i> first, like checking a map's scale before walking.</div>
+      <ul class="tight">
+        <li>Pie: whole = 360° = 100%. 1% = 3.6°.</li>
+        <li>Compare via ratios/percentages, not raw eyeballing.</li>
+        <li>Approximate — GATE options are usually well-spaced.</li>
+      </ul>
+      <div class="trap">⚠️ Trap: mixing up "percentage change" with "percentage point change".</div>
+    </div>
+    <div class="card">
+      <h3>Speed Tactics</h3>
+      <div class="trick">✅ Do the reading (units, totals) once; reuse for all sub-questions.</div>
+      <div class="trick">✅ Round smartly: 48.7% ≈ 50% to eliminate options, then refine only if needed.</div>
+      <div class="analogy">🪝 <b>Analogy:</b> Treat the dataset like a <b>buffet</b> — grab only the numbers the question orders, ignore the rest.</div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGIC -->
+<section id="logic">
+  <div class="sec-head"><div class="ico">🧩</div><h2>Logical &amp; Analytical Reasoning</h2></div>
+  <p class="sec-sub">Deduction, syllogisms, seating, blood relations, statements.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>Syllogisms</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Draw <b>Venn circles</b> — reasoning becomes seeing which balloons overlap.</div>
+      <ul class="tight">
+        <li>"All A are B" → A-circle sits inside B.</li>
+        <li>"Some A are B" → circles overlap.</li>
+        <li>A conclusion holds only if it's true in <b>every</b> valid diagram.</li>
+      </ul>
+      <div class="trap">⚠️ Trap: "possibility" conclusions — if any diagram allows it, it <i>can</i> be true.</div>
+    </div>
+    <div class="card">
+      <h3>Blood Relations</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Build a <b>family tree</b> on paper: + for male, − for female, horizontal = siblings/spouse, vertical = parent/child.</div>
+      <div class="trick">✅ "My father's only son" = <b>myself</b>. Read pronouns of the speaker carefully.</div>
+    </div>
+    <div class="card">
+      <h3>Seating / Arrangement</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> You're a <b>wedding planner</b> — place the <i>most-constrained guest</i> first, then fit the rest around them.</div>
+      <ul class="tight">
+        <li>Circle facing centre: left/right flip vs a row.</li>
+        <li>Start with fixed/definite clues, keep possibilities in a grid.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Statement &amp; Assumption / Cube</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> An assumption is the <b>hidden floor</b> a statement stands on — remove it and the statement collapses.</div>
+      <div class="trick">✅ Cube cut into n³ small cubes: corners=8 (3 faces), edges=12(n−2), faces=6(n−2)², inside=(n−2)³.</div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="q">Q. A 3×3×3 cube is painted then cut into 27 unit cubes. How many have exactly 2 painted faces?</div>
+    <details class="sol"><summary>Show solution</summary>
+      <div class="steps">Exactly-2-faces = edge cubes = 12·(n−2) with n=3 → 12·1.</div>
+      <b>Answer: 12.</b>
+    </details>
+  </div>
+</section>
+
+<!-- SPATIAL -->
+<section id="spatial">
+  <div class="sec-head"><div class="ico">🧊</div><h2>Spatial Aptitude</h2></div>
+  <p class="sec-sub">Shape rotation, mirrors, paper folding, embedded figures.</p>
+  <div class="grid two">
+    <div class="card">
+      <h3>Rotation &amp; Mirrors</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Rotation = <b>spinning a photo</b> (shape unchanged). Mirror = <b>your reflection</b> (left↔right swapped, R becomes Я).</div>
+      <div class="trick">✅ Track one <b>unique landmark</b> (an arrow/dot) through the transform instead of the whole figure.</div>
+      <div class="trap">⚠️ Trap: confusing rotation with reflection — a rotated figure keeps its handedness, a mirrored one flips it.</div>
+    </div>
+    <div class="card">
+      <h3>Paper Folding &amp; Cubes</h3>
+      <div class="analogy">🪝 <b>Analogy:</b> Punched holes are <b>symmetric twins</b> — each unfold doubles them across the crease line.</div>
+      <ul class="tight">
+        <li>Dice: opposite faces of a standard die sum to 7.</li>
+        <li>Net folding: opposite faces are <b>never</b> adjacent in the net.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="live-demo card" style="opacity:1;transform:none">
+    <h3>🎡 Live rotation demo</h3>
+    <p class="sec-sub" style="margin:4px 0 14px">Watch the same shape rotate — notice the corner dot stays the same corner (rotation preserves the figure).</p>
+    <div style="display:flex;justify-content:center;padding:14px">
+      <div id="spin3d" style="width:90px;height:90px;position:relative;animation:rot 6s linear infinite;transform-style:preserve-3d">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--a),var(--e));border-radius:12px;box-shadow:var(--shadow)"></div>
+        <div style="position:absolute;top:8px;left:8px;width:14px;height:14px;border-radius:50%;background:var(--c)"></div>
+      </div>
+    </div>
+  </div>
+  <style>@keyframes rot{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(1.1)}100%{transform:rotate(360deg) scale(1)}}</style>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz">
+  <div class="sec-head"><div class="ico">🏆</div><h2>Test Yourself</h2></div>
+  <p class="sec-sub">Instant feedback. Prove the concepts stuck.</p>
+  <div class="quiz" id="quizBox">
+    <div id="qText" style="font-size:17px;font-weight:600;margin-bottom:6px"></div>
+    <div id="qOpts"></div>
+    <div class="fb" id="qFb"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+      <span id="qScore" style="color:var(--muted);font-size:14px"></span>
+      <button id="qNext" class="pulse-badge" style="margin:0;border:none;font-size:14px;display:none">Next ▶</button>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  Built to be re-read before every mock. 🧠 &nbsp;•&nbsp; Anchor the analogy, recall the formula, dodge the trap.
+  <br>Open this page, skim the yellow boxes, and you carry the whole GATE aptitude toolbox in your head.
+</footer>
+
+<button class="toTop" id="toTop" aria-label="Back to top">↑</button>
+
+<script>
+/* progress bar + back-to-top */
+const prog=document.getElementById('prog'), toTop=document.getElementById('toTop');
+addEventListener('scroll',()=>{
+  const h=document.documentElement, sc=h.scrollTop/(h.scrollHeight-h.clientHeight);
+  prog.style.width=(sc*100)+'%';
+  toTop.classList.toggle('show',h.scrollTop>600);
+});
+toTop.onclick=()=>scrollTo({top:0,behavior:'smooth'});
+
+/* reveal-on-scroll for cards */
+const io=new IntersectionObserver((es)=>{
+  es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+},{threshold:.12});
+document.querySelectorAll('.card').forEach((c,i)=>{c.style.transitionDelay=(i%3*80)+'ms';io.observe(c);});
+
+/* ---- Quiz engine ---- */
+const QUESTIONS=[
+  {q:"Units digit of 3⁴⁴?",o:["1","3","7","9"],a:0,
+   why:"3's cycle is 3,9,7,1 (length 4). 44 mod 4 = 0 → last in cycle = 1."},
+  {q:"Price up 20% then down 20%. Net change?",o:["0%","−4%","+4%","−2%"],a:1,
+   why:"1.2 × 0.8 = 0.96 → a 4% net fall. Successive % never simply add."},
+  {q:"Go 30 km/h, return 60 km/h. Average speed?",o:["45","40","48","50"],a:1,
+   why:"Equal distance → harmonic mean 2·30·60/90 = 40 km/h."},
+  {q:"A does a job in 15 days, B in 10. Together they take?",o:["5","6","12.5","25"],a:1,
+   why:"Rates 1/15+1/10 = 1/6 → 6 days."},
+  {q:"Choose a 3-person team from 6 people. Ways?",o:["120","20","18","216"],a:1,
+   why:"Order irrelevant → combination 6C3 = 20."},
+  {q:"'Oar : Rowing :: Brush : ?'",o:["Cleaning","Painting","Hair","Wood"],a:1,
+   why:"Oar is the tool for rowing; a brush is the tool for painting."},
+  {q:"3×3×3 painted cube cut into 27. Cubes with exactly 1 painted face?",o:["6","8","12","1"],a:0,
+   why:"Face-centre cubes = 6·(n−2)² = 6·1 = 6."}
+];
+let qi=0,score=0;
+const qText=document.getElementById('qText'),qOpts=document.getElementById('qOpts'),
+      qFb=document.getElementById('qFb'),qScore=document.getElementById('qScore'),
+      qNext=document.getElementById('qNext');
+function loadQ(){
+  const Q=QUESTIONS[qi];
+  qText.textContent=`Q${qi+1}. ${Q.q}`;
+  qFb.textContent='';qNext.style.display='none';qOpts.innerHTML='';
+  Q.o.forEach((opt,idx)=>{
+    const b=document.createElement('button');
+    b.className='opt';b.textContent=opt;
+    b.onclick=()=>choose(idx,b);
+    qOpts.appendChild(b);
+  });
+  qScore.textContent=`Score: ${score} / ${QUESTIONS.length}`;
+}
+function choose(idx,btn){
+  const Q=QUESTIONS[qi];
+  [...qOpts.children].forEach(b=>b.disabled=true);
+  if(idx===Q.a){btn.classList.add('right');qFb.style.color='var(--good)';qFb.textContent='✅ Correct! '+Q.why;score++;}
+  else{btn.classList.add('wrong');qOpts.children[Q.a].classList.add('right');
+       qFb.style.color='var(--bad)';qFb.textContent='❌ Not quite. '+Q.why;}
+  qScore.textContent=`Score: ${score} / ${QUESTIONS.length}`;
+  qNext.style.display= qi<QUESTIONS.length-1 ? 'inline-block' : 'none';
+  if(qi===QUESTIONS.length-1){qFb.textContent+=`  🎉 Finished! Final score ${score}/${QUESTIONS.length}.`;}
+}
+qNext.onclick=()=>{qi++;loadQ();};
+loadQ();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

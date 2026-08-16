@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Graphs — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .vizwrap{overflow-x:auto; display:flex; justify-content:center; gap:26px; flex-wrap:wrap; margin:14px 0; padding:6px}
+  .graphsvg{display:block}
+  .graphsvg .gedge{stroke:#2c3d6e; stroke-width:3; transition:.3s}
+  .graphsvg .gedge.tree{stroke:var(--found); stroke-width:4.5}
+  .graphsvg .gedge.path{stroke:var(--accent); stroke-width:5}
+  .graphsvg .gedge.cross{stroke:var(--accent2); stroke-dasharray:5 4}
+  .graphsvg .gedge.hl{stroke:var(--mid); stroke-width:4.5}
+  .graphsvg .gnode{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .graphsvg .gnode.visit{fill:#3a3620; stroke:var(--mid); stroke-width:3.5}
+  .graphsvg .gnode.done{fill:#22345f; stroke:var(--accent); stroke-width:3.5}
+  .graphsvg .gnode.path,.graphsvg .gnode.start{fill:#0d3b30; stroke:var(--found); stroke-width:4}
+  .graphsvg .gnode.c0{fill:#22345f; stroke:var(--accent); stroke-width:3.5}
+  .graphsvg .gnode.c1{fill:#3a1d2a; stroke:var(--accent2); stroke-width:3.5}
+  .graphsvg .gnode.c2{fill:#0d3b30; stroke:var(--found); stroke-width:3.5}
+  .graphsvg .gnode.gray{fill:#3a3620; stroke:var(--mid); stroke-width:3.5}
+  .graphsvg .gnode.black{fill:#22345f; stroke:var(--accent); stroke-width:3.5}
+  .graphsvg .gnode.art{fill:#3a1d2a; stroke:var(--accent2); stroke-width:5}
+  .graphsvg .gnode.bad{fill:#3a1d2a; stroke:var(--accent2); stroke-width:4}
+  .graphsvg .gnode.fade{opacity:.15}
+  .graphsvg .gnlbl{fill:var(--ink); font-weight:800; font-size:15px; text-anchor:middle; dominant-baseline:central; font-family:'Consolas',monospace}
+  .graphsvg .gnlbl.fade{opacity:.15}
+  .graphsvg .gdist{fill:var(--mid); font-weight:800; font-size:12px; text-anchor:middle; dominant-baseline:central}
+  .graphsvg .garrow{fill:#2c3d6e; transition:.3s}
+  .graphsvg .garrow.tree{fill:var(--found)} .graphsvg .garrow.path{fill:var(--accent)}
+  .graphsvg .garrow.hl{fill:var(--mid)} .graphsvg .garrow.cross,.graphsvg .garrow.bad{fill:var(--accent2)}
+  .graphsvg .gweight{fill:#dbe7ff; font-weight:800; font-size:12.5px; text-anchor:middle; paint-order:stroke; stroke:#0b1020; stroke-width:3px; font-family:'Consolas',monospace}
+  .dsupanel{font-family:'Consolas',monospace; font-size:13px; background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:10px auto; max-width:520px; text-align:center}
+  .edgelist{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:10px 0}
+  .echip{background:#1d2a52; border:2px solid #2c3d6e; border-radius:9px; padding:5px 10px; font-weight:800; font-family:'Consolas',monospace; font-size:13px; transition:.3s}
+  .echip.pick{border-color:var(--found); background:#0d3b30; color:var(--found)}
+  .echip.skip{border-color:var(--accent2); background:#3a1d2a; opacity:.6; text-decoration:line-through}
+  .echip.cur{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+
+  .grid{display:inline-grid; gap:5px}
+  .gc{width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:9px; font-weight:800; font-size:15px;
+      background:#1d2a52; border:2px solid #2c3d6e; font-family:'Consolas',monospace; transition:.3s}
+  .gc.zero{background:#12233f; color:var(--muted)}
+  .gc.one{background:#1d2a52}
+  .gc.water{background:#0e1c3a; color:#33507f}
+  .gc.land{background:#233a1f; border-color:#3a5f2f}
+  .gc.island0{background:#0d3b30; border-color:var(--found); color:var(--found)}
+  .gc.island1{background:#3a1d2a; border-color:var(--accent2); color:#ff8fc7}
+  .gc.fresh{background:#233a1f; border-color:#3a5f2f; color:#8fe08f}
+  .gc.rot{background:#3a2a12; border-color:#c98a2f; color:#ffbe5c}
+  .gc.empty{background:#12182f; color:#33507f}
+  .gc.start{background:#0d3b30; border-color:var(--found); color:var(--found)}
+  .gc.target{background:#3a1d2a; border-color:var(--accent2); color:#ff8fc7}
+  .gc.visit{background:#3a3620; border-color:var(--mid)}
+  .gc.frontier{box-shadow:0 0 0 3px rgba(255,209,102,.4)}
+  .gc.path{background:#22345f; border-color:var(--accent); color:var(--accent)}
+  .gc.done{background:#22345f; border-color:var(--accent)}
+
+  .ladder{display:flex; flex-direction:column; gap:8px; align-items:center; margin:14px 0}
+  .lrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center}
+  .lrow .lvl{min-width:60px; text-align:right; color:var(--muted); font-size:12px; font-weight:700}
+  .chip{background:#1d2a52; border:2px solid #2c3d6e; border-radius:10px; padding:6px 12px; font-weight:800; font-family:'Consolas',monospace; font-size:14px; transition:.3s}
+  .chip.fwd{border-color:var(--accent); background:#22345f}
+  .chip.bwd{border-color:var(--accent2); background:#3a1d2a}
+  .chip.meet{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.4)}
+  .chip.path{border-color:var(--found); background:#0d3b30; color:var(--found)}
+  .chip.begin{border-color:var(--found); background:#0d3b30}
+
+  .adjbox{display:flex; gap:26px; flex-wrap:wrap; justify-content:center; align-items:flex-start}
+  .adjlist{font-family:'Consolas',monospace; font-size:13.5px; background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:14px 18px; min-width:200px}
+  .adjlist .row{padding:2px 0}
+  .adjlist .row.hl{color:var(--mid)}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Graphs — Animated Visual Guide</h1>
+  <p><span class="pulse-dot"></span>Nodes, edges, BFS waves, DFS dives, grids &amp; word ladders — watch every classic graph algorithm come alive. Built so graphs stick for life.</p>
+</header>
+
+<nav>
+  <a href="#wg">🕸️ What is a Graph</a>
+  <a href="#tm">📖 Terms</a>
+  <a href="#dg">🎯 Degree</a>
+  <a href="#rp">🗂️ Representation</a>
+  <a href="#bf">🌊 BFS</a>
+  <a href="#bt">🌲 BFS Tree</a>
+  <a href="#sp">🛣️ Shortest Path</a>
+  <a href="#kn">♞ Knight Moves</a>
+  <a href="#cz">📏 Closest Zero</a>
+  <a href="#ro">🍊 Rotten Oranges</a>
+  <a href="#wl">🪜 Word Ladder</a>
+  <a href="#wa">🔀 Word Ladder II</a>
+  <a href="#df">🧭 DFS</a>
+  <a href="#cc">🧩 Components</a>
+  <a href="#is">🏝️ Islands</a>
+  <a href="#sr">🧱 Surrounded Regions</a>
+  <a href="#bp">🎨 Bipartite</a>
+  <a href="#cu">🔁 Cycle (Undirected)</a>
+  <a href="#cd">🔃 Cycle (Directed)</a>
+  <a href="#ts">📚 Topo Sort</a>
+  <a href="#csch">🎓 Course Schedule</a>
+  <a href="#tk">📚 Topo Sort (Kahn)</a>
+  <a href="#oc">👽 Order of Characters</a>
+  <a href="#dsu">🌿 Disjoint Set (DSU)</a>
+  <a href="#dsuo">⚡ Optimized Union</a>
+  <a href="#kr">🌉 Kruskal MST</a>
+  <a href="#scc">🎯 SCC (Kosaraju)</a>
+  <a href="#ap">✂️ Articulation Points</a>
+  <a href="#pr1">🌲 Prim I</a>
+  <a href="#pr2">🌲 Prim II</a>
+  <a href="#dij">🛰️ Dijkstra</a>
+</nav>
+
+<main>
+
+  <!-- 1 -->
+  <section id="wg">
+    <h2>🕸️ What is a Graph? <span class="badge">nodes + edges</span></h2>
+    <p class="lead">A graph is a set of <b>vertices</b> (nodes) connected by <b>edges</b> (relationships). Unlike a tree, it can have cycles, many links, and no fixed root.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A map of connections:</span> think cities joined by roads, or people joined by friendships. Each dot is a vertex; each line is an edge. That's it — the most general "things + relationships" structure in all of CS.</div>
+      <div class="steps-flow"><span class="chip">vertex = a thing</span><span class="arrow">→</span><span class="chip">edge = a relationship</span><span class="arrow">→</span><span class="chip">graph = V + E</span></div>
+      <div class="oneliner">🔒 Keep forever: "A graph is just dots (vertices) and lines (edges) — trees &amp; lists are special cases of it."</div>
+    </div>
+    <div class="vizwrap" id="wgViz"></div>
+    <div class="status" id="wgStatus">Press play to draw a graph: vertices first, then edges.</div>
+    <div class="stats" id="wgStats"></div>
+    <div class="controls"><button class="btn" id="wgPlay">▶ Draw the graph</button><button class="btn ghost" id="wgReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="wgSpeed" min="200" max="1600" value="600" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a tree is a connected graph with no cycles and exactly V−1 edges. Every tree is a graph; not every graph is a tree.</div></div>
+  </section>
+
+  <!-- 2 -->
+  <section id="tm">
+    <h2>📖 Important Terms <span class="badge">vocabulary</span></h2>
+    <p class="lead">Vertex, edge, adjacent, path, cycle, connected — the words you'll use in every graph problem.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Speak graph:</span> two vertices joined by an edge are <b>adjacent</b> (neighbors). A <b>path</b> is a trail of edges from one vertex to another. A <b>cycle</b> is a path that returns to its start. A graph is <b>connected</b> if every vertex is reachable from every other.</div>
+      <div class="steps-flow"><span class="chip">adjacent = share an edge</span><span class="arrow">·</span><span class="chip">path = trail of edges</span><span class="arrow">·</span><span class="chip">cycle = path back to start</span></div>
+      <div class="oneliner">🔒 Keep forever: "Adjacent = neighbors; path = a walk; cycle = a loop; connected = all reachable."</div>
+    </div>
+    <div class="vizwrap" id="tmViz"></div>
+    <div class="status" id="tmStatus">Press play to highlight a vertex, an edge, a path, and a cycle.</div>
+    <div class="stats" id="tmStats"></div>
+    <div class="controls"><button class="btn" id="tmPlay">▶ Show the terms</button><button class="btn ghost" id="tmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tmSpeed" min="400" max="2600" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> <b>directed</b> edges are one-way arrows; <b>weighted</b> edges carry a cost. Plain edges (here) are undirected &amp; unweighted.</div></div>
+  </section>
+
+  <!-- 3 -->
+  <section id="dg">
+    <h2>🎯 Degree of a Node <span class="badge">handshake</span></h2>
+    <p class="lead">The degree of a vertex is how many edges touch it — i.e. its number of neighbors.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Count the lines:</span> vertex 1 has edges to 0, 2, and 3 → degree 3. Sum every vertex's degree and you always get <b>twice the edge count</b> (each edge is counted from both ends) — the Handshaking Lemma.</div>
+      <div class="steps-flow"><span class="chip">degree(v) = #edges at v</span><span class="arrow">→</span><span class="chip">Σ degrees = 2·E</span></div>
+      <div class="oneliner">🔒 Keep forever: "Degree = neighbor count; the sum of all degrees is always 2 × (number of edges)."</div>
+    </div>
+    <div class="vizwrap" id="dgViz"></div>
+    <div class="status" id="dgStatus">Press play to count degree of node 1 and verify the handshake sum.</div>
+    <div class="stats" id="dgStats"></div>
+    <div class="controls"><button class="btn" id="dgPlay">▶ Measure degrees</button><button class="btn ghost" id="dgReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dgSpeed" min="300" max="2000" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> in a <b>directed</b> graph each vertex has an <b>in-degree</b> and an <b>out-degree</b> instead of one degree.</div></div>
+  </section>
+
+  <!-- 4 -->
+  <section id="rp">
+    <h2>🗂️ Graph Representation <span class="badge">list vs matrix</span></h2>
+    <p class="lead">Two standard ways to store a graph: an <b>adjacency list</b> (each vertex keeps its neighbors) or an <b>adjacency matrix</b> (a V×V grid of 0/1).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">List vs grid:</span> the adjacency <b>list</b> is compact for sparse graphs (O(V+E) memory) and lists neighbors directly. The adjacency <b>matrix</b> answers "is u–v an edge?" in O(1) but uses O(V²) memory. Most algorithms use the list.</div>
+      <div class="steps-flow"><span class="chip">list: O(V+E) mem, iterate neighbors fast</span><span class="arrow">·</span><span class="chip">matrix: O(V²) mem, edge-lookup O(1)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sparse graph → adjacency list. Need instant edge lookups / dense graph → adjacency matrix."</div>
+    </div>
+    <div class="adjbox">
+      <div><div style="text-align:center;color:var(--accent);font-weight:800;font-size:12.5px;margin-bottom:6px">adjacency list</div><div class="adjlist" id="rpList"></div></div>
+      <div><div style="text-align:center;color:var(--accent);font-weight:800;font-size:12.5px;margin-bottom:6px">adjacency matrix</div><div class="vizwrap" id="rpMatrix" style="margin:0"></div></div>
+    </div>
+    <div class="status" id="rpStatus">Press play to build both representations edge by edge.</div>
+    <div class="stats" id="rpStats"></div>
+    <div class="controls"><button class="btn" id="rpPlay">▶ Build list &amp; matrix</button><button class="btn ghost" id="rpReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rpSpeed" min="200" max="1600" value="550" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> undirected edges appear <b>twice</b> in the list and make the matrix <b>symmetric</b> (M[u][v]=M[v][u]).</div></div>
+  </section>
+
+  <!-- 5 -->
+  <section id="bf">
+    <h2>🌊 Breadth First Search <span class="badge">queue · layers</span></h2>
+    <p class="lead">BFS explores level by level using a <b>queue</b>: visit a vertex, enqueue all unvisited neighbors, repeat. It spreads out like a ripple.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Ripple outward:</span> start at 0, visit its neighbors (level 1), then their neighbors (level 2)… A queue (FIFO) guarantees you finish a whole level before the next. A <code>visited</code> set stops re-visits.</div>
+      <div class="steps-flow"><span class="chip">enqueue start</span><span class="arrow">→</span><span class="chip">pop, visit, enqueue new neighbors</span><span class="arrow">→</span><span class="chip">repeat till queue empty</span></div>
+      <div class="oneliner">🔒 Keep forever: "BFS = a queue + a visited set → explores in expanding rings from the source."</div>
+    </div>
+    <div class="vizwrap" id="bfViz"></div>
+    <div class="status" id="bfStatus">Press play for BFS from vertex 0.</div>
+    <div class="stats" id="bfStats"></div>
+    <div class="controls"><button class="btn" id="bfPlay">▶ BFS from 0</button><button class="btn ghost" id="bfReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bfSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> mark a vertex visited when you <b>enqueue</b> it (not when you pop) so it's never added twice.</div></div>
+    <pre><code>q=[start]; visited={start};
+<span class="kw">while</span>(q){ u=q.shift(); visit(u);
+  <span class="kw">for</span>(v : adj[u]) <span class="kw">if</span>(!visited[v]){ visited.add(v); q.push(v); } }</code></pre>
+  </section>
+
+  <!-- 6 -->
+  <section id="bt">
+    <h2>🌲 BFS Tree <span class="badge">tree vs cross edges</span></h2>
+    <p class="lead">The edges BFS actually uses to first reach each vertex form a <b>BFS tree</b>. The leftover edges are <b>cross edges</b>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Keep the discovery edges:</span> whenever BFS reaches a new vertex, the edge it came through is a <b>tree edge</b> (green). Edges connecting already-seen vertices are <b>cross edges</b> (pink dashes). The tree edges span all vertices with no cycles.</div>
+      <div class="steps-flow"><span class="chip">first time reached → tree edge</span><span class="arrow">·</span><span class="chip">already visited → cross edge</span></div>
+      <div class="oneliner">🔒 Keep forever: "BFS tree = the edges that first discovered each vertex; everything else is a cross edge."</div>
+    </div>
+    <div class="vizwrap" id="btViz"></div>
+    <div class="status" id="btStatus">Press play to split edges into tree (green) &amp; cross (pink).</div>
+    <div class="stats" id="btStats"></div>
+    <div class="controls"><button class="btn" id="btPlay">▶ Build BFS tree</button><button class="btn ghost" id="btReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="btSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> in an undirected graph BFS produces only tree edges &amp; cross edges — never "back edges" that skip levels.</div></div>
+  </section>
+
+  <!-- 7 -->
+  <section id="sp">
+    <h2>🛣️ Shortest Path (Unweighted) <span class="badge">BFS = shortest</span></h2>
+    <p class="lead">On an unweighted graph, BFS finds the <b>shortest path</b> automatically: the level a vertex is found on = its distance from the source.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Levels are distances:</span> because BFS finishes each ring before the next, the first time you reach a vertex is via a shortest route. Store a <code>parent</code> pointer as you go, then walk parents back from the target to rebuild the path. Here: <b>0 → 5</b>.</div>
+      <div class="steps-flow"><span class="chip">BFS with dist[] &amp; parent[]</span><span class="arrow">→</span><span class="chip">dist[target] = hops</span><span class="arrow">→</span><span class="chip">follow parents back</span></div>
+      <div class="oneliner">🔒 Keep forever: "Unweighted shortest path = plain BFS; record parents to reconstruct the actual route."</div>
+    </div>
+    <div class="vizwrap" id="spViz"></div>
+    <div class="status" id="spStatus">Press play to BFS distances then trace the 0→5 shortest path.</div>
+    <div class="stats" id="spStats"></div>
+    <div class="controls"><button class="btn" id="spPlay">▶ Shortest 0 → 5</button><button class="btn ghost" id="spReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="spSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> BFS = shortest path only when every edge has the <b>same</b> weight. Weighted graphs need Dijkstra / 0-1 BFS.</div></div>
+  </section>
+
+  <!-- 8 -->
+  <section id="kn">
+    <h2>♞ Knight's Minimum Moves <span class="badge">BFS on a board</span></h2>
+    <p class="lead">The chessboard is a hidden graph: each square is a vertex, and a knight's L-move is an edge. BFS finds the fewest moves between two squares.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Board = graph:</span> from a square, a knight can reach up to 8 others (its L-moves = neighbors). BFS from the start square colors squares by move-count; the first time it reaches the target is the minimum number of jumps. Here <b>(0,0) → (4,4)</b>.</div>
+      <div class="steps-flow"><span class="chip">square = vertex</span><span class="arrow">·</span><span class="chip">L-move = edge</span><span class="arrow">→</span><span class="chip">BFS layers = move count</span></div>
+      <div class="oneliner">🔒 Keep forever: "Any 'minimum moves on a grid' problem is BFS — the grid is just an implicit graph."</div>
+    </div>
+    <div class="vizwrap" id="knViz"></div>
+    <div class="status" id="knStatus">Press play for knight BFS from (0,0) to (4,4).</div>
+    <div class="stats" id="knStats"></div>
+    <div class="controls"><button class="btn" id="knPlay">▶ Knight BFS</button><button class="btn ghost" id="knReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="knSpeed" min="200" max="1600" value="500" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> only the <b>move rule</b> changes between grid-BFS problems — knight jumps vs 4-directional steps. The BFS skeleton is identical.</div></div>
+  </section>
+
+  <!-- 9 -->
+  <section id="cz">
+    <h2>📏 Distance to Closest Zero <span class="badge">multi-source BFS</span></h2>
+    <p class="lead">For each cell in a 0/1 matrix, find its distance to the nearest 0. Seed BFS from <b>all</b> zeros at once.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Start everywhere at once:</span> push every 0 into the queue with distance 0. BFS outward simultaneously — the first wave to reach a 1 gives its shortest distance to any zero. One pass, no per-cell search.</div>
+      <div class="steps-flow"><span class="chip">enqueue all zeros (dist 0)</span><span class="arrow">→</span><span class="chip">BFS outward</span><span class="arrow">→</span><span class="chip">first arrival = nearest 0</span></div>
+      <div class="oneliner">🔒 Keep forever: "Nearest-source problems = multi-source BFS: seed the queue with every source at once."</div>
+    </div>
+    <div class="vizwrap" id="czViz"></div>
+    <div class="status" id="czStatus">Press play for multi-source BFS from every zero.</div>
+    <div class="stats" id="czStats"></div>
+    <div class="controls"><button class="btn" id="czPlay">▶ Fill distances</button><button class="btn ghost" id="czReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="czSpeed" min="250" max="2000" value="750" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> multi-source BFS is just BFS with many starting points — it's why it beats running single BFS per cell.</div></div>
+  </section>
+
+  <!-- 10 -->
+  <section id="ro">
+    <h2>🍊 Rotten Oranges <span class="badge">BFS in time</span></h2>
+    <p class="lead">Rot spreads to 4-adjacent fresh oranges each minute. How many minutes until none are fresh? Multi-source BFS where each level = one minute.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Each BFS level = one minute:</span> seed the queue with all initially rotten oranges. Every BFS ring rots the neighboring fresh ones — the number of rings is the answer. If a fresh orange is never reached, it's impossible (−1). Grid: 2=rotten, 1=fresh, 0=empty.</div>
+      <div class="steps-flow"><span class="chip">enqueue all rotten</span><span class="arrow">→</span><span class="chip">each level rots neighbors</span><span class="arrow">→</span><span class="chip">levels = minutes</span></div>
+      <div class="oneliner">🔒 Keep forever: "Rotten oranges = timed multi-source BFS — count the number of expansion waves."</div>
+    </div>
+    <div class="vizwrap" id="roViz"></div>
+    <div class="status" id="roStatus">Press play to spread the rot minute by minute.</div>
+    <div class="stats" id="roStats"></div>
+    <div class="controls"><button class="btn" id="roPlay">▶ Spread the rot</button><button class="btn ghost" id="roReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="roSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> process the queue <b>one full level at a time</b> (record queue size) so each wave counts as exactly one minute.</div></div>
+  </section>
+
+  <!-- 11 -->
+  <section id="wl">
+    <h2>🪜 Word Ladder <span class="badge">BFS over words</span></h2>
+    <p class="lead">Transform one word into another by changing a single letter at a time (each step must be a real word). Shortest chain = BFS.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Words are vertices:</span> two words are adjacent if they differ by one letter. BFS from the start word spreads level by level; the level the end word appears on is the shortest transformation length. <code>hit → hot → dot → dog → cog</code>.</div>
+      <div class="steps-flow"><span class="chip">word = vertex</span><span class="arrow">·</span><span class="chip">1-letter change = edge</span><span class="arrow">→</span><span class="chip">BFS levels = ladder length</span></div>
+      <div class="oneliner">🔒 Keep forever: "Word ladder = BFS on a graph where edges are single-letter changes."</div>
+    </div>
+    <div class="ladder" id="wlViz"></div>
+    <div class="status" id="wlStatus">Press play for BFS from hit to cog.</div>
+    <div class="stats" id="wlStats"></div>
+    <div class="controls"><button class="btn" id="wlPlay">▶ Ladder hit → cog</button><button class="btn ghost" id="wlReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="wlSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> to find neighbors fast, try every letter a–z at each position (26·L candidates) instead of comparing all word pairs.</div></div>
+  </section>
+
+  <!-- 12 -->
+  <section id="wa">
+    <h2>🔀 Word Ladder — Bidirectional BFS <span class="badge">meet in the middle</span></h2>
+    <p class="lead">Search from <b>both</b> ends at once. When the two frontiers meet, you've found the shortest ladder — while exploring far fewer words.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two waves collide:</span> a normal BFS frontier grows like bᵈ. Running one wave from <b>hit</b> (blue) and one from <b>cog</b> (pink) and stopping when they touch turns bᵈ into ~2·b^(d/2) — dramatically fewer nodes. Always expand the <b>smaller</b> frontier next.</div>
+      <div class="steps-flow"><span class="chip">frontier from start</span><span class="arrow">·</span><span class="chip">frontier from end</span><span class="arrow">→</span><span class="chip">stop when they intersect</span></div>
+      <div class="oneliner">🔒 Keep forever: "Bidirectional BFS meets in the middle — same answer, exponentially fewer nodes explored."</div>
+    </div>
+    <div class="ladder" id="waViz"></div>
+    <div class="status" id="waStatus">Press play for two frontiers meeting in the middle.</div>
+    <div class="stats" id="waStats"></div>
+    <div class="controls"><button class="btn" id="waPlay">▶ Bidirectional BFS</button><button class="btn ghost" id="waReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="waSpeed" min="300" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> bidirectional search needs a known <b>target</b> and reversible edges — perfect for word ladders &amp; puzzles.</div></div>
+  </section>
+
+  <!-- 13 -->
+  <section id="df">
+    <h2>🧭 Depth First Search <span class="badge">stack · recursion</span></h2>
+    <p class="lead">DFS plunges as deep as possible along one branch before backtracking — the opposite of BFS's cautious rings.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Dive then backtrack:</span> from a vertex, recurse into the first unvisited neighbor, and keep diving until stuck; then back up and try the next branch. Uses the call stack (or an explicit stack). Order here: <code>0,1,2,4,3,5</code>.</div>
+      <div class="steps-flow"><span class="chip">visit u, mark it</span><span class="arrow">→</span><span class="chip">recurse into each unvisited neighbor</span><span class="arrow">→</span><span class="chip">backtrack when stuck</span></div>
+      <div class="oneliner">🔒 Keep forever: "DFS = go deep first (stack/recursion); BFS = go wide first (queue)."</div>
+    </div>
+    <div class="vizwrap" id="dfViz"></div>
+    <div class="status" id="dfStatus">Press play for DFS from vertex 0.</div>
+    <div class="stats" id="dfStats"></div>
+    <div class="controls"><button class="btn" id="dfPlay">▶ DFS from 0</button><button class="btn ghost" id="dfReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dfSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> DFS powers cycle detection, topological sort, connected components &amp; flood fill — all "explore fully then backtrack" tasks.</div></div>
+    <pre><code><span class="fn">dfs</span>(u){ visited[u]=<span class="kw">true</span>; visit(u);
+  <span class="kw">for</span>(v : adj[u]) <span class="kw">if</span>(!visited[v]) dfs(v); }</code></pre>
+  </section>
+
+  <!-- 14 -->
+  <section id="cc">
+    <h2>🧩 Connected Components <span class="badge">count clusters</span></h2>
+    <p class="lead">A component is a maximal set of mutually reachable vertices. Count them by starting a fresh traversal from each still-unvisited vertex.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Flood each island of nodes:</span> loop over all vertices; when you hit one that's unvisited, that's a <b>new</b> component — run BFS/DFS to flood everything reachable, then continue. The number of times you start a flood = the component count. Here <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">for each vertex</span><span class="arrow">→</span><span class="chip">unvisited? count++ &amp; flood it</span><span class="arrow">→</span><span class="chip">total floods = components</span></div>
+      <div class="oneliner">🔒 Keep forever: "Components = number of separate BFS/DFS floods needed to cover every vertex."</div>
+    </div>
+    <div class="vizwrap" id="ccViz"></div>
+    <div class="status" id="ccStatus">Press play to color each connected component.</div>
+    <div class="stats" id="ccStats"></div>
+    <div class="controls"><button class="btn" id="ccPlay">▶ Count components</button><button class="btn ghost" id="ccReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ccSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Union-Find (DSU) counts components too — merge each edge's endpoints, then count distinct roots.</div></div>
+  </section>
+
+  <!-- 15 -->
+  <section id="is">
+    <h2>🏝️ Number of Islands <span class="badge">grid flood fill</span></h2>
+    <p class="lead">Count clusters of 1s ("land") in a grid where cells connect 4-directionally — connected components on an implicit grid graph.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sink each island once:</span> scan the grid; when you meet an unvisited land cell, that's a new island — flood-fill (BFS/DFS) all connected land so it's never recounted. Increment the island counter each time you start a flood. Here <b>2</b> islands.</div>
+      <div class="steps-flow"><span class="chip">scan cells</span><span class="arrow">→</span><span class="chip">unvisited land? island++ &amp; flood</span><span class="arrow">→</span><span class="chip">count = islands</span></div>
+      <div class="oneliner">🔒 Keep forever: "Number of islands = connected-components count on a grid — flood-fill each new land cell."</div>
+    </div>
+    <div class="vizwrap" id="isViz"></div>
+    <div class="status" id="isStatus">Press play to flood-fill and count the islands.</div>
+    <div class="stats" id="isStats"></div>
+    <div class="controls"><button class="btn" id="isPlay">▶ Count islands</button><button class="btn ghost" id="isReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="isSpeed" min="250" max="2000" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the same flood-fill pattern solves max-island-area, surrounded-regions &amp; coloring — just change what you track.</div></div>
+  </section>
+
+  <!-- 16 SURROUNDED REGIONS -->
+  <section id="sr">
+    <h2>🧱 Capture Surrounded Regions <span class="badge">border flood</span></h2>
+    <p class="lead">Flip every region of <code>O</code>s fully surrounded by <code>X</code>s. A region survives only if it touches the border.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Rescue from the edges:</span> instead of testing each region for "surrounded", flood-fill from every <code>O</code> on the <b>border</b> and mark those safe. Any <code>O</code> left unmarked is trapped → flip it to <code>X</code>.</div>
+      <div class="steps-flow"><span class="chip">flood O's touching the border → safe</span><span class="arrow">→</span><span class="chip">remaining O's → flip to X</span></div>
+      <div class="oneliner">🔒 Keep forever: "Don't test 'is it surrounded' — flood from the border to find what's safe; flip the rest."</div>
+    </div>
+    <div class="vizwrap" id="srViz"></div>
+    <div class="status" id="srStatus">Press play to rescue border-connected O's and capture the rest.</div>
+    <div class="stats" id="srStats"></div>
+    <div class="controls"><button class="btn" id="srPlay">▶ Capture regions</button><button class="btn ghost" id="srReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="srSpeed" min="250" max="2000" value="750" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "reach from the boundary" is the key trick — it turns a hard global test into one flood fill.</div></div>
+  </section>
+
+  <!-- 17 BIPARTITE -->
+  <section id="bp">
+    <h2>🎨 Check Bipartite Graph <span class="badge">2-coloring</span></h2>
+    <p class="lead">A graph is bipartite if you can 2-color it so no edge joins same-colored vertices. BFS/DFS colors greedily; a conflict means "not bipartite".</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Alternate the paint:</span> color the start A, all its neighbors B, their neighbors A… If you ever try to color a vertex the same as an adjacent one, an <b>odd cycle</b> exists → not bipartite. Here the coloring succeeds: two clean teams.</div>
+      <div class="steps-flow"><span class="chip">BFS, color = opposite of parent</span><span class="arrow">→</span><span class="chip">same-color edge? conflict</span><span class="arrow">·</span><span class="chip">no conflict → bipartite</span></div>
+      <div class="oneliner">🔒 Keep forever: "Bipartite ⇔ 2-colorable ⇔ no odd cycle — check by alternating colors during BFS."</div>
+    </div>
+    <div class="vizwrap" id="bpViz"></div>
+    <div class="status" id="bpStatus">Press play to 2-color the graph.</div>
+    <div class="stats" id="bpStats"></div>
+    <div class="controls"><button class="btn" id="bpPlay">▶ 2-color check</button><button class="btn ghost" id="bpReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bpSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> bipartite graphs model matchings, scheduling &amp; "us vs them" — and only odd cycles can break 2-colorability.</div></div>
+  </section>
+
+  <!-- 18 CYCLE UNDIRECTED -->
+  <section id="cu">
+    <h2>🔁 Detect Cycle — Undirected <span class="badge">parent check</span></h2>
+    <p class="lead">DFS/BFS the graph; if you reach an already-visited vertex that <b>isn't</b> the one you came from, you've found a cycle.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Bumped into an old friend:</span> during DFS, seeing a visited neighbor is fine if it's your <b>parent</b> (the edge you just used). But a visited neighbor that <b>isn't</b> your parent means there's another way back → a cycle.</div>
+      <div class="steps-flow"><span class="chip">DFS carrying parent</span><span class="arrow">→</span><span class="chip">visited neighbor ≠ parent → cycle</span></div>
+      <div class="oneliner">🔒 Keep forever: "Undirected cycle = a visited neighbor that isn't your parent."</div>
+    </div>
+    <div class="vizwrap" id="cuViz"></div>
+    <div class="status" id="cuStatus">Press play to DFS and catch the back edge.</div>
+    <div class="stats" id="cuStats"></div>
+    <div class="controls"><button class="btn" id="cuPlay">▶ Detect cycle</button><button class="btn ghost" id="cuReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cuSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Union-Find also detects undirected cycles — if an edge's endpoints already share a root, adding it makes a cycle.</div></div>
+  </section>
+
+  <!-- 19 CYCLE DIRECTED -->
+  <section id="cd">
+    <h2>🔃 Detect Cycle — Directed <span class="badge">recursion stack</span></h2>
+    <p class="lead">In a digraph, a cycle exists iff DFS finds a <b>back edge</b> — an edge to a vertex still on the current recursion stack (colored gray).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Three colors:</span> white = unvisited, <span style="color:var(--mid)">gray</span> = in progress (on the stack), <span style="color:var(--accent)">black</span> = fully done. If DFS reaches a <b>gray</b> vertex, that edge loops back into the active path → a directed cycle.</div>
+      <div class="steps-flow"><span class="chip">enter → gray</span><span class="arrow">→</span><span class="chip">edge to gray? cycle</span><span class="arrow">·</span><span class="chip">leave → black</span></div>
+      <div class="oneliner">🔒 Keep forever: "Directed cycle = a DFS edge into a gray (on-stack) vertex."</div>
+    </div>
+    <div class="vizwrap" id="cdViz"></div>
+    <div class="status" id="cdStatus">Press play to color-DFS and find the back edge.</div>
+    <div class="stats" id="cdStats"></div>
+    <div class="controls"><button class="btn" id="cdPlay">▶ Detect cycle</button><button class="btn ghost" id="cdReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cdSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "visited" alone is not enough for digraphs — you need the <b>on-stack</b> (gray) distinction.</div></div>
+  </section>
+
+  <!-- 20 TOPO SORT -->
+  <section id="ts">
+    <h2>📚 Topological Sort <span class="badge">DFS finish order</span></h2>
+    <p class="lead">Linearly order a DAG so every edge points forward. DFS and push each vertex when it <b>finishes</b>; reverse that list.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Finish deepest first:</span> a vertex is only "done" after all its descendants are. So the DFS <b>finish order</b>, reversed, guarantees prerequisites come before dependents. Only works on a DAG (no cycles).</div>
+      <div class="steps-flow"><span class="chip">DFS each vertex</span><span class="arrow">→</span><span class="chip">push on finish</span><span class="arrow">→</span><span class="chip">reverse = topo order</span></div>
+      <div class="oneliner">🔒 Keep forever: "Topological order = reverse of DFS finish times (DAG only)."</div>
+    </div>
+    <div class="vizwrap" id="tsViz"></div>
+    <div class="status" id="tsStatus">Press play to DFS and read off the topological order.</div>
+    <div class="stats" id="tsStats"></div>
+    <div class="controls"><button class="btn" id="tsPlay">▶ Topo sort (DFS)</button><button class="btn ghost" id="tsReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tsSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> topo sort powers build systems, task scheduling &amp; dependency resolution — anything with "do X before Y".</div></div>
+  </section>
+
+  <!-- 21 COURSE SCHEDULE -->
+  <section id="csch">
+    <h2>🎓 Course Schedule <span class="badge">can finish?</span></h2>
+    <p class="lead">Given courses with prerequisites, can you finish them all? Yes iff the prerequisite digraph has <b>no cycle</b> — a topological order exists.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Prerequisites are edges:</span> course a → b means "a before b". If you can topologically order all courses (Kahn's: repeatedly take a course with no remaining prerequisites), you can finish them. A leftover cycle = impossible.</div>
+      <div class="steps-flow"><span class="chip">build prereq DAG</span><span class="arrow">→</span><span class="chip">peel zero-indegree courses</span><span class="arrow">→</span><span class="chip">all peeled? finishable</span></div>
+      <div class="oneliner">🔒 Keep forever: "Course Schedule = cycle detection: finishable ⇔ prerequisite graph is a DAG."</div>
+    </div>
+    <div class="vizwrap" id="csViz"></div>
+    <div class="status" id="csStatus">Press play to peel courses in a valid order.</div>
+    <div class="stats" id="csStats"></div>
+    <div class="controls"><button class="btn" id="csPlay">▶ Can finish?</button><button class="btn ghost" id="csReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="csSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "Course Schedule II" just asks for the order itself — it's the topological sort you built while peeling.</div></div>
+  </section>
+
+  <!-- 22 TOPO KAHN -->
+  <section id="tk">
+    <h2>🪣 Topological Sort — Kahn's BFS <span class="badge">indegrees</span></h2>
+    <p class="lead">The BFS alternative to DFS topo sort: repeatedly output any vertex with <b>indegree 0</b>, then remove it and decrement its neighbors.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Peel the ready ones:</span> a vertex with indegree 0 has no unmet prerequisites → safe to output now. Removing it may free others (their indegree drops to 0). Keep a queue of ready vertices. If you output all of them, it's a DAG; if some never reach 0, there's a cycle.</div>
+      <div class="steps-flow"><span class="chip">compute indegrees</span><span class="arrow">→</span><span class="chip">queue indegree-0</span><span class="arrow">→</span><span class="chip">pop, output, decrement neighbors</span></div>
+      <div class="oneliner">🔒 Keep forever: "Kahn's algorithm = BFS on indegrees — output zero-indegree vertices until none remain."</div>
+    </div>
+    <div class="vizwrap" id="tkViz"></div>
+    <div class="status" id="tkStatus">Press play for Kahn's indegree-peeling topological sort.</div>
+    <div class="stats" id="tkStats"></div>
+    <div class="controls"><button class="btn" id="tkPlay">▶ Topo sort (Kahn)</button><button class="btn ghost" id="tkReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tkSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Kahn's doubles as cycle detection — if fewer than V vertices get output, a cycle blocked the rest.</div></div>
+  </section>
+
+  <!-- 23 ORDER OF CHARACTERS -->
+  <section id="oc">
+    <h2>👽 Order of Characters (Alien Dictionary) <span class="badge">topo on letters</span></h2>
+    <p class="lead">Given words sorted in an unknown alphabet, recover the letter order. Each adjacent word pair reveals one ordering edge; topo-sort them.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">First difference wins:</span> compare consecutive words; the first position where they differ gives an edge <code>c₁ → c₂</code> (c₁ comes before c₂). Collect all such edges into a graph over letters, then topological sort. Here <code>wrt, wrf, er, ett, rftt</code> ⇒ <b>w e r t f</b>.</div>
+      <div class="steps-flow"><span class="chip">compare adjacent words</span><span class="arrow">→</span><span class="chip">first diff → letter edge</span><span class="arrow">→</span><span class="chip">topo sort letters</span></div>
+      <div class="oneliner">🔒 Keep forever: "Alien dictionary = build letter-order edges from first differing chars, then topological sort."</div>
+    </div>
+    <div class="vizwrap" id="ocViz"></div>
+    <div class="status" id="ocStatus">Press play to derive the alien alphabet order.</div>
+    <div class="stats" id="ocStats"></div>
+    <div class="controls"><button class="btn" id="ocPlay">▶ Recover order</button><button class="btn ghost" id="ocReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ocSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> only the <b>first</b> differing character gives an edge; and a prefix that comes after its extension (e.g. "abc" before "ab") is invalid input.</div></div>
+  </section>
+
+  <!-- 24 DSU -->
+  <section id="dsu">
+    <h2>🌿 Disjoint Set Union (DSU) <span class="badge">find + union</span></h2>
+    <p class="lead">A structure that tracks a partition into disjoint sets, with two operations: <b>find</b> (which set?) and <b>union</b> (merge two sets).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Everyone points to a leader:</span> each element points to a parent; the root of the chain is the set's representative. <b>find(x)</b> walks up to the root. <b>union(a,b)</b> attaches one root under the other. Same root ⇒ same set.</div>
+      <div class="steps-flow"><span class="chip">parent[] pointers</span><span class="arrow">→</span><span class="chip">find = walk to root</span><span class="arrow">·</span><span class="chip">union = link roots</span></div>
+      <div class="oneliner">🔒 Keep forever: "DSU = a forest of parent pointers; the root is the set's ID."</div>
+    </div>
+    <div class="vizwrap" id="duViz"></div>
+    <div class="dsupanel" id="duPanel"></div>
+    <div class="status" id="duStatus">Press play to union elements and follow find to the root.</div>
+    <div class="stats" id="duStats"></div>
+    <div class="controls"><button class="btn" id="duPlay">▶ Union &amp; find</button><button class="btn ghost" id="duReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="duSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> naive union can build a long chain, making find O(n). The next section fixes that.</div></div>
+  </section>
+
+  <!-- 25 OPTIMIZED UNION -->
+  <section id="dsuo">
+    <h2>⚡ Optimized Union <span class="badge">rank + path compression</span></h2>
+    <p class="lead">Two upgrades make DSU nearly O(1): <b>union by rank</b> (attach smaller tree under bigger) and <b>path compression</b> (point nodes straight at the root during find).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Keep trees flat:</span> union by rank stops tall chains by always hanging the shorter tree under the taller root. Path compression then re-parents every node on a find directly to the root — so future finds are instant. Together: amortized <b>α(n)</b> (inverse-Ackermann, effectively constant).</div>
+      <div class="steps-flow"><span class="chip">union by rank → shallow trees</span><span class="arrow">·</span><span class="chip">find compresses path → flat</span></div>
+      <div class="oneliner">🔒 Keep forever: "Union by rank + path compression ⇒ DSU operations are effectively O(1)."</div>
+    </div>
+    <div class="vizwrap" id="doViz"></div>
+    <div class="dsupanel" id="doPanel"></div>
+    <div class="status" id="doStatus">Press play to see path compression flatten the tree.</div>
+    <div class="stats" id="doStats"></div>
+    <div class="controls"><button class="btn" id="doPlay">▶ Compress path</button><button class="btn ghost" id="doReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="doSpeed" min="300" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> path compression rewrites parents <b>during</b> find — the query itself optimizes the structure for next time.</div></div>
+  </section>
+
+  <!-- 26 KRUSKAL -->
+  <section id="kr">
+    <h2>🌉 Minimum Spanning Tree — Kruskal <span class="badge">sort + DSU</span></h2>
+    <p class="lead">Connect all vertices with minimum total edge weight. Kruskal sorts edges ascending and adds each one unless it forms a cycle (checked by DSU).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Greedy cheapest-first:</span> consider edges from lightest to heaviest. Add an edge only if its endpoints are in different sets (else it makes a cycle) — merge their sets with union. Stop at V−1 edges. Total here = <b>16</b>.</div>
+      <div class="steps-flow"><span class="chip">sort edges by weight</span><span class="arrow">→</span><span class="chip">add if no cycle (DSU)</span><span class="arrow">→</span><span class="chip">V−1 edges = MST</span></div>
+      <div class="oneliner">🔒 Keep forever: "Kruskal = sort edges, add the cheapest that doesn't make a cycle, using Union-Find."</div>
+    </div>
+    <div class="edgelist" id="krList"></div>
+    <div class="vizwrap" id="krViz"></div>
+    <div class="status" id="krStatus">Press play to build the MST edge by edge.</div>
+    <div class="stats" id="krStats"></div>
+    <div class="controls"><button class="btn" id="krPlay">▶ Kruskal MST</button><button class="btn ghost" id="krReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="krSpeed" min="300" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Kruskal shines on <b>sparse</b> graphs (sort dominates: O(E log E)); Prim suits dense graphs.</div></div>
+  </section>
+
+  <!-- 27 SCC -->
+  <section id="scc">
+    <h2>🎯 Strongly Connected Components <span class="badge">Kosaraju</span></h2>
+    <p class="lead">An SCC is a maximal set where every vertex can reach every other. Kosaraju finds them with two DFS passes and a graph transpose.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two passes + flip:</span> ① DFS the graph, pushing vertices by finish time onto a stack. ② Reverse every edge (transpose). ③ Pop vertices from the stack and DFS the transpose — each DFS tree is one SCC. Here: <b>{0,1,2}, {3,4}, {5}</b>.</div>
+      <div class="steps-flow"><span class="chip">DFS → finish-order stack</span><span class="arrow">→</span><span class="chip">transpose edges</span><span class="arrow">→</span><span class="chip">DFS in stack order = SCCs</span></div>
+      <div class="oneliner">🔒 Keep forever: "Kosaraju = finish-order DFS, transpose, then DFS again — each tree is an SCC."</div>
+    </div>
+    <div class="vizwrap" id="scViz"></div>
+    <div class="status" id="scStatus">Press play to color each strongly connected component.</div>
+    <div class="stats" id="scStats"></div>
+    <div class="controls"><button class="btn" id="scPlay">▶ Find SCCs</button><button class="btn ghost" id="scReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="scSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Tarjan's algorithm finds the same SCCs in a <b>single</b> DFS using discovery/low-link values.</div></div>
+  </section>
+
+  <!-- 28 ARTICULATION POINTS -->
+  <section id="ap">
+    <h2>✂️ Articulation Points <span class="badge">cut vertices</span></h2>
+    <p class="lead">A vertex whose removal splits the graph into more components. DFS with discovery &amp; low-link times finds them in one pass.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">No way around it:</span> during DFS, each vertex gets a <code>disc</code> time and a <code>low</code> = earliest reachable ancestor via its subtree. A non-root vertex <code>u</code> is an articulation point if some child <code>v</code> has <code>low[v] ≥ disc[u]</code> — the subtree can't bypass <code>u</code>. Here: <b>{1, 3}</b>.</div>
+      <div class="steps-flow"><span class="chip">DFS disc &amp; low</span><span class="arrow">→</span><span class="chip">child low ≥ disc[u] → u is a cut vertex</span></div>
+      <div class="oneliner">🔒 Keep forever: "Articulation point: a child's subtree can't reach above u ⇒ removing u disconnects it."</div>
+    </div>
+    <div class="vizwrap" id="apViz"></div>
+    <div class="status" id="apStatus">Press play to find the cut vertices.</div>
+    <div class="stats" id="apStats"></div>
+    <div class="controls"><button class="btn" id="apPlay">▶ Find cut vertices</button><button class="btn ghost" id="apReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="apSpeed" min="300" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the same disc/low machinery finds <b>bridges</b> — an edge is a bridge when <code>low[v] &gt; disc[u]</code> (strict).</div></div>
+  </section>
+
+  <!-- 29 PRIM 1 -->
+  <section id="pr1">
+    <h2>🌲 Prim's Algorithm I <span class="badge">grow from a vertex</span></h2>
+    <p class="lead">Another MST builder: grow one tree outward, always adding the cheapest edge that reaches a <b>new</b> vertex.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Grow one blob:</span> start from any vertex. Keep a <code>key</code> = cheapest known edge to each outside vertex. Repeatedly pick the outside vertex with the smallest key, add it to the tree, and relax its neighbors' keys. This O(V²) scan version is great for dense graphs. Total = <b>16</b>.</div>
+      <div class="steps-flow"><span class="chip">pick min-key outside vertex</span><span class="arrow">→</span><span class="chip">add to tree</span><span class="arrow">→</span><span class="chip">relax neighbor keys</span></div>
+      <div class="oneliner">🔒 Keep forever: "Prim grows a single tree, always absorbing the nearest outside vertex."</div>
+    </div>
+    <div class="vizwrap" id="p1Viz"></div>
+    <div class="status" id="p1Status">Press play to grow the MST from vertex 0 (key scan).</div>
+    <div class="stats" id="p1Stats"></div>
+    <div class="controls"><button class="btn" id="p1Play">▶ Prim I</button><button class="btn ghost" id="p1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p1Speed" min="300" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Prim &amp; Kruskal both give a minimum spanning tree — Prim grows one tree, Kruskal merges a forest.</div></div>
+  </section>
+
+  <!-- 30 PRIM 2 -->
+  <section id="pr2">
+    <h2>🌳 Prim's Algorithm II <span class="badge">priority queue</span></h2>
+    <p class="lead">The same growth, but a <b>min-heap</b> of candidate edges replaces the O(V) scan — giving O(E log V), ideal for sparse graphs.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Let a heap pick the min:</span> push edges crossing out of the tree into a priority queue. Pop the lightest; if it reaches a new vertex, add it and push that vertex's outgoing edges. Skip edges that lead back inside. Same MST, faster edge selection. Total = <b>16</b>.</div>
+      <div class="steps-flow"><span class="chip">push crossing edges to heap</span><span class="arrow">→</span><span class="chip">pop lightest to a new vertex</span><span class="arrow">→</span><span class="chip">add &amp; push its edges</span></div>
+      <div class="oneliner">🔒 Keep forever: "Prim II = Prim with a min-heap of frontier edges → O(E log V)."</div>
+    </div>
+    <div class="edgelist" id="p2Heap"></div>
+    <div class="vizwrap" id="p2Viz"></div>
+    <div class="status" id="p2Status">Press play to grow the MST with a min-heap of edges.</div>
+    <div class="stats" id="p2Stats"></div>
+    <div class="controls"><button class="btn" id="p2Play">▶ Prim II</button><button class="btn ghost" id="p2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p2Speed" min="300" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the heap version is what you actually code in contests — same result as Prim I, better complexity on sparse graphs.</div></div>
+  </section>
+
+  <!-- 31 DIJKSTRA -->
+  <section id="dij">
+    <h2>🛰️ Dijkstra's Algorithm <span class="badge">weighted shortest path</span></h2>
+    <p class="lead">Shortest paths from a source on a graph with <b>non-negative</b> weights. A min-heap always expands the closest unfinalized vertex.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Greedy nearest-first:</span> keep tentative distances; repeatedly finalize the unvisited vertex with the smallest distance, then <b>relax</b> its edges (<code>dist[v] = min(dist[v], dist[u]+w)</code>). Once finalized, a vertex's distance is optimal — because weights are non-negative. From 0: <b>0,3,1,4,7</b>.</div>
+      <div class="steps-flow"><span class="chip">pick min-dist unvisited</span><span class="arrow">→</span><span class="chip">finalize it</span><span class="arrow">→</span><span class="chip">relax its edges</span></div>
+      <div class="oneliner">🔒 Keep forever: "Dijkstra = BFS with a min-heap by distance; finalize nearest first (needs non-negative weights)."</div>
+    </div>
+    <div class="vizwrap" id="djViz"></div>
+    <div class="status" id="djStatus">Press play for Dijkstra from vertex 0.</div>
+    <div class="stats" id="djStats"></div>
+    <div class="controls"><button class="btn" id="djPlay">▶ Dijkstra from 0</button><button class="btn ghost" id="djReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="djSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> negative edges break Dijkstra — use Bellman-Ford instead. Equal weights? plain BFS already suffices.</div></div>
+
+    <div class="note key">🏆 <b>Graphs fully mastered!</b> Traversals (BFS/DFS) · grids as graphs (islands, regions, knight, oranges) · coloring &amp; cycles (bipartite, directed/undirected) · ordering (topo sort, Kahn, course schedule, alien dictionary) · Union-Find (DSU, optimized) · MST (Kruskal, Prim I &amp; II) · connectivity (SCC, articulation points) · and weighted shortest paths (Dijkstra). Every grid &amp; puzzle is secretly a graph. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Graphs — Animated Guide • Replay any animation, turn on 🎵 sound • Every grid &amp; puzzle is secretly a graph 🕸️</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(440+Math.random()*180,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ================= graph + grid renderers ================= */
+const NODES={0:{x:70,y:70},1:{x:210,y:50},2:{x:130,y:180},3:{x:330,y:95},4:{x:250,y:205},5:{x:415,y:200}};
+const EDGES=[[0,1],[0,2],[1,2],[1,3],[2,4],[3,4],[3,5],[4,5]];
+function adjOf(edges){ const a={}; edges.forEach(([u,v])=>{ (a[u]=a[u]||[]).push(v); (a[v]=a[v]||[]).push(u); }); Object.values(a).forEach(l=>l.sort((x,y)=>x-y)); return a; }
+const ADJ=adjOf(EDGES);
+function graphSVG(cont, nodes, edges, opt={}){
+  const R=opt.R||19; let e='',n='',arrows='';
+  edges.forEach(ed=>{ const a=ed[0],b=ed[1]; let w=ed[2]; if(w===undefined && opt.weight) w=(opt.weight[a+'-'+b]!==undefined?opt.weight[a+'-'+b]:opt.weight[b+'-'+a]);
+    const k1=a+'-'+b,k2=b+'-'+a; const cls=(opt.edgeCls&&(opt.edgeCls[k1]||opt.edgeCls[k2]))||''; const A=nodes[a],B=nodes[b];
+    let x1=A.x,y1=A.y,x2=B.x,y2=B.y;
+    if(opt.directed){ const dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len; x2=B.x-ux*(R+2); y2=B.y-uy*(R+2); const s=9,px=-uy,py=ux; arrows+=`<polygon class="garrow ${cls}" points="${x2},${y2} ${x2-ux*s+px*s*0.55},${y2-uy*s+py*s*0.55} ${x2-ux*s-px*s*0.55},${y2-uy*s-py*s*0.55}"/>`; }
+    e+=`<line class="gedge ${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    if(w!==undefined&&w!==null&&w!==false){ const mx=(A.x+B.x)/2,my=(A.y+B.y)/2; e+=`<text class="gweight ${cls}" x="${mx}" y="${my-3}">${w}</text>`; }
+  });
+  Object.keys(nodes).forEach(id=>{ const p=nodes[id]; const cls=(opt.nodeCls&&opt.nodeCls[id])||''; const fade=cls.includes('fade')?'fade':''; n+=`<circle class="gnode ${cls}" cx="${p.x}" cy="${p.y}" r="${R}"/>`; n+=`<text class="gnlbl ${fade}" x="${p.x}" y="${p.y}">${opt.label&&opt.label[id]!==undefined?opt.label[id]:id}</text>`; if(opt.dist&&opt.dist[id]!==undefined&&opt.dist[id]!==null){ n+=`<text class="gdist" x="${p.x+R+4}" y="${p.y-R+2}">${opt.dist[id]}</text>`; } });
+  const W=opt.W||480,H=opt.H||260;
+  cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="graphsvg">${e}${arrows}${n}</svg>`;
+}
+function gridViz(cont, grid, opt={}){ const R=grid.length,C=grid[0].length; let h=`<div class="grid" style="grid-template-columns:repeat(${C},1fr)">`; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ const cls=(opt.cls&&opt.cls(r,c,grid[r][c]))||''; let txt=grid[r][c]; if(opt.text){ const t=opt.text(r,c,grid[r][c]); txt=(t===undefined||t===null)?'':t; } h+=`<div class="gc ${cls}">${txt}</div>`; } h+='</div>'; cont.innerHTML=h; }
+
+/* ================= 1. what is a graph ================= */
+(function(){
+  const st=$('#wgStatus'), sp=$('#wgSpeed'), stats=$('#wgStats'), cont=$('#wgViz');
+  function build(){ const nc={}; Object.keys(NODES).forEach(k=>nc[k]='fade'); graphSVG(cont,NODES,[],{nodeCls:nc}); stats.innerHTML=''; st.textContent='Press play to draw a graph: vertices first, then edges.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const nc={}; Object.keys(NODES).forEach(k=>nc[k]='fade'); const ecShown=[];
+    for(const id of Object.keys(NODES)){ nc[id]='done'; graphSVG(cont,NODES,ecShown,{nodeCls:{...nc}}); tickSound(); st.innerHTML=`Add vertex <span class="k">${id}</span>.`; await sleep(+sp.value); }
+    for(const [a,b] of EDGES){ ecShown.push([a,b]); graphSVG(cont,NODES,ecShown,{nodeCls:{...nc}}); blip(560,0.08,'sine',0.09); st.innerHTML=`Connect edge <span class="k">${a} — ${b}</span>.`; await sleep(+sp.value); }
+    stats.innerHTML=`<span class="pill blue">V = 6 vertices</span><span class="pill green">E = 8 edges</span>`; st.innerHTML=`🕸️ A graph with <span class="k">6 vertices &amp; 8 edges</span> — dots and lines, nothing more!`; ANIM=false; celebrate(cont);
+  }
+  $('#wgPlay').onclick=play; $('#wgReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. terms ================= */
+(function(){
+  const st=$('#tmStatus'), sp=$('#tmSpeed'), stats=$('#tmStats'), cont=$('#tmViz');
+  function build(){ graphSVG(cont,NODES,EDGES,{}); stats.innerHTML=''; st.textContent='Press play to highlight a vertex, an edge, a path, and a cycle.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; graphSVG(cont,NODES,EDGES,{});
+    // vertex
+    graphSVG(cont,NODES,EDGES,{nodeCls:{3:'visit'}}); tickSound(); stats.innerHTML=`<span class="pill gold">vertex</span>`; st.innerHTML=`A <span class="k">vertex</span> (node) — here vertex 3.`; await sleep(+sp.value);
+    // edge / adjacent
+    graphSVG(cont,NODES,EDGES,{nodeCls:{1:'visit',3:'visit'},edgeCls:{'1-3':'hl'}}); tickSound(); stats.innerHTML=`<span class="pill gold">edge → adjacent</span>`; st.innerHTML=`An <span class="k">edge</span> 1–3: vertices 1 and 3 are <b>adjacent</b>.`; await sleep(+sp.value);
+    // path
+    const path=[[0,1],[1,3],[3,5]]; const pc={}; path.forEach(([a,b])=>pc[a+'-'+b]='path'); graphSVG(cont,NODES,EDGES,{nodeCls:{0:'path',1:'path',3:'path',5:'path'},edgeCls:pc}); blip(660,0.1,'sine',0.1); stats.innerHTML=`<span class="pill green">path 0→1→3→5</span>`; st.innerHTML=`A <span class="k">path</span> 0 → 1 → 3 → 5 — a trail of edges.`; await sleep(+sp.value*1.2);
+    // cycle
+    const cyc=[[0,1],[1,2],[0,2]]; const cc={}; cyc.forEach(([a,b])=>cc[a+'-'+b]='hl'); graphSVG(cont,NODES,EDGES,{nodeCls:{0:'visit',1:'visit',2:'visit'},edgeCls:cc}); blip(700,0.12,'sine',0.1); stats.innerHTML=`<span class="pill gold">cycle 0→1→2→0</span>`; st.innerHTML=`A <span class="k">cycle</span> 0 → 1 → 2 → 0 — a path back to its start.`; await sleep(+sp.value*1.2);
+    graphSVG(cont,NODES,EDGES,{}); st.innerHTML=`📖 Vertex · edge · adjacent · path · cycle — and this graph is <b>connected</b> (all reachable)!`; ANIM=false; celebrate(cont);
+  }
+  $('#tmPlay').onclick=play; $('#tmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. degree ================= */
+(function(){
+  const st=$('#dgStatus'), sp=$('#dgSpeed'), stats=$('#dgStats'), cont=$('#dgViz');
+  function build(){ graphSVG(cont,NODES,EDGES,{}); stats.innerHTML=''; st.textContent='Press play to count degree of node 1 and verify the handshake sum.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const target=1; const nbrs=ADJ[target];
+    graphSVG(cont,NODES,EDGES,{nodeCls:{[target]:'visit'}}); st.innerHTML=`Count edges touching vertex <span class="k">${target}</span>…`; await sleep(+sp.value);
+    const ec={},nc={[target]:'visit'};
+    for(let i=0;i<nbrs.length;i++){ const v=nbrs[i]; ec[target+'-'+v]='hl'; nc[v]='done'; graphSVG(cont,NODES,EDGES,{nodeCls:{...nc},edgeCls:{...ec}}); tickSound(); st.innerHTML=`Neighbor <span class="k">${v}</span> → degree so far = ${i+1}.`; await sleep(+sp.value); }
+    stats.innerHTML=`<span class="pill blue">degree(1) = ${nbrs.length}</span>`; st.innerHTML=`Vertex 1 has degree <span class="k">${nbrs.length}</span>. Now the handshake…`; await sleep(+sp.value*1.1);
+    const sum=Object.keys(NODES).reduce((s,k)=>s+(ADJ[k]?ADJ[k].length:0),0);
+    graphSVG(cont,NODES,EDGES,{label:Object.fromEntries(Object.keys(NODES).map(k=>[k,ADJ[k].length]))});
+    stats.innerHTML=`<span class="pill blue">Σ degrees = ${sum}</span><span class="pill green">2 × E = ${2*EDGES.length}</span>`; st.innerHTML=`🎯 Sum of degrees = <span class="k">${sum}</span> = 2 × ${EDGES.length} edges (Handshaking Lemma)! (labels show each degree)`; ANIM=false; celebrate(cont);
+  }
+  $('#dgPlay').onclick=play; $('#dgReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. representation ================= */
+(function(){
+  const st=$('#rpStatus'), sp=$('#rpSpeed'), stats=$('#rpStats'); const listBox=$('#rpList'), matBox=$('#rpMatrix');
+  const V=6;
+  function empties(){ return Array.from({length:V},()=>Array(V).fill(0)); }
+  function renderList(adjSoFar,hl){ listBox.innerHTML=Object.keys(NODES).map(k=>`<div class="row ${hl==k?'hl':''}">${k}: [${(adjSoFar[k]||[]).join(', ')}]</div>`).join(''); }
+  function renderMat(mat,hl){ gridViz(matBox,mat,{cls:(r,c,v)=>{ if(hl&&hl[0]==r&&hl[1]==c)return 'visit'; return v?'one':'zero'; }, text:(r,c,v)=>v}); }
+  function build(){ renderList({}); renderMat(empties()); stats.innerHTML=''; st.textContent='Press play to build both representations edge by edge.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const adjSoFar={}; const mat=empties();
+    for(const [a,b] of EDGES){
+      (adjSoFar[a]=adjSoFar[a]||[]).push(b); mat[a][b]=1; renderList(adjSoFar,a); renderMat(mat,[a,b]); tickSound(); st.innerHTML=`Edge ${a}–${b}: add ${b} to list[${a}], set M[${a}][${b}]=1.`; await sleep(+sp.value);
+      (adjSoFar[b]=adjSoFar[b]||[]).push(a); mat[b][a]=1; renderList(adjSoFar,b); renderMat(mat,[b,a]); tickSound(); st.innerHTML=`Undirected → also add ${a} to list[${b}], set M[${b}][${a}]=1.`; await sleep(+sp.value);
+    }
+    Object.values(adjSoFar).forEach(l=>l.sort((x,y)=>x-y)); renderList(adjSoFar); renderMat(mat);
+    stats.innerHTML=`<span class="pill blue">list: O(V+E)</span><span class="pill green">matrix: symmetric, O(V²)</span>`; st.innerHTML=`🗂️ Both built! Each undirected edge appears twice in the list and mirrors across the matrix diagonal.`; ANIM=false; celebrate(matBox);
+  }
+  $('#rpPlay').onclick=play; $('#rpReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. BFS ================= */
+(function(){
+  const st=$('#bfStatus'), sp=$('#bfSpeed'), stats=$('#bfStats'), cont=$('#bfViz');
+  function build(){ graphSVG(cont,NODES,EDGES,{}); stats.innerHTML=''; st.textContent='Press play for BFS from vertex 0.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const nc={}, order=[]; const q=[0]; const seen={0:true}; nc[0]='visit'; graphSVG(cont,NODES,EDGES,{nodeCls:{...nc}}); st.innerHTML=`Enqueue start 0.`; await sleep(+sp.value);
+    while(q.length){ const u=q.shift(); nc[u]='done'; order.push(u); graphSVG(cont,NODES,EDGES,{nodeCls:{...nc}}); tickSound(); st.innerHTML=`Pop &amp; visit <span class="k">${u}</span>. Queue: [${q.join(', ')}]`; await sleep(+sp.value);
+      for(const v of ADJ[u]) if(!seen[v]){ seen[v]=true; q.push(v); nc[v]='visit'; graphSVG(cont,NODES,EDGES,{nodeCls:{...nc}}); blip(560,0.07,'sine',0.08); st.innerHTML=`Enqueue neighbor ${v}. Queue: [${q.join(', ')}]`; await sleep(+sp.value*0.7); }
+      stats.innerHTML=`<span class="pill blue">visited: ${order.join(' → ')}</span>`;
+    }
+    st.innerHTML=`🌊 BFS order: <span class="k">${order.join(' → ')}</span> — explored in expanding rings from 0!`; ANIM=false; celebrate(cont);
+  }
+  $('#bfPlay').onclick=play; $('#bfReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. BFS tree ================= */
+(function(){
+  const st=$('#btStatus'), sp=$('#btSpeed'), stats=$('#btStats'), cont=$('#btViz');
+  function build(){ graphSVG(cont,NODES,EDGES,{}); stats.innerHTML=''; st.textContent='Press play to split edges into tree (green) & cross (pink).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const ec={},nc={}; const q=[0]; const seen={0:true}; nc[0]='done'; let tree=0,cross=0;
+    graphSVG(cont,NODES,EDGES,{nodeCls:{...nc},edgeCls:{...ec}}); st.innerHTML=`Start BFS at 0.`; await sleep(+sp.value);
+    while(q.length){ const u=q.shift();
+      for(const v of ADJ[u]){ const key=u+'-'+v, key2=v+'-'+u; if(ec[key]||ec[key2]) continue; if(!seen[v]){ seen[v]=true; q.push(v); nc[v]='done'; ec[key]='tree'; tree++; graphSVG(cont,NODES,EDGES,{nodeCls:{...nc},edgeCls:{...ec}}); blip(620,0.09,'sine',0.1); st.innerHTML=`Edge ${u}–${v} first reaches ${v} → <span style="color:var(--found)">tree edge</span>.`; }
+        else { ec[key]='cross'; cross++; graphSVG(cont,NODES,EDGES,{nodeCls:{...nc},edgeCls:{...ec}}); blip(340,0.09,'sawtooth',0.07); st.innerHTML=`Edge ${u}–${v} hits already-seen ${v} → <span style="color:#ff8fc7">cross edge</span>.`; }
+        stats.innerHTML=`<span class="pill green">tree: ${tree}</span><span class="pill pink">cross: ${cross}</span>`; await sleep(+sp.value); }
+    }
+    st.innerHTML=`🌲 BFS tree = <span class="k">${tree} tree edges</span> spanning all 6 vertices; <span class="k">${cross} cross edges</span> leftover.`; ANIM=false; celebrate(cont);
+  }
+  $('#btPlay').onclick=play; $('#btReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. shortest path ================= */
+(function(){
+  const st=$('#spStatus'), sp=$('#spSpeed'), stats=$('#spStats'), cont=$('#spViz');
+  function build(){ graphSVG(cont,NODES,EDGES,{}); stats.innerHTML=''; st.textContent='Press play to BFS distances then trace the 0→5 shortest path.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dist={0:0}, par={0:-1}, nc={0:'done'}; const q=[0];
+    graphSVG(cont,NODES,EDGES,{nodeCls:{...nc},dist:{...dist}}); st.innerHTML=`BFS from 0, recording distance &amp; parent.`; await sleep(+sp.value);
+    while(q.length){ const u=q.shift(); for(const v of ADJ[u]) if(dist[v]===undefined){ dist[v]=dist[u]+1; par[v]=u; nc[v]='done'; q.push(v); graphSVG(cont,NODES,EDGES,{nodeCls:{...nc},dist:{...dist}}); tickSound(); st.innerHTML=`Reach ${v} via ${u}: dist=${dist[v]}, parent=${u}.`; await sleep(+sp.value); } }
+    st.innerHTML=`Target 5 is ${dist[5]} hops away. Trace parents back…`; await sleep(+sp.value);
+    let cur=5; const path=[]; while(cur!==-1){ path.unshift(cur); cur=par[cur]; }
+    const ec={},pc={}; for(let i=0;i+1<path.length;i++){ ec[path[i]+'-'+path[i+1]]='path'; } path.forEach(p=>pc[p]='path');
+    graphSVG(cont,NODES,EDGES,{nodeCls:pc,edgeCls:ec,dist:{...dist}});
+    stats.innerHTML=`<span class="pill green">path: ${path.join(' → ')}</span><span class="pill blue">distance = ${dist[5]}</span>`; st.innerHTML=`🛣️ Shortest 0 → 5 = <span class="k">${path.join(' → ')}</span> (${dist[5]} edges) — found by plain BFS!`; ANIM=false; celebrate(cont);
+  }
+  $('#spPlay').onclick=play; $('#spReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. knight ================= */
+(function(){
+  const N=5, start=[0,0], target=[4,4]; const st=$('#knStatus'), sp=$('#knSpeed'), stats=$('#knStats'), cont=$('#knViz');
+  const MOVES=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+  let dist, par;
+  function grid(){ return Array.from({length:N},()=>Array(N).fill(null)); }
+  function render(d,extra){ gridViz(cont, grid(), {cls:(r,c)=>{ if(r===start[0]&&c===start[1])return 'start'; if(r===target[0]&&c===target[1])return extra&&extra.pathSet&&extra.pathSet.has(r+','+c)?'path':'target'; if(extra&&extra.pathSet&&extra.pathSet.has(r+','+c))return 'path'; if(d[r][c]!==null)return 'done'; return ''; }, text:(r,c)=>{ if(r===start[0]&&c===start[1])return '♞'; if(d[r][c]!==null)return d[r][c]; if(r===target[0]&&c===target[1])return '★'; return ''; }}); }
+  function build(){ dist=grid(); render(dist); stats.innerHTML=''; st.textContent='Press play for knight BFS from (0,0) to (4,4).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; dist=grid(); par={}; dist[start[0]][start[1]]=0; const q=[start]; render(dist); st.innerHTML=`Knight starts at (0,0), distance 0.`; await sleep(+sp.value);
+    let reached=false;
+    while(q.length){ const [r,c]=q.shift(); if(r===target[0]&&c===target[1]){ reached=true; break; }
+      for(const [dr,dc] of MOVES){ const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=N||nc>=N||dist[nr][nc]!==null) continue; dist[nr][nc]=dist[r][c]+1; par[nr+','+nc]=r+','+c; q.push([nr,nc]); render(dist); tickSound(); st.innerHTML=`Reach (${nr},${nc}) in <span class="k">${dist[nr][nc]}</span> moves.`; await sleep(+sp.value*0.9); }
+    }
+    // path
+    const pathSet=new Set(); let cur=target[0]+','+target[1]; const seq=[]; while(cur!==undefined){ pathSet.add(cur); seq.unshift(cur); cur=par[cur]; }
+    render(dist,{pathSet}); const moves=dist[target[0]][target[1]];
+    stats.innerHTML=`<span class="pill blue">min moves = ${moves}</span><span class="pill green">path: ${seq.join(' → ')}</span>`; st.innerHTML=`♞ Knight reaches (4,4) in <span class="k">${moves}</span> moves — BFS on the board graph!`; ANIM=false; celebrate(cont);
+  }
+  $('#knPlay').onclick=play; $('#knReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. closest zero ================= */
+(function(){
+  const MAT=[[0,0,0],[0,1,0],[1,1,1]]; const st=$('#czStatus'), sp=$('#czSpeed'), stats=$('#czStats'), cont=$('#czViz');
+  const R=MAT.length,C=MAT[0].length; const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+  let dist;
+  function render(d,front){ gridViz(cont, MAT, {cls:(r,c,v)=>{ if(front&&front.has(r+','+c))return 'visit frontier'; if(d[r][c]===0)return 'zero'; if(d[r][c]!==null)return 'done'; return 'one'; }, text:(r,c)=>d[r][c]===null?'':d[r][c]}); }
+  function build(){ dist=MAT.map(row=>row.map(v=>v===0?0:null)); render(dist); stats.innerHTML=''; st.textContent='Press play for multi-source BFS from every zero.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; dist=MAT.map(row=>row.map(v=>v===0?0:null)); let q=[]; for(let r=0;r<R;r++)for(let c=0;c<C;c++) if(MAT[r][c]===0) q.push([r,c]);
+    render(dist,new Set(q.map(([r,c])=>r+','+c))); st.innerHTML=`Seed the queue with <span class="k">all ${q.length} zeros</span> (distance 0).`; await sleep(+sp.value);
+    let d=0;
+    while(q.length){ const nq=[]; for(const [r,c] of q){ for(const [dr,dc] of DIRS){ const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=R||nc>=C||dist[nr][nc]!==null) continue; dist[nr][nc]=dist[r][c]+1; nq.push([nr,nc]); } }
+      if(nq.length){ d++; render(dist,new Set(nq.map(([r,c])=>r+','+c))); tickSound(); st.innerHTML=`Wave ${d}: cells at distance <span class="k">${d}</span> from a zero filled.`; await sleep(+sp.value); }
+      q=nq;
+    }
+    render(dist); const maxD=Math.max(...dist.flat()); stats.innerHTML=`<span class="pill blue">max distance = ${maxD}</span>`; st.innerHTML=`📏 Every cell now holds its distance to the nearest 0 (max = <span class="k">${maxD}</span>) — one multi-source BFS!`; ANIM=false; celebrate(cont);
+  }
+  $('#czPlay').onclick=play; $('#czReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. rotten oranges ================= */
+(function(){
+  const INIT=[[2,1,1],[1,1,0],[0,1,1]]; const st=$('#roStatus'), sp=$('#roSpeed'), stats=$('#roStats'), cont=$('#roViz');
+  const R=INIT.length,C=INIT[0].length; const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+  let g;
+  function render(grid,front){ gridViz(cont, grid, {cls:(r,c,v)=>{ if(front&&front.has(r+','+c))return 'rot frontier'; if(v===2)return 'rot'; if(v===1)return 'fresh'; return 'empty'; }, text:(r,c,v)=> v===0?'·':(v===2?'🦠':'🍊')}); }
+  function build(){ g=INIT.map(r=>r.slice()); render(g); stats.innerHTML=''; st.textContent='Press play to spread the rot minute by minute.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; g=INIT.map(r=>r.slice()); let q=[]; let fresh=0; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ if(g[r][c]===2)q.push([r,c]); else if(g[r][c]===1)fresh++; }
+    render(g,new Set(q.map(([r,c])=>r+','+c))); st.innerHTML=`Start: <span class="k">${q.length}</span> rotten, <span class="k">${fresh}</span> fresh.`; await sleep(+sp.value);
+    let minute=0;
+    while(q.length && fresh>0){ const nq=[]; for(const [r,c] of q){ for(const [dr,dc] of DIRS){ const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=R||nc>=C||g[nr][nc]!==1) continue; g[nr][nc]=2; fresh--; nq.push([nr,nc]); } }
+      if(nq.length){ minute++; render(g,new Set(nq.map(([r,c])=>r+','+c))); blip(500,0.1,'sine',0.09); st.innerHTML=`Minute <span class="k">${minute}</span>: rot spreads to ${nq.length} orange(s). Fresh left: ${fresh}.`; await sleep(+sp.value); }
+      q=nq;
+    }
+    render(g); stats.innerHTML=`<span class="pill blue">minutes = ${minute}</span><span class="pill green">fresh left = ${fresh}</span>`; st.innerHTML=`🍊 All oranges rotten after <span class="k">${minute} minutes</span> — each BFS wave = one minute!`; ANIM=false; celebrate(cont);
+  }
+  $('#roPlay').onclick=play; $('#roReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= word graph helper ================= */
+const WORDS=["hit","hot","dot","dog","lot","log","cog"];
+function oneApart(a,b){ let d=0; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) d++; return d===1; }
+function wadj(word,set){ const out=[]; const chars='abcdefghijklmnopqrstuvwxyz'; for(let i=0;i<word.length;i++){ for(const ch of chars){ if(ch===word[i])continue; const w=word.slice(0,i)+ch+word.slice(i+1); if(set.has(w)) out.push(w); } } return [...new Set(out)]; }
+
+/* ================= 11. word ladder ================= */
+(function(){
+  const begin="hit", end="cog"; const st=$('#wlStatus'), sp=$('#wlSpeed'), stats=$('#wlStats'), cont=$('#wlViz');
+  const dict=new Set([...WORDS]);
+  function render(levels, pathSet){ cont.innerHTML=levels.map((lv,i)=>`<div class="lrow"><span class="lvl">level ${i+1}</span>${lv.map(w=>`<span class="chip ${pathSet&&pathSet.has(w)?'path':(w===begin?'begin':'fwd')}">${w}</span>`).join('')}</div>`).join(''); }
+  function build(){ cont.innerHTML=''; render([[begin]]); stats.innerHTML=''; st.textContent='Press play for BFS from hit to cog.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const seen=new Set([begin]); let frontier=[begin]; const levels=[[begin]]; const par={}; render(levels); st.innerHTML=`Start BFS at "<span class="k">${begin}</span>".`; await sleep(+sp.value);
+    let found=false, level=1;
+    while(frontier.length && !found){ const next=[]; for(const w of frontier){ for(const nb of wadj(w,dict)){ if(seen.has(nb))continue; seen.add(nb); par[nb]=w; next.push(nb); if(nb===end) found=true; } }
+      if(next.length){ level++; levels.push(next); render(levels); tickSound(); st.innerHTML=`Level ${level}: reach ${next.map(w=>'"'+w+'"').join(', ')}.`; await sleep(+sp.value); }
+      frontier=next; if(found) break;
+    }
+    // path
+    const path=[]; let cur=end; while(cur){ path.unshift(cur); cur=par[cur]; } const pathSet=new Set(path); render(levels,pathSet);
+    stats.innerHTML=`<span class="pill green">${path.join(' → ')}</span><span class="pill blue">length = ${path.length}</span>`; st.innerHTML=`🪜 Shortest ladder <span class="k">${path.join(' → ')}</span> = ${path.length} words — BFS levels are the answer!`; ANIM=false; celebrate(cont);
+  }
+  $('#wlPlay').onclick=play; $('#wlReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. word ladder bidirectional ================= */
+(function(){
+  const begin="hit", end="cog"; const st=$('#waStatus'), sp=$('#waSpeed'), stats=$('#waStats'), cont=$('#waViz');
+  const dict=new Set([...WORDS]);
+  function render(rows){ cont.innerHTML=rows.map(row=>`<div class="lrow"><span class="lvl">${row.label}</span>${row.words.map(([w,cls])=>`<span class="chip ${cls}">${w}</span>`).join('')}</div>`).join(''); }
+  function build(){ render([{label:'forward',words:[[begin,'fwd']]},{label:'backward',words:[[end,'bwd']]}]); stats.innerHTML=''; st.textContent='Press play for two frontiers meeting in the middle.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true;
+    let fFront=new Set([begin]), bFront=new Set([end]); const fSeen=new Set([begin]), bSeen=new Set([end]); let steps=0; let meet=null; let explored=2;
+    const rows=[{label:'forward',words:[[begin,'fwd']]},{label:'backward',words:[[end,'bwd']]}]; render(rows); st.innerHTML=`Forward from "<span class="k">${begin}</span>", backward from "<span class="k">${end}</span>".`; await sleep(+sp.value);
+    while(fFront.size && bFront.size && !meet){
+      // expand smaller frontier (forward first if tie)
+      const expandF = fFront.size<=bFront.size;
+      const front = expandF?fFront:bFront; const seen=expandF?fSeen:bSeen; const other=expandF?bSeen:fSeen; const next=new Set();
+      for(const w of front){ for(const nb of wadj(w,dict)){ if(seen.has(nb))continue; seen.add(nb); next.add(nb); explored++; if(other.has(nb)){ meet=nb; } } }
+      steps++;
+      rows.push({label:(expandF?'fwd wave':'bwd wave')+' '+steps, words:[...next].map(w=> [w, meet&&w===meet?'meet':(expandF?'fwd':'bwd')])});
+      render(rows); tickSound(); st.innerHTML=`Expand ${expandF?'<span style="color:var(--accent)">forward</span>':'<span style="color:#ff8fc7">backward</span>'} (smaller side): ${[...next].map(w=>'"'+w+'"').join(', ')}.`; await sleep(+sp.value);
+      if(expandF) fFront=next; else bFront=next;
+      if(meet) break;
+    }
+    const touched=new Set([...fSeen,...bSeen]).size;
+    stats.innerHTML=`<span class="pill gold">frontiers met at "${meet}"</span><span class="pill blue">${steps} waves · ${touched} words touched</span>`; st.innerHTML=`🔀 The two waves collide at "<span class="k">${meet}</span>" — same shortest ladder. On a large dictionary this touches far fewer words than one-way BFS!`; ANIM=false; celebrate(cont);
+  }
+  $('#waPlay').onclick=play; $('#waReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. DFS ================= */
+(function(){
+  const st=$('#dfStatus'), sp=$('#dfSpeed'), stats=$('#dfStats'), cont=$('#dfViz');
+  function build(){ graphSVG(cont,NODES,EDGES,{}); stats.innerHTML=''; st.textContent='Press play for DFS from vertex 0.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const nc={}, order=[], seen={};
+    async function dfs(u,parentEdge){ seen[u]=true; nc[u]='visit'; order.push(u); const ec={}; if(parentEdge)ec[parentEdge]='tree'; graphSVG(cont,NODES,EDGES,{nodeCls:{...nc}}); tickSound(); st.innerHTML=`Dive into <span class="k">${u}</span>. Order: ${order.join(' → ')}`; stats.innerHTML=`<span class="pill blue">${order.join(' → ')}</span>`; await sleep(+sp.value);
+      for(const v of ADJ[u]) if(!seen[v]){ await dfs(v,u+'-'+v); } nc[u]='done'; graphSVG(cont,NODES,EDGES,{nodeCls:{...nc}}); await sleep(+sp.value*0.4); }
+    await dfs(0,null);
+    st.innerHTML=`🧭 DFS order: <span class="k">${order.join(' → ')}</span> — dive deep, backtrack when stuck!`; ANIM=false; celebrate(cont);
+  }
+  $('#dfPlay').onclick=play; $('#dfReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 14. connected components ================= */
+(function(){
+  const N2={0:{x:70,y:70},1:{x:170,y:55},2:{x:110,y:165},3:{x:290,y:70},4:{x:380,y:105},5:{x:300,y:195},6:{x:410,y:205}};
+  const E2=[[0,1],[1,2],[0,2],[3,4],[5,6]]; const A2=adjOf(E2);
+  const st=$('#ccStatus'), sp=$('#ccSpeed'), stats=$('#ccStats'), cont=$('#ccViz');
+  function build(){ graphSVG(cont,N2,E2,{}); stats.innerHTML=''; st.textContent='Press play to color each connected component.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const nc={}, seen={}; let comp=0;
+    for(const s of Object.keys(N2)){ if(seen[s])continue; comp++; const col='c'+((comp-1)%3); const q=[s]; seen[s]=true; nc[s]=col; graphSVG(cont,N2,E2,{nodeCls:{...nc}}); blip(560,0.1,'sine',0.1); st.innerHTML=`Vertex ${s} unvisited → <span class="k">component #${comp}</span>. Flood it…`; await sleep(+sp.value);
+      while(q.length){ const u=q.shift(); for(const v of A2[u]||[]) if(!seen[v]){ seen[v]=true; nc[v]=col; q.push(v); graphSVG(cont,N2,E2,{nodeCls:{...nc}}); tickSound(); await sleep(+sp.value*0.8); } }
+      stats.innerHTML=`<span class="pill blue">components so far = ${comp}</span>`;
+    }
+    st.innerHTML=`🧩 <span class="k">${comp} connected components</span> — one flood per cluster of vertices!`; ANIM=false; celebrate(cont);
+  }
+  $('#ccPlay').onclick=play; $('#ccReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. islands ================= */
+(function(){
+  const GRID=[[1,1,0,0],[1,0,0,1],[0,0,1,1],[0,0,0,1]]; const st=$('#isStatus'), sp=$('#isSpeed'), stats=$('#isStats'), cont=$('#isViz');
+  const R=GRID.length,C=GRID[0].length; const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+  let color;
+  function render(front){ gridViz(cont,GRID,{cls:(r,c,v)=>{ if(v===0)return 'water'; if(front&&front.has(r+','+c))return 'visit frontier'; if(color[r][c]!==null)return 'island'+(color[r][c]%2); return 'land'; }, text:(r,c,v)=> v===0?'~':(color[r][c]!==null?'●':'1')}); }
+  function build(){ color=Array.from({length:R},()=>Array(C).fill(null)); render(); stats.innerHTML=''; st.textContent='Press play to flood-fill and count the islands.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; color=Array.from({length:R},()=>Array(C).fill(null)); let islands=0;
+    for(let r=0;r<R;r++)for(let c=0;c<C;c++){ if(GRID[r][c]===1 && color[r][c]===null){ const id=islands; islands++; const q=[[r,c]]; color[r][c]=id; render(new Set([r+','+c])); blip(560,0.1,'sine',0.1); st.innerHTML=`New land at (${r},${c}) → <span class="k">island #${islands}</span>. Flood it…`; await sleep(+sp.value);
+      while(q.length){ const [cr,cc]=q.shift(); for(const [dr,dc] of DIRS){ const nr=cr+dr,nc=cc+dc; if(nr<0||nc<0||nr>=R||nc>=C||GRID[nr][nc]!==1||color[nr][nc]!==null)continue; color[nr][nc]=id; q.push([nr,nc]); render(new Set([nr+','+nc])); tickSound(); await sleep(+sp.value*0.75); } }
+      stats.innerHTML=`<span class="pill blue">islands so far = ${islands}</span>`; render(); await sleep(+sp.value*0.4);
+    } }
+    render(); st.innerHTML=`🏝️ <span class="k">${islands} islands</span> — flood-fill each new land cell exactly once (connected components on a grid)!`; ANIM=false; celebrate(cont);
+  }
+  $('#isPlay').onclick=play; $('#isReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= shared data & helpers for advanced sections ================= */
+function wadjOf(edges){ const a={}; edges.forEach(([u,v,w])=>{ (a[u]=a[u]||[]).push([v,w]); (a[v]=a[v]||[]).push([u,w]); }); return a; }
+function dadjOf(edges){ const a={}; Object.prototype; edges.forEach(([u,v])=>{ (a[u]=a[u]||[]).push(v); if(!a[v])a[v]=[]; }); Object.values(a).forEach(l=>l.sort()); return a; }
+function indegOf(nodes,edges){ const d={}; Object.keys(nodes).forEach(k=>d[k]=0); edges.forEach(([u,v])=>d[v]++); return d; }
+
+/* ================= 16. surrounded regions ================= */
+(function(){
+  const INIT=[['X','X','X','X'],['X','O','O','X'],['X','X','O','X'],['X','O','X','X']]; const st=$('#srStatus'),sp=$('#srSpeed'),stats=$('#srStats'),cont=$('#srViz');
+  const R=INIT.length,C=INIT[0].length,DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+  let safe;
+  function render(front,captured){ gridViz(cont,INIT,{cls:(r,c,v)=>{ if(v==='X')return 'water'; if(captured&&captured.has(r+','+c))return 'bad'; if(front&&front.has(r+','+c))return 'visit frontier'; if(safe[r][c])return 'done'; return 'land'; }, text:(r,c,v)=> captured&&captured.has(r+','+c)?'X':v}); }
+  function build(){ safe=Array.from({length:R},()=>Array(C).fill(false)); render(); stats.innerHTML=''; st.textContent='Press play to rescue border-connected O\u2019s and capture the rest.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; safe=Array.from({length:R},()=>Array(C).fill(false)); const q=[];
+    for(let r=0;r<R;r++)for(let c=0;c<C;c++){ if((r===0||c===0||r===R-1||c===C-1)&&INIT[r][c]==='O'){ safe[r][c]=true; q.push([r,c]); } }
+    render(new Set(q.map(([r,c])=>r+','+c))); st.innerHTML=`Seed flood from <span class="k">border O's</span> (they're safe).`; await sleep(+sp.value);
+    while(q.length){ const [r,c]=q.shift(); for(const [dr,dc] of DIRS){ const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=R||nc>=C||INIT[nr][nc]!=='O'||safe[nr][nc])continue; safe[nr][nc]=true; q.push([nr,nc]); render(new Set([nr+','+nc])); tickSound(); st.innerHTML=`(${nr},${nc}) reachable from border → <span style="color:var(--accent)">safe</span>.`; await sleep(+sp.value); } }
+    const captured=new Set(); for(let r=0;r<R;r++)for(let c=0;c<C;c++) if(INIT[r][c]==='O'&&!safe[r][c]) captured.add(r+','+c);
+    render(null,captured); blip(320,0.14,'sawtooth',0.08); stats.innerHTML=`<span class="pill green">safe O's kept</span><span class="pill pink">captured = ${captured.size}</span>`; st.innerHTML=`🧱 Captured <span class="k">${captured.size}</span> surrounded O's; border-connected O's survive!`; ANIM=false; celebrate(cont);
+  }
+  $('#srPlay').onclick=play; $('#srReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 17. bipartite ================= */
+(function(){
+  const N={0:{x:90,y:70},1:{x:90,y:200},2:{x:250,y:70},3:{x:250,y:200},4:{x:410,y:70},5:{x:410,y:200}};
+  const E=[[0,1],[0,3],[2,1],[2,3],[2,5],[4,3],[4,5]]; const A=adjOf(E);
+  const st=$('#bpStatus'),sp=$('#bpSpeed'),stats=$('#bpStats'),cont=$('#bpViz');
+  function build(){ graphSVG(cont,N,E,{}); stats.innerHTML=''; st.textContent='Press play to 2-color the graph.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const color={}; const nc={}; let ok=true;
+    for(const s of Object.keys(N)){ if(color[s]!==undefined)continue; color[s]=0; const q=[s]; nc[s]='c0'; graphSVG(cont,N,E,{nodeCls:{...nc}}); tickSound(); st.innerHTML=`Color ${s} = <span style="color:var(--accent)">A</span>.`; await sleep(+sp.value);
+      while(q.length){ const u=q.shift(); for(const v of A[u]){ if(color[v]===undefined){ color[v]=color[u]^1; nc[v]=color[v]?'c1':'c0'; q.push(v); graphSVG(cont,N,E,{nodeCls:{...nc}}); tickSound(); st.innerHTML=`Color ${v} = <span style="color:${color[v]?'#ff8fc7':'var(--accent)'}">${color[v]?'B':'A'}</span> (opposite of ${u}).`; await sleep(+sp.value); } else if(color[v]===color[u]){ ok=false; } } } }
+    const A2=Object.keys(color).filter(k=>color[k]===0), B2=Object.keys(color).filter(k=>color[k]===1);
+    stats.innerHTML=`<span class="pill blue">A: {${A2.join(', ')}}</span><span class="pill pink">B: {${B2.join(', ')}}</span>`; st.innerHTML=`🎨 ${ok?'Bipartite!':'Not bipartite.'} Two teams <span class="k">{${A2.join(', ')}}</span> &amp; <span class="k">{${B2.join(', ')}}</span> with no internal edge.`; ANIM=false; celebrate(cont);
+  }
+  $('#bpPlay').onclick=play; $('#bpReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 18. cycle undirected ================= */
+(function(){
+  const N={0:{x:110,y:70},1:{x:260,y:60},2:{x:180,y:195},3:{x:390,y:180}};
+  const E=[[0,1],[1,2],[2,0],[2,3]]; const A=adjOf(E);
+  const st=$('#cuStatus'),sp=$('#cuSpeed'),stats=$('#cuStats'),cont=$('#cuViz');
+  function build(){ graphSVG(cont,N,E,{W:480,H:250}); stats.innerHTML=''; st.textContent='Press play to DFS and catch the back edge.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const seen={},nc={},ec={}; let found=null;
+    async function dfs(u,parent){ if(found)return; seen[u]=true; nc[u]='visit'; graphSVG(cont,N,E,{nodeCls:{...nc},edgeCls:{...ec},W:480,H:250}); tickSound(); st.innerHTML=`Visit ${u} (parent ${parent===-1?'none':parent}).`; await sleep(+sp.value);
+      for(const v of A[u]){ if(found)break; if(!seen[v]){ ec[u+'-'+v]='tree'; await dfs(v,u); } else if(v!==parent){ found=[u,v]; ec[u+'-'+v]='cross'; nc[u]='bad'; nc[v]='bad'; graphSVG(cont,N,E,{nodeCls:{...nc},edgeCls:{...ec},W:480,H:250}); blip(320,0.15,'sawtooth',0.09); st.innerHTML=`Edge ${u}–${v} hits visited non-parent ${v} → <span style="color:#ff8fc7">cycle!</span>`; await sleep(+sp.value); } } if(nc[u]==='visit')nc[u]='done'; }
+    await dfs(0,-1);
+    stats.innerHTML=found?`<span class="pill pink">cycle via ${found[0]}–${found[1]}</span>`:`<span class="pill green">no cycle</span>`; st.innerHTML=`🔁 ${found?`Cycle found (back edge ${found[0]}–${found[1]})`:'No cycle'} — a visited neighbor that wasn't the parent!`; ANIM=false; celebrate(cont);
+  }
+  $('#cuPlay').onclick=play; $('#cuReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 19. cycle directed ================= */
+(function(){
+  const N={0:{x:110,y:70},1:{x:270,y:70},2:{x:190,y:200},3:{x:400,y:130}};
+  const E=[[0,1],[1,2],[2,0],[0,3]]; const A=dadjOf(E);
+  const st=$('#cdStatus'),sp=$('#cdSpeed'),stats=$('#cdStats'),cont=$('#cdViz');
+  function build(){ graphSVG(cont,N,E,{directed:true,W:480,H:250}); stats.innerHTML=''; st.textContent='Press play to color-DFS and find the back edge.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const state={},nc={},ec={}; let found=null;
+    async function dfs(u){ if(found)return; state[u]='gray'; nc[u]='gray'; graphSVG(cont,N,E,{nodeCls:{...nc},edgeCls:{...ec},directed:true,W:480,H:250}); tickSound(); st.innerHTML=`Enter ${u} → <span style="color:var(--mid)">gray</span> (on stack).`; await sleep(+sp.value);
+      for(const v of A[u]||[]){ if(found)break; if(state[v]==='gray'){ found=[u,v]; ec[u+'-'+v]='bad'; nc[u]='bad'; nc[v]='bad'; graphSVG(cont,N,E,{nodeCls:{...nc},edgeCls:{...ec},directed:true,W:480,H:250}); blip(320,0.15,'sawtooth',0.09); st.innerHTML=`Edge ${u}→${v} points to <span style="color:var(--mid)">gray</span> ${v} → <span style="color:#ff8fc7">directed cycle!</span>`; await sleep(+sp.value); } else if(!state[v]){ ec[u+'-'+v]='tree'; await dfs(v); } }
+      if(state[u]==='gray'){ state[u]='black'; if(nc[u]!=='bad')nc[u]='black'; graphSVG(cont,N,E,{nodeCls:{...nc},edgeCls:{...ec},directed:true,W:480,H:250}); await sleep(+sp.value*0.4); } }
+    for(const s of Object.keys(N)){ if(!state[s]&&!found) await dfs(s); }
+    stats.innerHTML=found?`<span class="pill pink">back edge ${found[0]}→${found[1]}</span>`:`<span class="pill green">DAG (no cycle)</span>`; st.innerHTML=`🔃 ${found?`Cycle: back edge ${found[0]}→${found[1]} into a gray vertex`:'No cycle'} — gray = on the recursion stack!`; ANIM=false; celebrate(cont);
+  }
+  $('#cdPlay').onclick=play; $('#cdReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= directed DAG shared ================= */
+const TNODES={5:{x:70,y:65},4:{x:70,y:205},2:{x:215,y:65},3:{x:215,y:205},1:{x:365,y:65},0:{x:365,y:205}};
+const TEDGES=[[5,2],[5,0],[4,0],[4,1],[2,3],[3,1]];
+
+/* ================= 20. topo sort DFS ================= */
+(function(){
+  const A=dadjOf(TEDGES); const st=$('#tsStatus'),sp=$('#tsSpeed'),stats=$('#tsStats'),cont=$('#tsViz');
+  function build(){ graphSVG(cont,TNODES,TEDGES,{directed:true}); stats.innerHTML=''; st.textContent='Press play to DFS and read off the topological order.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const seen={},nc={},finish=[];
+    async function dfs(u){ seen[u]=true; nc[u]='visit'; graphSVG(cont,TNODES,TEDGES,{nodeCls:{...nc},directed:true}); tickSound(); st.innerHTML=`DFS enter ${u}.`; await sleep(+sp.value);
+      for(const v of A[u]||[]) if(!seen[v]) await dfs(v);
+      finish.push(u); nc[u]='done'; graphSVG(cont,TNODES,TEDGES,{nodeCls:{...nc},directed:true}); st.innerHTML=`Finish ${u} → push to stack.`; stats.innerHTML=`<span class="pill blue">finish order: ${finish.join(' ')}</span>`; await sleep(+sp.value*0.8); }
+    for(const s of Object.keys(TNODES).map(Number).sort((a,b)=>a-b)) if(!seen[s]) await dfs(s);
+    const topo=[...finish].reverse();
+    stats.innerHTML=`<span class="pill green">topological order: ${topo.join(' → ')}</span>`; st.innerHTML=`📚 Topological order = reversed finish order: <span class="k">${topo.join(' → ')}</span> (every edge points forward)!`; ANIM=false; celebrate(cont);
+  }
+  $('#tsPlay').onclick=play; $('#tsReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 21. course schedule ================= */
+(function(){
+  const N={0:{x:80,y:130},1:{x:230,y:60},2:{x:230,y:200},3:{x:380,y:130}};
+  const E=[[0,1],[0,2],[1,3],[2,3]]; const A=dadjOf(E);
+  const st=$('#csStatus'),sp=$('#csSpeed'),stats=$('#csStats'),cont=$('#csViz');
+  function build(){ graphSVG(cont,N,E,{directed:true,label:{0:'C0',1:'C1',2:'C2',3:'C3'},W:480,H:250}); stats.innerHTML=''; st.textContent='Press play to peel courses in a valid order.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const indeg=indegOf(N,E); const nc={}; const order=[]; let q=Object.keys(N).filter(k=>indeg[k]===0);
+    const LB={0:'C0',1:'C1',2:'C2',3:'C3'};
+    graphSVG(cont,N,E,{directed:true,label:LB,W:480,H:250}); st.innerHTML=`Indegrees computed. Ready (0 prereqs): [${q.join(', ')}].`; await sleep(+sp.value);
+    while(q.length){ const u=q.shift(); order.push(u); nc[u]='done'; graphSVG(cont,N,E,{nodeCls:{...nc},directed:true,label:LB,W:480,H:250}); tickSound(); st.innerHTML=`Take course <span class="k">C${u}</span> (no unmet prereqs).`; stats.innerHTML=`<span class="pill blue">taken: ${order.map(x=>'C'+x).join(' → ')}</span>`; await sleep(+sp.value);
+      for(const v of A[u]||[]){ indeg[v]--; if(indeg[v]===0) q.push(v); } }
+    const ok=order.length===Object.keys(N).length;
+    st.innerHTML=`🎓 ${ok?`All ${order.length} courses finishable`:'Cycle → cannot finish'}! Valid order: <span class="k">${order.map(x=>'C'+x).join(' → ')}</span>.`; ANIM=false; celebrate(cont);
+  }
+  $('#csPlay').onclick=play; $('#csReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 22. topo Kahn ================= */
+(function(){
+  const A=dadjOf(TEDGES); const st=$('#tkStatus'),sp=$('#tkSpeed'),stats=$('#tkStats'),cont=$('#tkViz');
+  function labels(indeg){ const l={}; Object.keys(TNODES).forEach(k=>l[k]=k+'·'+indeg[k]); return l; }
+  function build(){ const indeg=indegOf(TNODES,TEDGES); graphSVG(cont,TNODES,TEDGES,{directed:true,label:labels(indeg)}); stats.innerHTML=''; st.textContent='Press play for Kahn\u2019s indegree-peeling topological sort.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const indeg=indegOf(TNODES,TEDGES); const nc={}; const order=[]; let q=Object.keys(TNODES).filter(k=>indeg[k]===0).map(Number).sort((a,b)=>a-b);
+    graphSVG(cont,TNODES,TEDGES,{directed:true,label:labels(indeg)}); st.innerHTML=`Labels show <span class="k">id·indegree</span>. Queue zero-indegree: [${q.join(', ')}].`; await sleep(+sp.value);
+    while(q.length){ const u=q.shift(); order.push(u); nc[u]='done'; graphSVG(cont,TNODES,TEDGES,{nodeCls:{...nc},directed:true,label:labels(indeg)}); tickSound(); st.innerHTML=`Output <span class="k">${u}</span>; drop it &amp; decrement neighbors.`; await sleep(+sp.value);
+      const freed=[]; for(const v of A[u]||[]){ indeg[v]--; if(indeg[v]===0){ q.push(v); freed.push(v); } } q.sort((a,b)=>a-b);
+      graphSVG(cont,TNODES,TEDGES,{nodeCls:{...nc},directed:true,label:labels(indeg)}); stats.innerHTML=`<span class="pill blue">order: ${order.join(' → ')}</span>`; if(freed.length){ st.innerHTML=`${freed.join(', ')} reached indegree 0 → enqueued.`; await sleep(+sp.value*0.8); } }
+    st.innerHTML=`🪣 Kahn's order: <span class="k">${order.join(' → ')}</span> — peeled all ${order.length} vertices (no cycle)!`; ANIM=false; celebrate(cont);
+  }
+  $('#tkPlay').onclick=play; $('#tkReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 23. order of characters ================= */
+(function(){
+  const WORDS=["wrt","wrf","er","ett","rftt"]; const st=$('#ocStatus'),sp=$('#ocSpeed'),stats=$('#ocStats'),cont=$('#ocViz');
+  const CN={w:{x:70,y:130},e:{x:165,y:130},r:{x:260,y:130},t:{x:355,y:130},f:{x:445,y:130}};
+  function build(){ graphSVG(cont,CN,[],{directed:true,W:500,H:200}); stats.innerHTML=`<span class="pill gold">words: ${WORDS.join(', ')}</span>`; st.textContent='Press play to derive the alien alphabet order.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const edges=[]; const seen=new Set();
+    for(let i=0;i+1<WORDS.length;i++){ const a=WORDS[i],b=WORDS[i+1]; let k=0; while(k<a.length&&k<b.length&&a[k]===b[k])k++;
+      if(k<a.length&&k<b.length){ const e=a[k]+'-'+b[k]; if(!seen.has(e)){ seen.add(e); edges.push([a[k],b[k]]); } graphSVG(cont,CN,edges,{directed:true,W:500,H:200}); tickSound(); st.innerHTML=`"${a}" vs "${b}": first diff <span class="k">${a[k]} → ${b[k]}</span>.`; await sleep(+sp.value); } }
+    // topo sort chars
+    const A=dadjOf(edges); const indeg={}; Object.keys(CN).forEach(c=>indeg[c]=0); edges.forEach(([u,v])=>indeg[v]++); let q=Object.keys(CN).filter(c=>indeg[c]===0); const order=[]; const nc={};
+    st.innerHTML=`All edges found. Topological sort the letters…`; await sleep(+sp.value);
+    while(q.length){ q.sort(); const u=q.shift(); order.push(u); nc[u]='done'; graphSVG(cont,CN,edges,{nodeCls:{...nc},directed:true,W:500,H:200}); tickSound(); stats.innerHTML=`<span class="pill green">order: ${order.join('')}</span>`; await sleep(+sp.value); for(const v of A[u]||[]){ indeg[v]--; if(indeg[v]===0)q.push(v); } }
+    st.innerHTML=`👽 Alien alphabet order = <span class="k">${order.join(' ')}</span> → "<b>${order.join('')}</b>"!`; ANIM=false; celebrate(cont);
+  }
+  $('#ocPlay').onclick=play; $('#ocReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= DSU sections ================= */
+const DSUPOS={0:{x:50,y:180},1:{x:135,y:180},2:{x:220,y:180},3:{x:305,y:180},4:{x:390,y:180},5:{x:460,y:180}};
+function dsuEdges(parent){ const e=[]; for(let i=0;i<parent.length;i++) if(parent[i]!==i) e.push([i,parent[i]]); return e; }
+function dsuPanel(el,parent){ el.innerHTML='parent = [ '+parent.map((p,i)=>`<b style="color:${p===i?'var(--found)':'var(--ink)'}">${p}</b>`).join(', ')+' ]'; }
+
+/* ---- 24 DSU basic ---- */
+(function(){
+  const st=$('#duStatus'),sp=$('#duSpeed'),stats=$('#duStats'),cont=$('#duViz'),panel=$('#duPanel');
+  const OPS=[['u',0,1],['u',2,3],['u',3,4],['u',1,2],['f',0]];
+  function build(){ const parent=[0,1,2,3,4,5]; graphSVG(cont,DSUPOS,[],{directed:true,W:520,H:230}); dsuPanel(panel,parent); stats.innerHTML=''; st.textContent='Press play to union elements and follow find to the root.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const parent=[0,1,2,3,4,5]; const find=x=>{ while(parent[x]!==x)x=parent[x]; return x; };
+    graphSVG(cont,DSUPOS,[],{directed:true,W:520,H:230}); dsuPanel(panel,parent); await sleep(+sp.value*0.6);
+    for(const op of OPS){ if(op[0]==='u'){ const [_,a,b]=op; const ra=find(a),rb=find(b); if(ra!==rb){ parent[ra]=rb; } graphSVG(cont,DSUPOS,dsuEdges(parent),{nodeCls:{[ra]:'visit',[rb]:'done'},directed:true,W:520,H:230}); dsuPanel(panel,parent); tickSound(); st.innerHTML=`union(${a},${b}): link root ${ra} under root ${rb}.`; stats.innerHTML=`<span class="pill blue">roots merged: ${ra} → ${rb}</span>`; await sleep(+sp.value); }
+      else { const x=op[1]; let cur=x; const nc={}; while(parent[cur]!==cur){ nc[cur]='visit'; graphSVG(cont,DSUPOS,dsuEdges(parent),{nodeCls:{...nc},directed:true,W:520,H:230}); tickSound(); st.innerHTML=`find(${x}): at ${cur} → go to parent ${parent[cur]}.`; await sleep(+sp.value); cur=parent[cur]; } nc[cur]='c2'; graphSVG(cont,DSUPOS,dsuEdges(parent),{nodeCls:{...nc},directed:true,W:520,H:230}); stats.innerHTML=`<span class="pill green">find(${x}) = ${cur}</span>`; st.innerHTML=`find(${x}) reached root <span class="k">${cur}</span>.`; await sleep(+sp.value); } }
+    st.innerHTML=`🌿 Sets merged into a tree rooted at <span class="k">${find(0)}</span> — same root ⇒ same set. Note the chain 0→1→4!`; ANIM=false; celebrate(cont);
+  }
+  $('#duPlay').onclick=play; $('#duReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ---- 25 optimized union ---- */
+(function(){
+  const st=$('#doStatus'),sp=$('#doSpeed'),stats=$('#doStats'),cont=$('#doViz'),panel=$('#doPanel');
+  function build(){ const parent=[0,1,2,3,4,5]; graphSVG(cont,DSUPOS,[],{directed:true,W:520,H:230}); dsuPanel(panel,parent); stats.innerHTML=''; st.textContent='Press play to see path compression flatten the tree.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const parent=[0,1,2,3,4,5],rank=[0,0,0,0,0,0];
+    const findNC=x=>{ while(parent[x]!==x)x=parent[x]; return x; };
+    function unionRank(a,b){ const ra=findNC(a),rb=findNC(b); if(ra===rb)return; if(rank[ra]<rank[rb])parent[ra]=rb; else if(rank[ra]>rank[rb])parent[rb]=ra; else { parent[rb]=ra; rank[ra]++; } }
+    // build a deliberately deep-ish tree by rank unions
+    unionRank(0,1); unionRank(2,3); unionRank(1,3); unionRank(4,3); unionRank(5,3);
+    graphSVG(cont,DSUPOS,dsuEdges(parent),{directed:true,W:520,H:230}); dsuPanel(panel,parent); st.innerHTML=`Built with <span class="k">union by rank</span> (shorter tree under taller). Now find(3) with compression…`; await sleep(+sp.value*1.3);
+    // path compression find(3): node 3 sits at depth 2 (3 → 2 → 0)
+    const x=3; const path=[]; let cur=x; while(parent[cur]!==cur){ path.push(cur); cur=parent[cur]; } const root=cur;
+    const nc={}; for(const p of path){ nc[p]='visit'; } nc[root]='c2'; graphSVG(cont,DSUPOS,dsuEdges(parent),{nodeCls:{...nc},directed:true,W:520,H:230}); st.innerHTML=`find(${x}) walks ${path.concat(root).join(' → ')} to root <span class="k">${root}</span>.`; await sleep(+sp.value);
+    for(const p of path){ parent[p]=root; graphSVG(cont,DSUPOS,dsuEdges(parent),{nodeCls:{...nc},directed:true,W:520,H:230}); dsuPanel(panel,parent); blip(640,0.1,'sine',0.09); st.innerHTML=`Compress: point ${p} straight at root ${root}.`; await sleep(+sp.value); }
+    stats.innerHTML=`<span class="pill green">tree flattened — depth ≤ 1</span>`; st.innerHTML=`⚡ Path compressed! Every node on the find path now points directly at <span class="k">${root}</span> — future finds are O(1).`; ANIM=false; celebrate(cont);
+  }
+  $('#doPlay').onclick=play; $('#doReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= weighted graph shared ================= */
+const WNODES={0:{x:70,y:60},1:{x:235,y:55},2:{x:150,y:180},3:{x:345,y:160},4:{x:425,y:60}};
+const WEDGES=[[0,1,2],[0,3,6],[1,2,3],[1,3,8],[1,4,5],[2,4,7],[3,4,9]];
+
+/* ================= 26 Kruskal ================= */
+(function(){
+  const st=$('#krStatus'),sp=$('#krSpeed'),stats=$('#krStats'),cont=$('#krViz'),listEl=$('#krList');
+  const sorted=[...WEDGES].sort((a,b)=>a[2]-b[2]);
+  function renderList(state){ listEl.innerHTML=sorted.map((e,i)=>`<span class="echip ${state[i]||''}">${e[0]}–${e[1]}:${e[2]}</span>`).join(''); }
+  function build(){ renderList({}); graphSVG(cont,WNODES,WEDGES,{weight:true}); stats.innerHTML=''; st.textContent='Press play to build the MST edge by edge.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const parent=[0,1,2,3,4]; const find=x=>{while(parent[x]!==x)x=parent[x];return x;}; const ec={}; const state={}; let total=0,cnt=0;
+    renderList({}); graphSVG(cont,WNODES,WEDGES,{weight:true});
+    for(let i=0;i<sorted.length;i++){ const [a,b,w]=sorted[i]; state[i]='cur'; renderList({...state}); const ra=find(a),rb=find(b);
+      if(ra!==rb){ parent[ra]=rb; ec[a+'-'+b]='tree'; total+=w; cnt++; state[i]='pick'; graphSVG(cont,WNODES,WEDGES,{edgeCls:{...ec},weight:true}); blip(660,0.1,'sine',0.1); st.innerHTML=`Add ${a}–${b} (w=${w}) — different sets → MST edge. Total=${total}.`; }
+      else { state[i]='skip'; ec[a+'-'+b]='cross'; graphSVG(cont,WNODES,WEDGES,{edgeCls:{...ec},weight:true}); blip(320,0.1,'sawtooth',0.07); st.innerHTML=`Skip ${a}–${b} (w=${w}) — same set → would make a cycle.`; }
+      renderList({...state}); stats.innerHTML=`<span class="pill green">MST weight = ${total}</span><span class="pill blue">edges = ${cnt}/4</span>`; await sleep(+sp.value); if(cnt===4)break; }
+    // clear cross edges visually
+    Object.keys(ec).forEach(k=>{ if(ec[k]==='cross') delete ec[k]; }); graphSVG(cont,WNODES,WEDGES,{edgeCls:{...ec},weight:true});
+    st.innerHTML=`🌉 Kruskal MST complete — weight <span class="k">${total}</span> using ${cnt} edges (cheapest, no cycles)!`; ANIM=false; celebrate(cont);
+  }
+  $('#krPlay').onclick=play; $('#krReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 27 SCC Kosaraju ================= */
+(function(){
+  const N={0:{x:80,y:70},1:{x:205,y:55},2:{x:140,y:185},3:{x:325,y:80},4:{x:325,y:200},5:{x:445,y:140}};
+  const E=[[0,1],[1,2],[2,0],[1,3],[3,4],[4,3],[4,5]];
+  const A=dadjOf(E); const AT=dadjOf(E.map(([u,v])=>[v,u]));
+  const st=$('#scStatus'),sp=$('#scSpeed'),stats=$('#scStats'),cont=$('#scViz');
+  function build(){ graphSVG(cont,N,E,{directed:true}); stats.innerHTML=''; st.textContent='Press play to color each strongly connected component.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const seen={},order=[],nc={};
+    async function dfs1(u){ seen[u]=true; nc[u]='visit'; graphSVG(cont,N,E,{nodeCls:{...nc},directed:true}); tickSound(); st.innerHTML=`Pass 1 DFS: visit ${u}.`; await sleep(+sp.value*0.7); for(const v of A[u]||[]) if(!seen[v]) await dfs1(v); order.push(u); nc[u]='done'; graphSVG(cont,N,E,{nodeCls:{...nc},directed:true}); }
+    for(const s of Object.keys(N).map(Number).sort((a,b)=>a-b)) if(!seen[s]) await dfs1(s);
+    st.innerHTML=`Pass 1 done (finish order ${[...order].reverse().join(', ')}). Transpose edges &amp; DFS again…`; await sleep(+sp.value);
+    const ET=E.map(([u,v])=>[v,u]); const seen2={}; let comp=0; const compOf={};
+    async function dfs2(u,c){ seen2[u]=true; compOf[u]=c; nc[u]='c'+(c%3); graphSVG(cont,N,ET,{nodeCls:{...nc},directed:true}); tickSound(); await sleep(+sp.value*0.7); for(const v of AT[u]||[]) if(!seen2[v]) await dfs2(v,c); }
+    for(let i=order.length-1;i>=0;i--){ const u=order[i]; if(!seen2[u]){ comp++; st.innerHTML=`New SCC #${comp} from ${u} (on transpose).`; await dfs2(u,comp-1); await sleep(+sp.value*0.5); } }
+    // group
+    const groups={}; Object.keys(compOf).forEach(u=>{ (groups[compOf[u]]=groups[compOf[u]]||[]).push(u); });
+    const gtxt=Object.values(groups).map(g=>'{'+g.sort().join(',')+'}').join(' ');
+    stats.innerHTML=`<span class="pill green">${comp} SCCs: ${gtxt}</span>`; st.innerHTML=`🎯 <span class="k">${comp}</span> strongly connected components: ${gtxt} — two DFS passes + transpose!`; ANIM=false; celebrate(cont);
+  }
+  $('#scPlay').onclick=play; $('#scReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 28 articulation points ================= */
+(function(){
+  const N={0:{x:95,y:70},1:{x:210,y:135},2:{x:95,y:205},3:{x:335,y:135},4:{x:445,y:135}};
+  const E=[[0,1],[1,2],[2,0],[1,3],[3,4]]; const A=adjOf(E);
+  const st=$('#apStatus'),sp=$('#apSpeed'),stats=$('#apStats'),cont=$('#apViz');
+  function build(){ graphSVG(cont,N,E,{}); stats.innerHTML=''; st.textContent='Press play to find the cut vertices.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const disc={},low={},nc={}; let timer=0; const arts=new Set();
+    async function dfs(u,parent){ disc[u]=low[u]=++timer; nc[u]='visit'; graphSVG(cont,N,E,{nodeCls:{...nc}}); tickSound(); st.innerHTML=`Visit ${u}: disc=low=${disc[u]}.`; await sleep(+sp.value); let children=0;
+      for(const v of A[u]){ if(disc[v]===undefined){ children++; await dfs(v,u); low[u]=Math.min(low[u],low[v]); if(parent!==-1 && low[v]>=disc[u]){ arts.add(u); nc[u]='art'; graphSVG(cont,N,E,{nodeCls:{...nc}}); blip(700,0.12,'sine',0.1); st.innerHTML=`child ${v} has low=${low[v]} ≥ disc[${u}]=${disc[u]} → <span style="color:#ff8fc7">${u} is a cut vertex!</span>`; await sleep(+sp.value); } }
+        else if(v!==parent){ low[u]=Math.min(low[u],disc[v]); } }
+      if(parent===-1 && children>1){ arts.add(u); nc[u]='art'; graphSVG(cont,N,E,{nodeCls:{...nc}}); st.innerHTML=`root ${u} has ${children} DFS children → cut vertex.`; await sleep(+sp.value); }
+      if(nc[u]!=='art')nc[u]='done'; graphSVG(cont,N,E,{nodeCls:{...nc}}); await sleep(+sp.value*0.4); }
+    await dfs(0,-1);
+    stats.innerHTML=`<span class="pill pink">articulation points: {${[...arts].sort().join(', ')}}</span>`; st.innerHTML=`✂️ Cut vertices = <span class="k">{${[...arts].sort().join(', ')}}</span> — removing any splits the graph!`; ANIM=false; celebrate(cont);
+  }
+  $('#apPlay').onclick=play; $('#apReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 29 Prim I ================= */
+(function(){
+  const A=wadjOf(WEDGES); const st=$('#p1Status'),sp=$('#p1Speed'),stats=$('#p1Stats'),cont=$('#p1Viz');
+  function build(){ graphSVG(cont,WNODES,WEDGES,{weight:true}); stats.innerHTML=''; st.textContent='Press play to grow the MST from vertex 0 (key scan).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const V=5; const key=Array(V).fill(Infinity),par=Array(V).fill(-1),inMST=Array(V).fill(false); key[0]=0; const ec={},nc={}; let total=0;
+    for(let it=0;it<V;it++){ let u=-1; for(let v=0;v<V;v++) if(!inMST[v]&&(u===-1||key[v]<key[u]))u=v; inMST[u]=true; if(par[u]!==-1){ ec[par[u]+'-'+u]='tree'; total+=key[u]; } nc[u]='c2'; graphSVG(cont,WNODES,WEDGES,{nodeCls:{...nc},edgeCls:{...ec},weight:true}); tickSound(); st.innerHTML=`Pick min-key vertex <span class="k">${u}</span> (key=${key[u]})${par[u]!==-1?` via edge ${par[u]}–${u}`:''}. Total=${total}.`; stats.innerHTML=`<span class="pill green">MST weight = ${total}</span>`; await sleep(+sp.value);
+      for(const [v,w] of A[u]||[]) if(!inMST[v]&&w<key[v]){ key[v]=w; par[v]=u; } }
+    st.innerHTML=`🌲 Prim I done — MST weight <span class="k">${total}</span>, grown one vertex at a time!`; ANIM=false; celebrate(cont);
+  }
+  $('#p1Play').onclick=play; $('#p1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 30 Prim II (heap) ================= */
+(function(){
+  const A=wadjOf(WEDGES); const st=$('#p2Status'),sp=$('#p2Speed'),stats=$('#p2Stats'),cont=$('#p2Viz'),heapEl=$('#p2Heap');
+  function renderHeap(heap,cur){ heapEl.innerHTML=heap.slice().sort((a,b)=>a[0]-b[0]).map(([w,u,p])=>`<span class="echip ${cur&&cur[1]===u&&cur[2]===p?'cur':''}">${p}→${u}:${w}</span>`).join('')||'<span class="echip">heap empty</span>'; }
+  function build(){ graphSVG(cont,WNODES,WEDGES,{weight:true}); renderHeap([]); stats.innerHTML=''; st.textContent='Press play to grow the MST with a min-heap of edges.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const inMST={}; const ec={},nc={}; let total=0,cnt=0; let heap=[]; const push=(w,u,p)=>heap.push([w,u,p]); const pop=()=>{ let bi=0; for(let i=1;i<heap.length;i++) if(heap[i][0]<heap[bi][0])bi=i; return heap.splice(bi,1)[0]; };
+    inMST[0]=true; nc[0]='c2'; for(const [v,w] of A[0]) push(w,v,0); graphSVG(cont,WNODES,WEDGES,{nodeCls:{...nc},weight:true}); renderHeap(heap); st.innerHTML=`Start at 0; push its edges to the heap.`; await sleep(+sp.value);
+    while(heap.length && cnt<4){ const cur=pop(); const [w,u,p]=cur; renderHeap(heap,cur);
+      if(inMST[u]){ ec[p+'-'+u]='cross'; graphSVG(cont,WNODES,WEDGES,{nodeCls:{...nc},edgeCls:{...ec},weight:true}); blip(320,0.09,'sawtooth',0.06); st.innerHTML=`Pop ${p}→${u} (w=${w}) — ${u} already in tree → skip.`; await sleep(+sp.value); delete ec[p+'-'+u]; continue; }
+      inMST[u]=true; nc[u]='c2'; ec[p+'-'+u]='tree'; total+=w; cnt++; graphSVG(cont,WNODES,WEDGES,{nodeCls:{...nc},edgeCls:{...ec},weight:true}); blip(660,0.1,'sine',0.1); st.innerHTML=`Pop lightest ${p}→${u} (w=${w}) → add. Total=${total}.`; stats.innerHTML=`<span class="pill green">MST weight = ${total}</span><span class="pill blue">edges = ${cnt}/4</span>`; await sleep(+sp.value);
+      for(const [v,ww] of A[u]) if(!inMST[v]) push(ww,v,u); renderHeap(heap); }
+    st.innerHTML=`🌳 Prim II done — MST weight <span class="k">${total}</span> via a min-heap of frontier edges!`; ANIM=false; celebrate(cont);
+  }
+  $('#p2Play').onclick=play; $('#p2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 31 Dijkstra ================= */
+(function(){
+  const N={0:{x:70,y:120},1:{x:205,y:50},2:{x:205,y:195},3:{x:345,y:120},4:{x:445,y:120}};
+  const E=[[0,1,4],[0,2,1],[2,1,2],[2,3,5],[1,3,1],[3,4,3]]; const A=wadjOf(E);
+  const st=$('#djStatus'),sp=$('#djSpeed'),stats=$('#djStats'),cont=$('#djViz');
+  function dl(dist){ const l={}; Object.keys(N).forEach(k=>l[k]= dist[k]===Infinity?k+'·∞':k+'·'+dist[k]); return l; }
+  function build(){ const dist={}; Object.keys(N).forEach(k=>dist[k]=Infinity); dist[0]=0; graphSVG(cont,N,E,{weight:true,label:dl(dist)}); stats.innerHTML=''; st.textContent='Press play for Dijkstra from vertex 0.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dist={}; Object.keys(N).forEach(k=>dist[k]=Infinity); dist[0]=0; const done={},nc={},ec={};
+    graphSVG(cont,N,E,{weight:true,label:dl(dist)}); st.innerHTML=`All distances ∞ except source 0 = 0.`; await sleep(+sp.value);
+    for(let it=0;it<Object.keys(N).length;it++){ let u=-1; for(const v of Object.keys(N)) if(!done[v]&&(u===-1||dist[v]<dist[u]))u=v; if(dist[u]===Infinity)break; done[u]=true; nc[u]='c2'; graphSVG(cont,N,E,{nodeCls:{...nc},edgeCls:{...ec},weight:true,label:dl(dist)}); tickSound(); st.innerHTML=`Finalize nearest unvisited <span class="k">${u}</span> (dist=${dist[u]}). Relax its edges…`; await sleep(+sp.value);
+      for(const [v,w] of A[u]||[]) if(!done[v] && dist[u]+w<dist[v]){ dist[v]=dist[u]+w; ec[u+'-'+v]='path'; graphSVG(cont,N,E,{nodeCls:{...nc},edgeCls:{...ec},weight:true,label:dl(dist)}); blip(560,0.08,'sine',0.08); st.innerHTML=`Relax ${u}→${v}: dist[${v}] = ${dist[u]}+${w} = <span class="k">${dist[v]}</span>.`; await sleep(+sp.value*0.85); }
+      stats.innerHTML=`<span class="pill blue">dist: ${Object.keys(N).map(k=>k+'='+(dist[k]===Infinity?'∞':dist[k])).join(', ')}</span>`; }
+    st.innerHTML=`🛰️ Dijkstra done — shortest distances from 0: <span class="k">${Object.keys(N).map(k=>dist[k]).join(', ')}</span>!`; ANIM=false; celebrate(cont);
+  }
+  $('#djPlay').onclick=play; $('#djReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

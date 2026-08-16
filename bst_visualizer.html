@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Binary Search Trees — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11.5px; font-weight:600; padding:5px 9px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .treewrap{display:flex; justify-content:center; margin:16px 0; overflow-x:auto}
+  svg.tree{max-width:100%; height:auto}
+  .tnode circle{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.35s}
+  .tnode.active circle{fill:#3a3620; stroke:var(--mid); stroke-width:4}
+  .tnode.active2 circle{fill:#3a1d2a; stroke:var(--accent2); stroke-width:4}
+  .tnode.visited circle{fill:#22345f; stroke:var(--accent)}
+  .tnode.done circle{fill:#0d3b30; stroke:var(--found); stroke-width:3.5}
+  .tnode.bad circle{fill:#3a1d2a; stroke:var(--hi); stroke-width:4}
+  .tnode.faded circle{opacity:.2} .tnode.faded text{opacity:.25}
+  .tnode text{fill:var(--ink); font-weight:700; font-size:15px; text-anchor:middle; dominant-baseline:central}
+  .tnode text.tlab{fill:var(--mid); font-size:11px; font-weight:800}
+  .tedge{stroke:#2c3d6e; stroke-width:2.5; transition:.35s}
+  .tedge.path{stroke:var(--found); stroke-width:4}
+
+  .cellrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:16px 0; min-height:56px}
+  .cell{position:relative; min-width:46px; height:46px; padding:0 8px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:15px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .35s}
+  .cell.mid{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.45)}
+  .cell.lo{border-color:var(--lo); box-shadow:0 0 0 3px rgba(67,97,238,.4)}
+  .cell.hi{border-color:var(--hi); box-shadow:0 0 0 3px rgba(247,37,133,.4)}
+  .cell.found{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.5)}
+  .cell.empty{color:var(--muted); font-style:italic; background:#141d3a}
+  .cell .ptr{position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font-size:11px; font-weight:800; color:var(--accent); background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 6px}
+  .qlabel{text-align:center; color:var(--accent); font-weight:800; font-size:13px; margin:6px 0 2px}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Binary Search Trees — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch BSTs search, insert, delete, and self-check as the ordering property lights up the path. Built so every BST pattern sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#whatbst">🌳 What is a BST</a>
+  <a href="#searchbst">🔍 Search</a>
+  <a href="#insertbst">➕ Insert</a>
+  <a href="#deletebst">➖ Delete</a>
+  <a href="#deleteimpl">🛠️ Delete Impl</a>
+  <a href="#kthsmall">🔢 Kth Smallest</a>
+  <a href="#checkbst1">✅ Is BST? I</a>
+  <a href="#checkbst2">✅ Is BST? II</a>
+  <a href="#checkbst3">✅ Is BST? III</a>
+  <a href="#sortedarray">⚖️ From Sorted Array</a>
+  <a href="#largestbst">🌲 Largest BST</a>
+  <a href="#reconbst">🧩 Reconstruct</a>
+  <a href="#iter1">▶️ Iterator I</a>
+  <a href="#iter2">⏩ Iterator II</a>
+  <a href="#pairsum">👥 Pair Sum</a>
+  <a href="#lcabst">🔗 LCA</a>
+  <a href="#recover1">🔧 Recovery I</a>
+  <a href="#recover2">🔧 Recovery II</a>
+</nav>
+
+<main>
+
+  <!-- WHAT IS BST -->
+  <section id="whatbst">
+    <h2>🌳 What is a BST? <span class="badge">Ordering rule</span></h2>
+    <p class="lead">A Binary Search Tree keeps everything <b>sorted</b>: for every node, left subtree &lt; node &lt; right subtree.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A sorted filing cabinet:</span> smaller keys always go left, larger go right — at <b>every</b> node, recursively. This one rule makes search, insert, and delete all O(h), and an in-order walk spits out the values in sorted order.</div>
+      <div class="steps-flow"><span class="chip">left subtree &lt; node</span><span class="arrow">·</span><span class="chip">right subtree &gt; node</span><span class="arrow">·</span><span class="chip">inorder = sorted</span></div>
+      <div class="oneliner">🔒 Keep forever: "Left smaller, right larger, everywhere — so inorder is sorted."</div>
+    </div>
+    <div class="treewrap"><svg class="tree" id="wbSvg"></svg></div>
+    <div class="qlabel">Inorder (sorted)</div>
+    <div class="cellrow" id="wbRow"></div>
+    <div class="status" id="wbStatus">Press play to see the sorted inorder walk.</div>
+    <div class="controls"><button class="btn" id="wbPlay">▶ Show Order</button><button class="btn ghost" id="wbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="wbSpeed" min="200" max="2000" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(h) operations — O(log n) if balanced, O(n) if degenerate (a sorted-insert chain). Balancing (AVL/Red-Black) keeps h ≈ log n.</div></div>
+    <pre><code><span class="cm">// BST property for every node:</span>
+all(left) &lt; node.val &lt; all(right)</code></pre>
+  </section>
+
+  <!-- SEARCH -->
+  <section id="searchbst">
+    <h2>🔍 Search in a BST <span class="badge">O(h)</span></h2>
+    <p class="lead">Compare with the node and go left or right — each step discards half the tree.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Binary search on a tree:</span> at each node, if the target is smaller go left, larger go right, equal → found. The ordering guarantees you never need to look at the other side.</div>
+      <div class="oneliner">🔒 Keep forever: "Smaller → left, larger → right, equal → found. Half the tree gone each step."</div>
+    </div>
+    <div class="note">Search for <b>7</b>.</div>
+    <div class="treewrap"><svg class="tree" id="seSvg"></svg></div>
+    <div class="status" id="seStatus">Press play to search for 7.</div>
+    <div class="controls"><button class="btn" id="sePlay">▶ Search 7</button><button class="btn ghost" id="seReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="seSpeed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(h). No backtracking — the comparison alone decides the direction.</div></div>
+    <pre><code><span class="kw">while</span>(n!=null){ <span class="kw">if</span>(t==n.val) <span class="kw">return</span> n; n = (t&lt;n.val)? n.left : n.right; }</code></pre>
+  </section>
+
+  <!-- INSERT -->
+  <section id="insertbst">
+    <h2>➕ Insert into a BST <span class="badge">Attach at leaf</span></h2>
+    <p class="lead">Walk down as if searching; when you fall off the tree, attach the new node there.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Follow the search to a gap:</span> the value's correct spot is exactly where a search for it would end (a null child). Walk left/right by comparison until you hit that empty slot, then hang the new leaf.</div>
+      <div class="oneliner">🔒 Keep forever: "Insert = search until null, then attach the new leaf there."</div>
+    </div>
+    <div class="note">Insert <b>5</b>.</div>
+    <div class="treewrap"><svg class="tree" id="inSvg"></svg></div>
+    <div class="status" id="inStatus">Press play to insert 5.</div>
+    <div class="controls"><button class="btn" id="inPlay">▶ Insert 5</button><button class="btn ghost" id="inReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="inSpeed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> new values always become leaves. Insert order shapes the tree — sorted input makes it degenerate.</div></div>
+    <pre><code>Node insert(Node n, <span class="kw">int</span> x){
+  <span class="kw">if</span>(n==null) <span class="kw">return</span> <span class="kw">new</span> Node(x);
+  <span class="kw">if</span>(x&lt;n.val) n.left=insert(n.left,x); <span class="kw">else</span> n.right=insert(n.right,x);
+  <span class="kw">return</span> n;
+}</code></pre>
+  </section>
+
+  <!-- DELETE -->
+  <section id="deletebst">
+    <h2>➖ Delete from a BST <span class="badge">Three cases</span></h2>
+    <p class="lead">Deleting a node depends on its children — leaf, one child, or two children.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Fill the hole in order:</span> a leaf just vanishes. A one-child node is replaced by that child. A two-child node is replaced by its <b>inorder successor</b> (the smallest value in its right subtree) — the only value that preserves the ordering — then that successor is removed from below.</div>
+      <div class="steps-flow"><span class="chip">leaf → remove</span><span class="arrow">·</span><span class="chip">one child → replace with child</span><span class="arrow">·</span><span class="chip">two children → successor</span></div>
+      <div class="oneliner">🔒 Keep forever: "Two children? Replace with the inorder successor (min of the right subtree)."</div>
+    </div>
+    <div class="note">Delete node <b>3</b> (has two children) → replaced by successor <b>4</b>.</div>
+    <div class="treewrap"><svg class="tree" id="deSvg"></svg></div>
+    <div class="status" id="deStatus">Press play to delete node 3.</div>
+    <div class="controls"><button class="btn" id="dePlay">▶ Delete 3</button><button class="btn ghost" id="deReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="deSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the inorder successor is the leftmost node of the right subtree — it has no left child, so removing it is easy.</div></div>
+    <pre><code><span class="cm">// two-child case:</span>
+succ = min(node.right); node.val = succ.val; node.right = delete(node.right, succ.val);</code></pre>
+  </section>
+
+  <!-- DELETE IMPL -->
+  <section id="deleteimpl">
+    <h2>🛠️ Implementation of BST Delete <span class="badge">All cases</span></h2>
+    <p class="lead">The full recursive delete: find the node, then handle each of the three cases in code.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One clean recursion:</span> recurse left/right to find the node. Once found, if it has ≤ 1 child return the other child directly; otherwise copy the successor's value in and recursively delete the successor. The return value re-links parents automatically.</div>
+      <div class="oneliner">🔒 Keep forever: "Return the replacement subtree up the recursion — parents relink themselves."</div>
+    </div>
+    <div class="note">Delete a leaf (1), a one-child node (10), then a two-child node (6).</div>
+    <div class="treewrap"><svg class="tree" id="diSvg"></svg></div>
+    <div class="status" id="diStatus">Press play to run all three delete cases.</div>
+    <div class="stats" id="diStats"></div>
+    <div class="controls"><button class="btn" id="diPlay">▶ Delete 1, 10, 6</button><button class="btn ghost" id="diReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="diSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> returning the (possibly new) subtree root from each recursive call is what makes the re-linking effortless.</div></div>
+    <pre><code>Node delete(Node n, <span class="kw">int</span> x){
+  <span class="kw">if</span>(n==null) <span class="kw">return</span> null;
+  <span class="kw">if</span>(x&lt;n.val) n.left=delete(n.left,x);
+  <span class="kw">else if</span>(x&gt;n.val) n.right=delete(n.right,x);
+  <span class="kw">else</span> {
+    <span class="kw">if</span>(n.left==null) <span class="kw">return</span> n.right;
+    <span class="kw">if</span>(n.right==null) <span class="kw">return</span> n.left;
+    Node s=min(n.right); n.val=s.val; n.right=delete(n.right,s.val);
+  }
+  <span class="kw">return</span> n;
+}</code></pre>
+  </section>
+
+  <!-- KTH SMALLEST -->
+  <section id="kthsmall">
+    <h2>🔢 Kth Smallest Node <span class="badge">Inorder count</span></h2>
+    <p class="lead">Inorder traversal visits values in sorted order — the k-th visited node is the k-th smallest.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Count while walking sorted:</span> do an inorder traversal and keep a counter. When the counter reaches k, you're standing on the answer — stop early. No need to finish the whole traversal.</div>
+      <div class="oneliner">🔒 Keep forever: "Inorder is sorted — the k-th node you visit is the k-th smallest."</div>
+    </div>
+    <div class="note">Find the <b>3rd</b> smallest.</div>
+    <div class="treewrap"><svg class="tree" id="ksSvg"></svg></div>
+    <div class="status" id="ksStatus">Press play to find the 3rd smallest.</div>
+    <div class="stats" id="ksStats"></div>
+    <div class="controls"><button class="btn" id="ksPlay">▶ Kth Smallest (k=3)</button><button class="btn ghost" id="ksReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ksSpeed" min="300" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> for the k-th <b>largest</b>, do a reverse inorder (right, node, left). Augmenting nodes with subtree size gives O(h).</div></div>
+    <pre><code><span class="kw">void</span> inorder(Node n){ <span class="kw">if</span>(n==null||done) <span class="kw">return</span>;
+  inorder(n.left); <span class="kw">if</span>(++count==k){ ans=n.val; done=<span class="kw">true</span>; <span class="kw">return</span>; } inorder(n.right); }</code></pre>
+  </section>
+
+  <!-- CHECK BST 1 -->
+  <section id="checkbst1">
+    <h2>✅ Is it a BST? I — Naive <span class="badge">O(n²)</span></h2>
+    <p class="lead">At each node, verify the whole left subtree is smaller and the whole right subtree is larger.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Check every subtree fully:</span> for each node, find the max of its left subtree and the min of its right subtree and confirm <code>maxLeft &lt; node &lt; minRight</code>. Correct, but scanning subtrees at every node is O(n²).</div>
+      <div class="oneliner">🔒 Keep forever: "maxLeft &lt; node &lt; minRight at every node — but recomputing min/max is O(n²)."</div>
+    </div>
+    <div class="treewrap"><svg class="tree" id="v1Svg"></svg></div>
+    <div class="status" id="v1Status">Press play to validate every node.</div>
+    <div class="stats" id="v1Stats"></div>
+    <div class="controls"><button class="btn" id="v1Play">▶ Validate (naive)</button><button class="btn ghost" id="v1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="v1Speed" min="200" max="2000" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> comparing only with immediate children is a classic bug — a grandchild can still violate the property.</div></div>
+    <pre><code><span class="kw">boolean</span> isBST(Node n){ <span class="kw">if</span>(n==null) <span class="kw">return</span> <span class="kw">true</span>;
+  <span class="kw">if</span>(max(n.left)&gt;=n.val || min(n.right)&lt;=n.val) <span class="kw">return</span> <span class="kw">false</span>;
+  <span class="kw">return</span> isBST(n.left) &amp;&amp; isBST(n.right); }</code></pre>
+  </section>
+
+  <!-- CHECK BST 2 -->
+  <section id="checkbst2">
+    <h2>✅ Is it a BST? II — Bounds <span class="badge">O(n)</span></h2>
+    <p class="lead">Pass a valid (min, max) range down; each node must fit its window.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Shrinking windows:</span> the root can be anything (−∞, +∞). Going left tightens the upper bound to the parent; going right raises the lower bound. If any node falls outside its window, it's not a BST. One pass, O(n).</div>
+      <div class="steps-flow"><span class="chip">node in (min, max)?</span><span class="arrow">→</span><span class="chip">left: max = node</span><span class="arrow">·</span><span class="chip">right: min = node</span></div>
+      <div class="oneliner">🔒 Keep forever: "Carry a (min, max) range down; every node must fit its window."</div>
+    </div>
+    <div class="treewrap"><svg class="tree" id="v2Svg"></svg></div>
+    <div class="status" id="v2Status">Press play. Each node checks its allowed range.</div>
+    <div class="stats" id="v2Stats"></div>
+    <div class="controls"><button class="btn" id="v2Play">▶ Validate (bounds)</button><button class="btn ghost" id="v2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="v2Speed" min="300" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> use strict inequalities (&lt;/&gt;) to reject duplicates, and long/±∞ bounds to avoid overflow at the extremes.</div></div>
+    <pre><code><span class="kw">boolean</span> valid(Node n, <span class="kw">long</span> min, <span class="kw">long</span> max){
+  <span class="kw">if</span>(n==null) <span class="kw">return</span> <span class="kw">true</span>;
+  <span class="kw">if</span>(n.val&lt;=min || n.val&gt;=max) <span class="kw">return</span> <span class="kw">false</span>;
+  <span class="kw">return</span> valid(n.left,min,n.val) &amp;&amp; valid(n.right,n.val,max);
+}</code></pre>
+  </section>
+
+  <!-- CHECK BST 3 -->
+  <section id="checkbst3">
+    <h2>✅ Is it a BST? III — Inorder <span class="badge">O(n)</span></h2>
+    <p class="lead">A tree is a BST iff its inorder traversal is strictly increasing.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sorted or bust:</span> since a BST's inorder is sorted, just walk inorder and compare each value to the previous one. The moment a value is ≤ its predecessor, the property breaks.</div>
+      <div class="oneliner">🔒 Keep forever: "Inorder must strictly increase — track prev and compare."</div>
+    </div>
+    <div class="treewrap"><svg class="tree" id="v3Svg"></svg></div>
+    <div class="qlabel">Inorder sequence</div>
+    <div class="cellrow" id="v3Row"></div>
+    <div class="status" id="v3Status">Press play. Inorder must keep increasing.</div>
+    <div class="stats" id="v3Stats"></div>
+    <div class="controls"><button class="btn" id="v3Play">▶ Validate (inorder)</button><button class="btn ghost" id="v3Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="v3Speed" min="300" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> you only need the previous value, not the whole list — O(1) extra space with a running <code>prev</code>.</div></div>
+    <pre><code>prev = -∞;
+inorder(n){ <span class="kw">if</span>(n==null) <span class="kw">return</span> <span class="kw">true</span>;
+  <span class="kw">if</span>(!inorder(n.left)) <span class="kw">return</span> <span class="kw">false</span>;
+  <span class="kw">if</span>(n.val&lt;=prev) <span class="kw">return</span> <span class="kw">false</span>; prev=n.val;
+  <span class="kw">return</span> inorder(n.right); }</code></pre>
+  </section>
+
+  <!-- FROM SORTED ARRAY -->
+  <section id="sortedarray">
+    <h2>⚖️ Build a Balanced BST from a Sorted Array <span class="badge">Divide</span></h2>
+    <p class="lead">Pick the middle element as the root — recursively — to build a perfectly height-balanced BST.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Middle first:</span> the middle of a sorted array makes a balanced root (equal halves left and right). Recurse on the left half for the left subtree and the right half for the right — the tree comes out with minimum height.</div>
+      <div class="steps-flow"><span class="chip">mid → root</span><span class="arrow">→</span><span class="chip">left half → left subtree</span><span class="arrow">·</span><span class="chip">right half → right subtree</span></div>
+      <div class="oneliner">🔒 Keep forever: "Middle element as root, recurse on halves → balanced BST (height log n)."</div>
+    </div>
+    <div class="note">Sorted <code>[1,3,4,6,7,8,10,13,14]</code> → balanced BST.</div>
+    <div class="cellrow" id="saRow"></div>
+    <div class="treewrap"><svg class="tree" id="saSvg"></svg></div>
+    <div class="status" id="saStatus">Press play to build the balanced BST.</div>
+    <div class="controls"><button class="btn" id="saPlay">▶ Build Balanced BST</button><button class="btn ghost" id="saReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="saSpeed" min="300" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n). The sorted array acts as the inorder; choosing the middle balances it — height becomes ⌈log₂(n+1)⌉.</div></div>
+    <pre><code>Node build(<span class="kw">int</span> lo, <span class="kw">int</span> hi){
+  <span class="kw">if</span>(lo&gt;hi) <span class="kw">return</span> null; <span class="kw">int</span> mid=(lo+hi)/<span class="num">2</span>;
+  Node n=<span class="kw">new</span> Node(a[mid]);
+  n.left=build(lo,mid-<span class="num">1</span>); n.right=build(mid+<span class="num">1</span>,hi);
+  <span class="kw">return</span> n;
+}</code></pre>
+  </section>
+
+  <!-- LARGEST BST -->
+  <section id="largestbst">
+    <h2>🌲 Largest BST in a Binary Tree <span class="badge">Post-order info</span></h2>
+    <p class="lead">Find the biggest subtree that happens to be a valid BST — bubble up (isBST, size, min, max).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Ask each subtree to report:</span> post-order, every node returns whether its subtree is a BST, its size, and its min/max. A node forms a BST only if both children are BSTs and <code>maxLeft &lt; node &lt; minRight</code>. Track the largest valid size seen.</div>
+      <div class="steps-flow"><span class="chip">children both BST?</span><span class="arrow">·</span><span class="chip">maxL &lt; node &lt; minR?</span><span class="arrow">→</span><span class="chip">size = L+R+1</span></div>
+      <div class="oneliner">🔒 Keep forever: "Return (isBST, size, min, max) up; combine only when the node bridges valid BST children."</div>
+    </div>
+    <div class="note">This tree isn't fully a BST — find its largest BST subtree.</div>
+    <div class="treewrap"><svg class="tree" id="lbSvg"></svg></div>
+    <div class="status" id="lbStatus">Press play to find the largest BST subtree.</div>
+    <div class="stats" id="lbStats"></div>
+    <div class="controls"><button class="btn" id="lbPlay">▶ Largest BST</button><button class="btn ghost" id="lbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lbSpeed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n) — a single post-order pass carries all the info up. The naive "check BST at every node" is O(n²).</div></div>
+    <pre><code><span class="cm">// returns {isBST, size, min, max}</span>
+<span class="kw">if</span>(L.isBST &amp;&amp; R.isBST &amp;&amp; L.max&lt;n.val &amp;&amp; n.val&lt;R.min)
+  <span class="kw">return</span> {<span class="kw">true</span>, L.size+R.size+<span class="num">1</span>, min(L.min,n.val), max(R.max,n.val)};</code></pre>
+  </section>
+
+  <!-- RECONSTRUCT -->
+  <section id="reconbst">
+    <h2>🧩 Reconstruct a BST from Preorder <span class="badge">Bounds</span></h2>
+    <p class="lead">A BST's preorder alone rebuilds it — each value fits a valid range as you descend.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Order removes ambiguity:</span> scan preorder; the next value becomes a node only if it fits the current upper bound. Descending left tightens the bound to the parent; the recursion places every value in its unique legal spot — no second traversal needed.</div>
+      <div class="oneliner">🔒 Keep forever: "BST preorder + a running bound rebuilds the tree — inorder is implied (it's sorted)."</div>
+    </div>
+    <div class="note">preorder = <code>[8, 3, 1, 6, 10, 14]</code></div>
+    <div class="cellrow" id="rbRow"></div>
+    <div class="treewrap"><svg class="tree" id="rbSvg"></svg></div>
+    <div class="status" id="rbStatus">Press play to rebuild the BST from its preorder.</div>
+    <div class="controls"><button class="btn" id="rbPlay">▶ Reconstruct</button><button class="btn ghost" id="rbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rbSpeed" min="300" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n) with the bound trick. Postorder or level-order of a BST also uniquely rebuild it.</div></div>
+    <pre><code><span class="kw">int</span> idx=<span class="num">0</span>;
+Node build(<span class="kw">int</span> bound){
+  <span class="kw">if</span>(idx==n || pre[idx]&gt;bound) <span class="kw">return</span> null;
+  Node node=<span class="kw">new</span> Node(pre[idx++]);
+  node.left=build(node.val); node.right=build(bound);
+  <span class="kw">return</span> node;
+}</code></pre>
+  </section>
+
+  <!-- ITERATOR 1 -->
+  <section id="iter1">
+    <h2>▶️ BST Iterator I — Controlled Stack <span class="badge">O(h) space</span></h2>
+    <p class="lead">Emit inorder values on demand with <code>next()</code> / <code>hasNext()</code>, using a stack of pending nodes.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pause the inorder walk:</span> the constructor pushes the leftmost path. Each <code>next()</code> pops the top (the next smallest), then pushes the leftmost path of its right child. Only the current spine is stored → O(h) space, amortized O(1) per call.</div>
+      <div class="steps-flow"><span class="chip">push all lefts</span><span class="arrow">→</span><span class="chip">next: pop &amp; return</span><span class="arrow">→</span><span class="chip">push lefts of its right</span></div>
+      <div class="oneliner">🔒 Keep forever: "Store only the left spine; next() pops, then pushes the right child's left spine."</div>
+    </div>
+    <div class="treewrap"><svg class="tree" id="i1Svg"></svg></div>
+    <div class="qlabel">Stack</div>
+    <div class="cellrow" id="i1Stack"></div>
+    <div class="qlabel">next() outputs</div>
+    <div class="cellrow" id="i1Out"></div>
+    <div class="status" id="i1Status">Press play to call next() across the whole tree.</div>
+    <div class="controls"><button class="btn" id="i1Play">▶ Run Iterator</button><button class="btn ghost" id="i1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="i1Speed" min="300" max="2400" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(h) space, not O(n). Perfect when you may stop early and don't want to materialize the whole inorder.</div></div>
+    <pre><code>next(){ Node n=st.pop(); <span class="kw">for</span>(Node c=n.right;c!=null;c=c.left) st.push(c); <span class="kw">return</span> n.val; }
+hasNext(){ <span class="kw">return</span> !st.isEmpty(); }</code></pre>
+  </section>
+
+  <!-- ITERATOR 2 -->
+  <section id="iter2">
+    <h2>⏩ BST Iterator II — Flattened Array <span class="badge">O(n) space</span></h2>
+    <p class="lead">Precompute the full inorder into an array; <code>next()</code> is just an index step.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Flatten once, read fast:</span> do one inorder traversal up front into a list, then keep a pointer. Every <code>next()</code> is a trivial O(1) array read. Simpler code, but O(n) memory even if you stop early.</div>
+      <div class="oneliner">🔒 Keep forever: "Precompute inorder into an array; next() = arr[i++]. Simple, O(n) space."</div>
+    </div>
+    <div class="treewrap"><svg class="tree" id="i2Svg"></svg></div>
+    <div class="qlabel">Flattened inorder</div>
+    <div class="cellrow" id="i2Row"></div>
+    <div class="status" id="i2Status">Press play. next() walks the flattened array.</div>
+    <div class="controls"><button class="btn" id="i2Play">▶ Run Iterator</button><button class="btn ghost" id="i2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="i2Speed" min="300" max="2400" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the trade-off — Iterator I (stack) is O(h) space &amp; lazy; Iterator II (array) is O(n) space but dead simple.</div></div>
+    <pre><code>List a = inorder(root);   <span class="cm">// precompute once</span>
+next(){ <span class="kw">return</span> a.get(i++); }
+hasNext(){ <span class="kw">return</span> i &lt; a.size(); }</code></pre>
+  </section>
+
+  <!-- PAIR SUM -->
+  <section id="pairsum">
+    <h2>👥 Pair with Given Sum in a BST <span class="badge">Sorted 2-ptr</span></h2>
+    <p class="lead">Two values summing to a target — walk the inorder (sorted) order from both ends.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two iterators, opposite directions:</span> a BST's inorder is sorted, so use a smallest-first and a largest-first iterator as two pointers. If the sum is too big, advance the high one down; too small, advance the low one up; equal → found.</div>
+      <div class="oneliner">🔒 Keep forever: "BST + two-pointer on the sorted inorder — converge from both ends."</div>
+    </div>
+    <div class="note">Find a pair summing to <b>13</b>.</div>
+    <div class="treewrap"><svg class="tree" id="psSvg"></svg></div>
+    <div class="qlabel">Inorder (sorted)</div>
+    <div class="cellrow" id="psRow"></div>
+    <div class="status" id="psStatus">Press play to find a pair summing to 13.</div>
+    <div class="controls"><button class="btn" id="psPlay">▶ Find Pair = 13</button><button class="btn ghost" id="psReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="psSpeed" min="300" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a hash set works too (O(n) space). The two-iterator approach is O(h) space and mirrors two-sum on a sorted array.</div></div>
+    <pre><code>l = smallest(); r = largest();
+<span class="kw">while</span>(l&lt;r){ s=l+r; <span class="kw">if</span>(s==T) <span class="kw">return</span> {l,r};
+  <span class="kw">else if</span>(s&lt;T) l=next(l); <span class="kw">else</span> r=prev(r); }</code></pre>
+  </section>
+
+  <!-- LCA -->
+  <section id="lcabst">
+    <h2>🔗 Lowest Common Ancestor in a BST <span class="badge">Value split</span></h2>
+    <p class="lead">Use the ordering: walk down until the two targets fall on opposite sides.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Where they part ways:</span> starting at the root, if both values are smaller go left, if both are larger go right. The first node where they split (one ≤ node ≤ other) is their lowest common ancestor. No recursion or extra storage needed.</div>
+      <div class="steps-flow"><span class="chip">both &lt; node → left</span><span class="arrow">·</span><span class="chip">both &gt; node → right</span><span class="arrow">·</span><span class="chip">split → LCA</span></div>
+      <div class="oneliner">🔒 Keep forever: "In a BST, the LCA is the first node where p and q fall on opposite sides."</div>
+    </div>
+    <div class="note">Find LCA(1, 7).</div>
+    <div class="treewrap"><svg class="tree" id="lcSvg"></svg></div>
+    <div class="status" id="lcStatus">Press play to find LCA(1, 7).</div>
+    <div class="stats" id="lcStats"></div>
+    <div class="controls"><button class="btn" id="lcPlay">▶ Find LCA</button><button class="btn ghost" id="lcReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lcSpeed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(h) time, O(1) space — far simpler than the general-tree LCA because values tell you the direction.</div></div>
+    <pre><code><span class="kw">while</span>(n!=null){
+  <span class="kw">if</span>(p&lt;n.val &amp;&amp; q&lt;n.val) n=n.left;
+  <span class="kw">else if</span>(p&gt;n.val &amp;&amp; q&gt;n.val) n=n.right;
+  <span class="kw">else</span> <span class="kw">return</span> n;   <span class="cm">// split point = LCA</span>
+}</code></pre>
+  </section>
+
+  <!-- RECOVERY 1 -->
+  <section id="recover1">
+    <h2>🔧 Recover a BST I — Inorder <span class="badge">Find swapped pair</span></h2>
+    <p class="lead">Two nodes were swapped by mistake — the inorder reveals exactly which two, so swap them back.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Spot the dips:</span> a correct BST's inorder is sorted. With two nodes swapped, the inorder has one or two "dips" (a value smaller than its predecessor). The <b>first</b> offender is the earlier dip's larger value; the <b>second</b> is the later dip's smaller value. Swap them and the tree is fixed.</div>
+      <div class="steps-flow"><span class="chip">walk inorder</span><span class="arrow">→</span><span class="chip">find first &amp; second out-of-order nodes</span><span class="arrow">→</span><span class="chip">swap their values</span></div>
+      <div class="oneliner">🔒 Keep forever: "Two swapped nodes = up to two inorder dips; swap the first-high with the second-low."</div>
+    </div>
+    <div class="note">Nodes <b>3</b> and <b>10</b> were swapped — inorder detects them.</div>
+    <div class="treewrap"><svg class="tree" id="r1Svg"></svg></div>
+    <div class="qlabel">Inorder (should be sorted)</div>
+    <div class="cellrow" id="r1Row"></div>
+    <div class="status" id="r1Status">Press play to detect and fix the swap.</div>
+    <div class="stats" id="r1Stats"></div>
+    <div class="controls"><button class="btn" id="r1Play">▶ Recover</button><button class="btn ghost" id="r1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="r1Speed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> if the two swapped nodes are adjacent in inorder, there's only <b>one</b> dip — handle that case (second = the dip's smaller value).</div></div>
+    <pre><code>inorder: <span class="kw">if</span>(prev!=null &amp;&amp; prev.val&gt;cur.val){
+  <span class="kw">if</span>(first==null) first=prev; second=cur; }
+prev=cur;
+<span class="cm">// finally: swap(first.val, second.val)</span></code></pre>
+  </section>
+
+  <!-- RECOVERY 2 -->
+  <section id="recover2">
+    <h2>🔧 Recover a BST II — Morris O(1) Space <span class="badge">No stack</span></h2>
+    <p class="lead">Same detection, but traverse inorder with <b>Morris threading</b> — constant extra space.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Threads instead of a stack:</span> Morris traversal temporarily links each node to its inorder predecessor, so you can walk inorder without recursion or a stack. Detect the same swapped pair on the fly, then swap back — all in O(1) extra space.</div>
+      <div class="steps-flow"><span class="chip">Morris inorder (O(1) space)</span><span class="arrow">→</span><span class="chip">detect the dips</span><span class="arrow">→</span><span class="chip">swap the two values</span></div>
+      <div class="oneliner">🔒 Keep forever: "Morris threading gives O(1)-space inorder — detect &amp; fix the swap without a stack."</div>
+    </div>
+    <div class="note">Same swapped tree — fixed with no extra memory.</div>
+    <div class="treewrap"><svg class="tree" id="r2Svg"></svg></div>
+    <div class="qlabel">Inorder (Morris)</div>
+    <div class="cellrow" id="r2Row"></div>
+    <div class="status" id="r2Status">Press play to recover in O(1) space.</div>
+    <div class="stats" id="r2Stats"></div>
+    <div class="controls"><button class="btn" id="r2Play">▶ Recover (Morris)</button><button class="btn ghost" id="r2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="r2Speed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Morris restores every temporary thread, leaving the tree structurally unchanged — only the two swapped values get corrected.</div></div>
+    <pre><code><span class="cm">// Morris inorder: thread node → its predecessor, walk with O(1) space</span>
+<span class="kw">while</span>(cur!=null){ <span class="kw">if</span>(cur.left==null){ check(cur); cur=cur.right; }
+  <span class="kw">else</span> { pred=rightmost(cur.left); <span class="kw">if</span>(pred.right==null){ pred.right=cur; cur=cur.left; }
+    <span class="kw">else</span> { pred.right=null; check(cur); cur=cur.right; } } }</code></pre>
+
+    <div class="note key">🏆 <b>BSTs mastered!</b> The ordering rule powers O(h) search/insert/delete · inorder gives sorted order (kth smallest, validation, recovery) · bounds &amp; post-order info validate and find the largest BST · divide-and-conquer builds balanced trees · iterators stream values lazily or eagerly · and value comparisons make LCA trivial. Picture left-small, right-large and no BST problem can surprise you. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Binary Search Trees — Animated Guide • Replay any animation, turn on 🎵 sound • Learn by watching the ordering 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.08 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*120,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- Tree helpers ---- */
+let NID=0;
+function node(v,l=null,r=null){ return {val:v,left:l,right:r,_id:NID++}; }
+function treeSVG(svgEl){
+  const xs=44, ys=66, r=17, pad=26;
+  return { render(root, opts={}){
+    if(!root){ svgEl.innerHTML=''; return; }
+    let idx=0, maxD=0;
+    (function dfs(n,d){ if(!n)return; dfs(n.left,d+1); n._x=idx++; n._y=d; maxD=Math.max(maxD,d); dfs(n.right,d+1); })(root,0);
+    const W=Math.max((idx-1)*xs+pad*2,80), H=maxD*ys+pad*2+16;
+    svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`); svgEl.setAttribute('width',W); svgEl.setAttribute('height',H);
+    const st=opts.states||{}, lab=opts.labels||{}, pathIds=opts.path?new Set(opts.path):null;
+    const px=n=>pad+n._x*xs, py=n=>pad+n._y*ys+8;
+    let s='';
+    (function edges(n){ if(!n)return; [n.left,n.right].forEach(c=>{ if(c){ const cl=(pathIds&&pathIds.has(n._id)&&pathIds.has(c._id))?'tedge path':'tedge'; s+=`<line x1="${px(n)}" y1="${py(n)}" x2="${px(c)}" y2="${py(c)}" class="${cl}"/>`; edges(c);} }); })(root);
+    (function nodes(n){ if(!n)return; nodes(n.left); s+=`<g class="tnode ${st[n._id]||''}"><circle cx="${px(n)}" cy="${py(n)}" r="${r}"/>`; if(lab[n._id]!=null) s+=`<text class="tlab" x="${px(n)}" y="${py(n)-r-8}">${lab[n._id]}</text>`; s+=`<text x="${px(n)}" y="${py(n)}">${n.val}</text></g>`; nodes(n.right); })(root);
+    svgEl.innerHTML=s;
+  } };
+}
+function bstFromValues(vals){ NID=0; let root=null; function ins(n,v){ if(!n) return node(v); if(v<n.val) n.left=ins(n.left,v); else n.right=ins(n.right,v); return n; } for(const v of vals) root=ins(root,v); return root; }
+function buildBST1(){ return bstFromValues([8,3,10,1,6,14,4,7,13]); }
+function inorderNodes(root){ const a=[]; (function dfs(n){ if(!n)return; dfs(n.left); a.push(n); dfs(n.right); })(root); return a; }
+function nodesOf(root){ const a=[]; (function dfs(n){ if(!n)return; a.push(n); dfs(n.left); dfs(n.right); })(root); return a; }
+function findNode(root,v){ return nodesOf(root).find(n=>n.val===v); }
+function rowCells(container, arr, opts={}){ container.innerHTML=''; if(!arr.length){ container.innerHTML='<div class="cell empty">(empty)</div>'; return; } arr.forEach((v,i)=>{ const c=document.createElement('div'); c.className='cell'+(opts.mid&&opts.mid.includes(i)?' mid':'')+(opts.lo&&opts.lo.includes(i)?' lo':'')+(opts.hiC&&opts.hiC.includes(i)?' hi':'')+(opts.done&&opts.done.has(i)?' found':''); c.innerHTML=`${v}${opts.ptr&&opts.ptr[i]!=null?`<span class="ptr">${opts.ptr[i]}</span>`:''}`; container.appendChild(c); }); }
+function bstDelete(root,v){ if(!root) return null; if(v<root.val) root.left=bstDelete(root.left,v); else if(v>root.val) root.right=bstDelete(root.right,v); else { if(!root.left) return root.right; if(!root.right) return root.left; let s=root.right; while(s.left) s=s.left; root.val=s.val; root.right=bstDelete(root.right,s.val); } return root; }
+function pathTo(root,val){ const path=[]; (function dfs(n){ if(!n) return false; path.push(n); if(n.val===val) return true; if(dfs(n.left)||dfs(n.right)) return true; path.pop(); return false; })(root); return path; }
+
+/* ================= 1. What is BST ================= */
+(function(){
+  const T=treeSVG($('#wbSvg')); let root=buildBST1(); const st=$('#wbStatus'); const sp=$('#wbSpeed');
+  function build(){ root=buildBST1(); T.render(root); rowCells($('#wbRow'),[]); st.textContent='Press play to see the sorted inorder walk.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const order=inorderNodes(root); const out=[]; const states={};
+    for(const n of order){ out.push(n.val); states[n._id]='done'; T.render(root,{states:{...states,[n._id]:'active'}}); rowCells($('#wbRow'),out.slice(),{done:new Set([out.length-1])}); st.innerHTML=`Inorder visits <span class="k">${n.val}</span>.`; tickSound(); await sleep(+sp.value); }
+    T.render(root,{states}); st.innerHTML='🌳 Inorder is sorted — that\'s the BST guarantee!'; ANIM=false; celebrate($('#wbSvg'));
+  }
+  $('#wbPlay').onclick=play; $('#wbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Search ================= */
+(function(){
+  const T=treeSVG($('#seSvg')); let root=buildBST1(); const st=$('#seStatus'); const sp=$('#seSpeed');
+  function build(){ root=buildBST1(); T.render(root); st.textContent='Press play to search for 7.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const t=7; let n=root; const states={};
+    while(n){ states[n._id]='active'; T.render(root,{states:{...states}}); if(t===n.val){ T.render(root,{states:{...states,[n._id]:'done'}}); st.innerHTML=`🔍 Found <span class="k">${t}</span>!`; ANIM=false; celebrate($('#seSvg')); return; } st.innerHTML=`${t} ${t<n.val?'&lt;':'&gt;'} ${n.val} → go ${t<n.val?'LEFT':'RIGHT'}.`; states[n._id]='visited'; tickSound(); await sleep(+sp.value); n = t<n.val? n.left : n.right; }
+    st.innerHTML='Not found.'; ANIM=false;
+  }
+  $('#sePlay').onclick=play; $('#seReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Insert ================= */
+(function(){
+  const T=treeSVG($('#inSvg')); let root=buildBST1(); const st=$('#inStatus'); const sp=$('#inSpeed');
+  function build(){ root=buildBST1(); T.render(root); st.textContent='Press play to insert 5.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const x=5; let n=root, parent=null, dir=''; const states={};
+    while(n){ states[n._id]='active'; T.render(root,{states:{...states}}); st.innerHTML=`${x} ${x<n.val?'&lt;':'&gt;'} ${n.val} → go ${x<n.val?'LEFT':'RIGHT'}.`; states[n._id]='visited'; tickSound(); await sleep(+sp.value); parent=n; dir=x<n.val?'left':'right'; n = x<n.val? n.left : n.right; }
+    const nn=node(x); parent[dir]=nn; T.render(root,{states:{...states,[nn._id]:'done'}}); st.innerHTML=`➕ Attached <span class="k">${x}</span> as the ${dir} child of ${parent.val}!`; ANIM=false; celebrate($('#inSvg'));
+  }
+  $('#inPlay').onclick=play; $('#inReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Delete ================= */
+(function(){
+  const T=treeSVG($('#deSvg')); let root=buildBST1(); const st=$('#deStatus'); const sp=$('#deSpeed');
+  function build(){ root=buildBST1(); T.render(root); st.textContent='Press play to delete node 3.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const target=findNode(root,3);
+    T.render(root,{states:{[target._id]:'active'}}); st.innerHTML='Delete <span class="k">3</span> — it has two children.'; tickSound(); await sleep(+sp.value);
+    let s=target.right; while(s.left) s=s.left;
+    T.render(root,{states:{[target._id]:'active',[s._id]:'active2'}}); st.innerHTML=`Inorder successor = min of right subtree = <span class="k">${s.val}</span>.`; await sleep(+sp.value);
+    root=bstDelete(root,3); T.render(root,{states:{}}); const moved=findNode(root,4); T.render(root,{states:moved?{[moved._id]:'done'}:{}}); st.innerHTML='➖ Node 3 replaced by successor 4 — BST intact!'; ANIM=false; celebrate($('#deSvg'));
+  }
+  $('#dePlay').onclick=play; $('#deReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. Delete implementation ================= */
+(function(){
+  const T=treeSVG($('#diSvg')); let root=buildBST1(); const st=$('#diStatus'); const sp=$('#diSpeed'); const stats=$('#diStats');
+  function build(){ root=buildBST1(); T.render(root); stats.innerHTML=''; st.textContent='Press play to run all three delete cases.'; }
+  build();
+  async function del(v,label){ const t=findNode(root,v); T.render(root,{states:{[t._id]:'active'}}); stats.innerHTML=`<span class="pill blue">${label}</span>`; st.innerHTML=`Delete ${v}: ${label}.`; tickSound(); await sleep(+sp.value); root=bstDelete(root,v); T.render(root); await sleep(+sp.value*0.7); }
+  async function play(){ if(ANIM)return; ANIM=true; build();
+    await del(1,'Case 1: leaf → just remove');
+    await del(10,'Case 2: one child → replace with child');
+    await del(6,'Case 3: two children → successor');
+    T.render(root); st.innerHTML='🛠️ All three delete cases handled — BST stays valid!'; ANIM=false; celebrate($('#diSvg'));
+  }
+  $('#diPlay').onclick=play; $('#diReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. Kth smallest ================= */
+(function(){
+  const T=treeSVG($('#ksSvg')); let root=buildBST1(); const st=$('#ksStatus'); const sp=$('#ksSpeed'); const stats=$('#ksStats'); const k=3;
+  function build(){ root=buildBST1(); T.render(root); stats.innerHTML=''; st.textContent='Press play to find the 3rd smallest.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const order=inorderNodes(root); const states={};
+    for(let i=0;i<order.length;i++){ const n=order[i]; states[n._id]='done'; T.render(root,{states:{...states,[n._id]:'active'}}); stats.innerHTML=`<span class="pill blue">count = ${i+1}</span>`; st.innerHTML=`Inorder #${i+1} → <span class="k">${n.val}</span>.`; tickSound(); await sleep(+sp.value); if(i+1===k){ T.render(root,{states:{...states,[n._id]:'done'}}); stats.innerHTML=`<span class="pill green">${k}rd smallest = ${n.val}</span>`; st.innerHTML=`🔢 The ${k}rd smallest is <span class="k">${n.val}</span> (stop early)!`; ANIM=false; celebrate($('#ksSvg')); return; } }
+    ANIM=false;
+  }
+  $('#ksPlay').onclick=play; $('#ksReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Check BST I (naive) ================= */
+(function(){
+  const T=treeSVG($('#v1Svg')); let root=buildBST1(); const st=$('#v1Status'); const sp=$('#v1Speed'); const stats=$('#v1Stats');
+  function subMax(n){ let m=-Infinity; (function dfs(x){ if(!x)return; m=Math.max(m,x.val); dfs(x.left); dfs(x.right); })(n); return m; }
+  function subMin(n){ let m=Infinity; (function dfs(x){ if(!x)return; m=Math.min(m,x.val); dfs(x.left); dfs(x.right); })(n); return m; }
+  function build(){ root=buildBST1(); T.render(root); stats.innerHTML=''; st.textContent='Press play to validate every node.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const states={}; let ok=true;
+    for(const n of nodesOf(root)){ const mxL=n.left?subMax(n.left):-Infinity, mnR=n.right?subMin(n.right):Infinity; const good=mxL<n.val&&n.val<mnR; if(!good)ok=false; states[n._id]=good?'done':'bad'; T.render(root,{states:{...states,[n._id]:'active'}}); st.innerHTML=`node ${n.val}: maxLeft=${mxL===-Infinity?'−∞':mxL} &lt; ${n.val} &lt; minRight=${mnR===Infinity?'+∞':mnR} → ${good?'ok ✓':'✗'}`; tickSound(); await sleep(+sp.value); }
+    T.render(root,{states}); stats.innerHTML=ok?'<span class="pill green">valid BST ✓</span>':'<span class="pill pink">not a BST</span>'; st.innerHTML=ok?'✅ Every node passed → it IS a BST (but O(n²))!':'✅ Violation found.'; ANIM=false; celebrate($('#v1Svg'));
+  }
+  $('#v1Play').onclick=play; $('#v1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. Check BST II (bounds) ================= */
+(function(){
+  const T=treeSVG($('#v2Svg')); let root=buildBST1(); const st=$('#v2Status'); const sp=$('#v2Speed'); const stats=$('#v2Stats');
+  function build(){ root=buildBST1(); T.render(root); stats.innerHTML=''; st.textContent='Press play. Each node checks its allowed range.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const states={}; const labels={}; let ok=true;
+    async function valid(n,min,max){ if(!n||!ok) return true; const good=n.val>min&&n.val<max; labels[n._id]=`(${min===-Infinity?'−∞':min},${max===Infinity?'+∞':max})`; states[n._id]=good?'active':'bad'; T.render(root,{states:{...states},labels}); st.innerHTML=`node ${n.val} must be in (${min===-Infinity?'−∞':min}, ${max===Infinity?'+∞':max}) → ${good?'ok ✓':'✗'}`; tickSound(); await sleep(+sp.value); if(!good){ok=false;return false;} states[n._id]='done'; return await valid(n.left,min,n.val) && await valid(n.right,n.val,max); }
+    await valid(root,-Infinity,Infinity); T.render(root,{states,labels}); stats.innerHTML=ok?'<span class="pill green">valid BST ✓ (O(n))</span>':'<span class="pill pink">not a BST</span>'; st.innerHTML=ok?'✅ All nodes fit their windows → valid BST in O(n)!':'✅ A node broke its range.'; ANIM=false; celebrate($('#v2Svg'));
+  }
+  $('#v2Play').onclick=play; $('#v2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. Check BST III (inorder) ================= */
+(function(){
+  const T=treeSVG($('#v3Svg')); let root=buildBST1(); const st=$('#v3Status'); const sp=$('#v3Speed'); const stats=$('#v3Stats');
+  function build(){ root=buildBST1(); T.render(root); rowCells($('#v3Row'),[]); stats.innerHTML=''; st.textContent='Press play. Inorder must keep increasing.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const order=inorderNodes(root); const out=[]; const states={}; let prev=-Infinity, ok=true;
+    for(const n of order){ const good=n.val>prev; if(!good)ok=false; out.push(n.val); states[n._id]=good?'done':'bad'; T.render(root,{states:{...states,[n._id]:'active'}}); rowCells($('#v3Row'),out.slice(),{done:new Set(out.map((_,i)=>i))}); st.innerHTML=`${n.val} ${good?'&gt;':'≤'} prev(${prev===-Infinity?'−∞':prev}) → ${good?'ok ✓':'✗'}`; tickSound(); await sleep(+sp.value); if(!good)break; prev=n.val; }
+    T.render(root,{states}); stats.innerHTML=ok?'<span class="pill green">strictly increasing ✓</span>':'<span class="pill pink">not sorted</span>'; st.innerHTML=ok?'✅ Inorder is strictly increasing → valid BST!':'✅ Inorder dipped → not a BST.'; ANIM=false; celebrate($('#v3Svg'));
+  }
+  $('#v3Play').onclick=play; $('#v3Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. From sorted array ================= */
+(function(){
+  const T=treeSVG($('#saSvg')); const arr=[1,3,4,6,7,8,10,13,14]; const st=$('#saStatus'); const sp=$('#saSpeed'); let root=null;
+  function buildBalanced(lo,hi){ if(lo>hi) return null; const mid=(lo+hi)>>1; const n=node(arr[mid]); n.left=buildBalanced(lo,mid-1); n.right=buildBalanced(mid+1,hi); return n; }
+  function build(){ NID=0; root=buildBalanced(0,arr.length-1); rowCells($('#saRow'),arr); T.render(root,{states:Object.fromEntries(nodesOf(root).map(n=>[n._id,'faded']))}); st.textContent='Press play to build the balanced BST.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const states=Object.fromEntries(nodesOf(root).map(n=>[n._id,'faded']));
+    const preo=[]; (function pre(n){ if(!n)return; preo.push(n); pre(n.left); pre(n.right); })(root);
+    for(const n of preo){ states[n._id]='active'; const mi=arr.indexOf(n.val); rowCells($('#saRow'),arr,{mid:[mi]}); T.render(root,{states:{...states}}); st.innerHTML=`Pick <span class="k">${n.val}</span> as a subtree root (middle of its range).`; tickSound(); await sleep(+sp.value); states[n._id]='done'; }
+    rowCells($('#saRow'),arr); T.render(root,{states}); st.innerHTML='⚖️ Balanced BST built — minimum height!'; ANIM=false; celebrate($('#saSvg'));
+  }
+  $('#saPlay').onclick=play; $('#saReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. Largest BST ================= */
+(function(){
+  const T=treeSVG($('#lbSvg')); let root; const st=$('#lbStatus'); const sp=$('#lbSpeed'); const stats=$('#lbStats');
+  function buildTree(){ NID=0; const n1=node(1),n8=node(8),n5=node(5,n1,n8); const n7=node(7); const n15=node(15,null,n7); return node(10,n5,n15); }
+  function build(){ root=buildTree(); T.render(root); stats.innerHTML=''; st.textContent='Press play to find the largest BST subtree.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const states={}; let best={size:0,node:null};
+    async function dfs(n){ if(!n) return {isBST:true,size:0,min:Infinity,max:-Infinity}; const L=await dfs(n.left), R=await dfs(n.right); const isB=L.isBST&&R.isBST&&L.max<n.val&&n.val<R.min; const res={isBST:isB,size:isB?L.size+R.size+1:0,min:Math.min(L.min,n.val),max:Math.max(R.max,n.val)};
+      states[n._id]=isB?'done':'bad'; T.render(root,{states:{...states,[n._id]:'active'},labels:isB?{[n._id]:'BST:'+res.size}:{[n._id]:'✗'}}); st.innerHTML=`node ${n.val}: ${isB?`valid BST of size ${res.size}`:'not a BST here'}.`; tickSound(); await sleep(+sp.value);
+      if(isB&&res.size>best.size){ best={size:res.size,node:n}; } return res; }
+    await dfs(root);
+    const ids=[]; (function collect(x){ if(!x)return; ids.push(x._id); collect(x.left); collect(x.right); })(best.node);
+    T.render(root,{states:Object.fromEntries(ids.map(id=>[id,'done']))}); stats.innerHTML=`<span class="pill green">largest BST size = ${best.size}</span>`; st.innerHTML=`🌲 Largest BST subtree is rooted at <span class="k">${best.node.val}</span>, size ${best.size}!`; ANIM=false; celebrate($('#lbSvg'));
+  }
+  $('#lbPlay').onclick=play; $('#lbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. Reconstruct from preorder ================= */
+(function(){
+  const T=treeSVG($('#rbSvg')); const pre=[8,3,1,6,10,14]; let root; const st=$('#rbStatus'); const sp=$('#rbSpeed');
+  function build(){ root=bstFromValues(pre); rowCells($('#rbRow'),pre); T.render(root,{states:Object.fromEntries(nodesOf(root).map(n=>[n._id,'faded']))}); st.textContent='Press play to rebuild the BST from its preorder.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const states=Object.fromEntries(nodesOf(root).map(n=>[n._id,'faded']));
+    for(let i=0;i<pre.length;i++){ const n=findNode(root,pre[i]); states[n._id]='active'; rowCells($('#rbRow'),pre,{mid:[i]}); T.render(root,{states:{...states}}); st.innerHTML=`Place <span class="k">${pre[i]}</span> in its valid range (bounds tighten as we descend).`; tickSound(); await sleep(+sp.value); states[n._id]='done'; }
+    rowCells($('#rbRow'),pre); T.render(root,{states}); st.innerHTML='🧩 BST rebuilt from preorder alone!'; ANIM=false; celebrate($('#rbSvg'));
+  }
+  $('#rbPlay').onclick=play; $('#rbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. Iterator I (stack) ================= */
+(function(){
+  const T=treeSVG($('#i1Svg')); let root=buildBST1(); const st=$('#i1Status'); const sp=$('#i1Speed');
+  function build(){ root=buildBST1(); T.render(root); rowCells($('#i1Stack'),[]); rowCells($('#i1Out'),[]); st.textContent='Press play to call next() across the whole tree.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const stack=[]; const out=[];
+    function pushLefts(n){ while(n){ stack.push(n); n=n.left; } }
+    pushLefts(root); rowCells($('#i1Stack'),stack.map(n=>n.val)); st.innerHTML='Constructor: push the leftmost spine.'; await sleep(+sp.value);
+    while(stack.length){ const n=stack.pop(); out.push(n.val); T.render(root,{states:{[n._id]:'active'}}); rowCells($('#i1Stack'),stack.map(x=>x.val)); rowCells($('#i1Out'),out.slice(),{done:new Set([out.length-1])}); st.innerHTML=`next() → <span class="k">${n.val}</span>; push left spine of its right.`; tickSound(); await sleep(+sp.value); if(n.right){ pushLefts(n.right); rowCells($('#i1Stack'),stack.map(x=>x.val)); await sleep(+sp.value*0.5); } }
+    T.render(root); st.innerHTML=`▶️ Streamed inorder: ${out.join(' ')} (O(h) space)!`; ANIM=false; celebrate($('#i1Out'));
+  }
+  $('#i1Play').onclick=play; $('#i1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 14. Iterator II (flatten) ================= */
+(function(){
+  const T=treeSVG($('#i2Svg')); let root=buildBST1(); const st=$('#i2Status'); const sp=$('#i2Speed');
+  function build(){ root=buildBST1(); T.render(root); rowCells($('#i2Row'),[]); st.textContent='Press play. next() walks the flattened array.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const order=inorderNodes(root); const vals=order.map(n=>n.val);
+    st.innerHTML='Precompute the full inorder into an array…'; rowCells($('#i2Row'),vals); await sleep(+sp.value);
+    for(let i=0;i<vals.length;i++){ T.render(root,{states:{[order[i]._id]:'active'}}); rowCells($('#i2Row'),vals,{mid:[i],done:new Set([...Array(i).keys()])}); st.innerHTML=`next() → arr[${i}] = <span class="k">${vals[i]}</span> (O(1)).`; tickSound(); await sleep(+sp.value); }
+    rowCells($('#i2Row'),vals,{done:new Set(vals.map((_,i)=>i))}); T.render(root); st.innerHTML='⏩ Simple O(1) next(), but O(n) space up front!'; ANIM=false; celebrate($('#i2Row'));
+  }
+  $('#i2Play').onclick=play; $('#i2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. Pair sum ================= */
+(function(){
+  const T=treeSVG($('#psSvg')); let root=buildBST1(); const st=$('#psStatus'); const sp=$('#psSpeed'); const target=13;
+  function build(){ root=buildBST1(); T.render(root); rowCells($('#psRow'),[]); st.textContent='Press play to find a pair summing to 13.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const order=inorderNodes(root); const vals=order.map(n=>n.val); rowCells($('#psRow'),vals); await sleep(+sp.value*0.6);
+    let l=0,r=vals.length-1;
+    while(l<r){ const s=vals[l]+vals[r]; rowCells($('#psRow'),vals,{ptr:{[l]:'l',[r]:'r'},mid:[l,r]}); T.render(root,{states:{[order[l]._id]:'active',[order[r]._id]:'active2'}}); st.innerHTML=`${vals[l]} + ${vals[r]} = <span class="k">${s}</span> vs ${target}`; tickSound(); await sleep(+sp.value);
+      if(s===target){ rowCells($('#psRow'),vals,{done:new Set([l,r])}); T.render(root,{states:{[order[l]._id]:'done',[order[r]._id]:'done'}}); st.innerHTML=`👥 Pair ${vals[l]} + ${vals[r]} = ${target}!`; ANIM=false; celebrate($('#psSvg')); return; }
+      else if(s<target){ st.innerHTML=`${s} &lt; ${target} → advance l.`; await sleep(+sp.value*0.4); l++; } else { st.innerHTML=`${s} &gt; ${target} → retreat r.`; await sleep(+sp.value*0.4); r--; } }
+    st.innerHTML='No pair found.'; ANIM=false;
+  }
+  $('#psPlay').onclick=play; $('#psReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 16. LCA in BST ================= */
+(function(){
+  const T=treeSVG($('#lcSvg')); let root=buildBST1(); const st=$('#lcStatus'); const sp=$('#lcSpeed'); const stats=$('#lcStats');
+  function build(){ root=buildBST1(); T.render(root); stats.innerHTML=''; st.textContent='Press play to find LCA(1, 7).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const p=1,q=7; let n=root; const states={};
+    const idP=findNode(root,p)._id, idQ=findNode(root,q)._id;
+    while(n){ states[n._id]='active'; T.render(root,{states:{...states,[idP]:'active2',[idQ]:'active2'}});
+      if(p<n.val&&q<n.val){ st.innerHTML=`both &lt; ${n.val} → go LEFT.`; states[n._id]='visited'; tickSound(); await sleep(+sp.value); n=n.left; }
+      else if(p>n.val&&q>n.val){ st.innerHTML=`both &gt; ${n.val} → go RIGHT.`; states[n._id]='visited'; tickSound(); await sleep(+sp.value); n=n.right; }
+      else { T.render(root,{states:{[n._id]:'done',[idP]:'active2',[idQ]:'active2'}}); stats.innerHTML=`<span class="pill green">LCA(${p},${q}) = ${n.val}</span>`; st.innerHTML=`🔗 ${p} and ${q} split at <span class="k">${n.val}</span> → that's the LCA!`; ANIM=false; celebrate($('#lcSvg')); return; } }
+    ANIM=false;
+  }
+  $('#lcPlay').onclick=play; $('#lcReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= Broken BST (swap 3 & 10 values) ================= */
+function buildBroken(){ const r=buildBST1(); const a=findNode(r,3), b=findNode(r,10); a.val=10; b.val=3; return r; }
+
+/* 17. Recovery I */
+(function(){
+  const T=treeSVG($('#r1Svg')); let root=buildBroken(); const st=$('#r1Status'); const sp=$('#r1Speed'); const stats=$('#r1Stats');
+  function build(){ root=buildBroken(); T.render(root); rowCells($('#r1Row'),[]); stats.innerHTML=''; st.textContent='Press play to detect and fix the swap.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const order=inorderNodes(root); const out=[]; const states={}; let prev=null, first=null, second=null;
+    for(const n of order){ out.push(n.val); const dip=prev&&prev.val>n.val; states[n._id]=dip?'bad':'done'; if(dip){ if(!first)first=prev; second=n; states[prev._id]='bad'; }
+      T.render(root,{states:{...states,[n._id]:'active'}}); rowCells($('#r1Row'),out.slice(),{done:new Set(out.map((_,i)=>i))}); st.innerHTML=`inorder ${n.val}${dip?` &lt; prev ${prev.val} → <b style="color:#ff9ecb">dip!</b>`:''}`; tickSound(); await sleep(+sp.value); prev=n; }
+    st.innerHTML=`Swapped nodes = <span class="k">${first.val}</span> and <span class="k">${second.val}</span> → swap them back.`; await sleep(+sp.value);
+    const t=first.val; first.val=second.val; second.val=t; T.render(root,{states:Object.fromEntries(inorderNodes(root).map(n=>[n._id,'done']))}); rowCells($('#r1Row'),inorderNodes(root).map(n=>n.val),{done:new Set(order.map((_,i)=>i))}); stats.innerHTML='<span class="pill green">recovered ✓</span>'; st.innerHTML='🔧 Swapped back → BST restored (inorder sorted again)!'; ANIM=false; celebrate($('#r1Svg'));
+  }
+  $('#r1Play').onclick=play; $('#r1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* 18. Recovery II (Morris concept) */
+(function(){
+  const T=treeSVG($('#r2Svg')); let root=buildBroken(); const st=$('#r2Status'); const sp=$('#r2Speed'); const stats=$('#r2Stats');
+  function build(){ root=buildBroken(); T.render(root); rowCells($('#r2Row'),[]); stats.innerHTML=''; st.textContent='Press play to recover in O(1) space.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const order=inorderNodes(root); const out=[]; const states={}; let prev=null, first=null, second=null;
+    st.innerHTML='Morris inorder: thread each node to its predecessor (no stack)…'; await sleep(+sp.value);
+    for(const n of order){ out.push(n.val); const dip=prev&&prev.val>n.val; states[n._id]=dip?'bad':'done'; if(dip){ if(!first)first=prev; second=n; states[prev._id]='bad'; }
+      T.render(root,{states:{...states,[n._id]:'active'}}); rowCells($('#r2Row'),out.slice(),{done:new Set(out.map((_,i)=>i))}); st.innerHTML=`Morris visit ${n.val}${dip?` &lt; ${prev.val} → dip!`:''} (O(1) space)`; tickSound(); await sleep(+sp.value); prev=n; }
+    st.innerHTML=`Detected <span class="k">${first.val}</span> &amp; <span class="k">${second.val}</span> with no extra memory → swap.`; await sleep(+sp.value);
+    const t=first.val; first.val=second.val; second.val=t; T.render(root,{states:Object.fromEntries(inorderNodes(root).map(n=>[n._id,'done']))}); rowCells($('#r2Row'),inorderNodes(root).map(n=>n.val),{done:new Set(order.map((_,i)=>i))}); stats.innerHTML='<span class="pill green">recovered · O(1) space ✓</span>'; st.innerHTML='🔧 Recovered with Morris threading — no stack, no recursion!'; ANIM=false; celebrate($('#r2Svg'));
+  }
+  $('#r2Play').onclick=play; $('#r2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tries — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12px; font-weight:600; padding:6px 11px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .triewrap{overflow-x:auto; display:flex; justify-content:center; margin:14px 0; padding:6px}
+  .triesvg{display:block}
+  .triesvg .tedge{stroke:#2c3d6e; stroke-width:3; transition:.3s}
+  .triesvg .tedge.path{stroke:var(--accent); stroke-width:4.5}
+  .triesvg .tedge.new{stroke:var(--found); stroke-width:4}
+  .triesvg .tedge.del{stroke:var(--accent2); stroke-dasharray:5 4}
+  .triesvg .tnode{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .triesvg .tnode.tend{stroke:var(--found); stroke-width:4}
+  .triesvg .tnode.hl{fill:#3a3620; stroke:var(--mid); stroke-width:3.5}
+  .triesvg .tnode.path{fill:#22345f; stroke:var(--accent); stroke-width:3.5}
+  .triesvg .tnode.new{fill:#0d3b30; stroke:var(--found); stroke-width:4}
+  .triesvg .tnode.match{fill:#0d3b30; stroke:var(--found); stroke-width:4}
+  .triesvg .tnode.del{fill:#3a1d2a; stroke:var(--accent2); stroke-width:3.5}
+  .triesvg .tnode.fade{opacity:.22}
+  .triesvg .tnodelbl{fill:var(--ink); font-weight:800; font-size:15px; text-anchor:middle; dominant-baseline:central; font-family:'Consolas',monospace}
+  .triesvg .tnodelbl.fade{opacity:.22}
+  .triesvg .tcnt{fill:var(--mid); font-weight:800; font-size:11px; text-anchor:middle; dominant-baseline:central}
+
+  .arrrow{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; min-height:46px; margin:4px 0}
+  .wordrow{display:flex; gap:5px; align-items:center; justify-content:center; margin:5px 0}
+  .wordrow .tagw{min-width:64px; text-align:right; color:var(--muted); font-weight:700; font-size:13px}
+  .cell{position:relative; min-width:34px; height:38px; padding:0 5px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:15px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s; font-family:'Consolas',monospace}
+  .cell.scan{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.4)}
+  .cell.match{border-color:var(--found); background:#0d3b30}
+  .cell.rej{opacity:.32}
+  .cell.pre{border-color:var(--accent); background:#22345f}
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12.5px; margin:8px 0 2px}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Tries — Animated Visual Guide</h1>
+  <p><span class="pulse-dot"></span>Watch words share prefixes on a branching tree — insert, search, delete, unique-prefix, and bit-tries for max XOR. Built so tries stick for life.</p>
+</header>
+
+<nav>
+  <a href="#pm">🔎 Prefix Match</a>
+  <a href="#intro">🌱 Intro to Tries</a>
+  <a href="#search">🎯 Prefix Search</a>
+  <a href="#insert">➕ Insertion</a>
+  <a href="#delete">🗑️ Deletion</a>
+  <a href="#sup">🔑 Shortest Unique Prefix</a>
+  <a href="#binary">🔢 Binary Tries</a>
+  <a href="#xor">⚡ Maximum XOR</a>
+</nav>
+
+<main>
+
+  <!-- 1. PREFIX MATCH PROBLEM -->
+  <section id="pm">
+    <h2>🔎 The Prefix Match Problem <span class="badge">motivation</span></h2>
+    <p class="lead">Given a dictionary, answer many queries: <i>"how many / which words start with this prefix?"</i> Scanning every word every time is wasteful.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Why a trie?</span> To match prefix <code>"ap"</code> naively, you re-scan the first letters of <b>every</b> word — O(N·L) per query, and you keep re-walking the same shared letters. A <b>trie</b> stores each shared prefix <b>once</b> as a path, so a query just walks that path.</div>
+      <div class="steps-flow"><span class="chip">naive: check each word's prefix</span><span class="arrow">→</span><span class="chip">shared letters re-scanned</span><span class="arrow">→</span><span class="chip">trie shares prefixes → walk once</span></div>
+      <div class="oneliner">🔒 Keep forever: "Words that share a prefix should share a path — that's the whole idea of a trie."</div>
+    </div>
+    <div class="note">Dictionary <code>[apple, app, apt, bat, bad]</code>. Query prefix <b>"ap"</b>.</div>
+    <div id="pmList" style="margin:14px 0"></div>
+    <div class="status" id="pmStatus">Press play: naively test each word against the prefix "ap".</div>
+    <div class="stats" id="pmStats"></div>
+    <div class="controls"><button class="btn" id="pmPlay">▶ Match prefix "ap"</button><button class="btn ghost" id="pmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pmSpeed" min="200" max="1600" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the pain of re-scanning shared letters is exactly what a trie removes. Same prefix → same branch.</div></div>
+  </section>
+
+  <!-- 2. INTRODUCTION -->
+  <section id="intro">
+    <h2>🌱 Introduction to Tries <span class="badge">prefix tree</span></h2>
+    <p class="lead">A trie is a tree where each <b>edge</b> is a character and each root→node <b>path</b> spells a prefix. An <b>end flag</b> marks where a real word finishes.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One path per prefix:</span> insert <code>cat, car, card, dog</code>. "cat" and "car" share the branch <code>c → a</code>, then split at <code>t</code> vs <code>r</code>. Green-ringed nodes are word ends. No prefix is ever stored twice.</div>
+      <div class="steps-flow"><span class="chip">root = empty prefix</span><span class="arrow">→</span><span class="chip">edge = one character</span><span class="arrow">→</span><span class="chip">🟢 ring = end of a word</span></div>
+      <div class="oneliner">🔒 Keep forever: "A node = a prefix. Its children = the next possible letters. The ring = a word ends here."</div>
+    </div>
+    <div class="triewrap" id="itTrie"></div>
+    <div class="status" id="itStatus">Press play to grow the trie from cat, car, card, dog.</div>
+    <div class="stats" id="itStats"></div>
+    <div class="controls"><button class="btn" id="itPlay">▶ Build the trie</button><button class="btn ghost" id="itReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="itSpeed" min="250" max="2000" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> shared prefixes = shared paths. Green ring ≠ leaf — "car" ends inside the branch that continues to "card".</div></div>
+    <pre><code><span class="kw">class</span> <span class="fn">Node</span>{ Node[] child = <span class="kw">new</span> Node[<span class="num">26</span>]; <span class="kw">boolean</span> isEnd; }</code></pre>
+  </section>
+
+  <!-- 3. PREFIX SEARCH -->
+  <section id="search">
+    <h2>🎯 Prefix Search in a Trie <span class="badge">O(L)</span></h2>
+    <p class="lead">To find everything under a prefix, walk the prefix path once — then the whole subtree below is your answer set.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Walk then collect:</span> search <code>"car"</code> — follow <code>c → a → r</code>. If any letter is missing, no word has that prefix (return none). If you land safely, every word in that node's subtree starts with "car" → here <b>car, card</b>.</div>
+      <div class="steps-flow"><span class="chip">walk prefix chars</span><span class="arrow">→</span><span class="chip">missing edge → no match</span><span class="arrow">·</span><span class="chip">landed → subtree = answers</span></div>
+      <div class="oneliner">🔒 Keep forever: "Prefix search = walk the path; the subtree under the landing node is the answer set."</div>
+    </div>
+    <div class="note">Trie of <code>[cat, car, card, cup, dog]</code>. Search prefix <b>"car"</b>.</div>
+    <div class="triewrap" id="psTrie"></div>
+    <div class="status" id="psStatus">Press play to walk "car" and light up its subtree.</div>
+    <div class="stats" id="psStats"></div>
+    <div class="controls"><button class="btn" id="psPlay">▶ Search "car"</button><button class="btn ghost" id="psReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="psSpeed" min="250" max="2000" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "does word exist" needs <code>isEnd</code> at the landing node; "does prefix exist" just needs to arrive there.</div></div>
+  </section>
+
+  <!-- 4. INSERTION -->
+  <section id="insert">
+    <h2>➕ Insertion in a Trie <span class="badge">O(L)</span></h2>
+    <p class="lead">Walk the word letter by letter: reuse an edge if it exists, else create a new node. Mark the final node as an end.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Reuse or branch:</span> insert <code>to, tea, ten, in, inn</code>. When "ten" arrives, <code>t → e</code> already exists (from "tea"), so we <b>reuse</b> it and only add the new <code>n</code>. Green pops = newly created nodes; blue = reused.</div>
+      <div class="steps-flow"><span class="chip">for each char</span><span class="arrow">→</span><span class="chip">child exists? reuse</span><span class="arrow">·</span><span class="chip">else create node</span><span class="arrow">→</span><span class="chip">mark last isEnd</span></div>
+      <div class="oneliner">🔒 Keep forever: "Insert = descend, creating nodes only for letters that don't exist yet, then flag the end."</div>
+    </div>
+    <div class="triewrap" id="inTrie"></div>
+    <div class="status" id="inStatus">Press play to insert to, tea, ten, in, inn one by one.</div>
+    <div class="stats" id="inStats"></div>
+    <div class="controls"><button class="btn" id="inPlay">▶ Insert 5 words</button><button class="btn ghost" id="inReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="inSpeed" min="250" max="2000" value="780" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "inn" reuses all of "in" and only adds a second <code>n</code>. Nothing is duplicated — that's the memory win.</div></div>
+    <pre><code><span class="fn">insert</span>(word){ Node cur=root;
+  <span class="kw">for</span>(ch : word){ <span class="kw">if</span>(cur.child[ch]==<span class="kw">null</span>) cur.child[ch]=<span class="kw">new</span> Node(); cur=cur.child[ch]; }
+  cur.isEnd=<span class="kw">true</span>; }</code></pre>
+  </section>
+
+  <!-- 5. DELETION -->
+  <section id="delete">
+    <h2>🗑️ Deletion in a Trie <span class="badge">prune carefully</span></h2>
+    <p class="lead">Unmark the word's end flag, then prune dead nodes bottom-up — but <b>only</b> nodes that have no children and aren't another word's end.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Cut only dead branches:</span> from <code>[tea, ten, to]</code> delete <code>"tea"</code>. Clear the end flag on the final <code>a</code>. Now walk back up: <code>a</code> has no children → remove it. But <code>e</code> still has child <code>n</code> (for "ten") → stop. "ten" and "to" survive untouched.</div>
+      <div class="steps-flow"><span class="chip">clear isEnd on last node</span><span class="arrow">→</span><span class="chip">prune leaf if no child &amp; not end</span><span class="arrow">·</span><span class="chip">stop at a shared node</span></div>
+      <div class="oneliner">🔒 Keep forever: "Delete = unflag the end, then delete childless non-end nodes on the way up — stop at any fork."</div>
+    </div>
+    <div class="triewrap" id="dlTrie"></div>
+    <div class="status" id="dlStatus">Press play to delete "tea" while keeping ten and to.</div>
+    <div class="stats" id="dlStats"></div>
+    <div class="controls"><button class="btn" id="dlPlay">▶ Delete "tea"</button><button class="btn ghost" id="dlReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dlSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> never blindly delete the path — a node may be shared. Only prune if it's childless AND not an end.</div></div>
+  </section>
+
+  <!-- 6. SHORTEST UNIQUE PREFIX -->
+  <section id="sup">
+    <h2>🔑 Shortest Unique Prefixes <span class="badge">count on nodes</span></h2>
+    <p class="lead">Give each word the shortest prefix that no other word shares. Store a <b>pass-count</b> on every node; walk down until the count drops to 1.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Walk to the first "1":</span> insert words and increment a counter on each node visited. A count of 1 means only one word passes here — so the prefix so far is unique. For <code>[zebra, dog, duck, dove]</code>: <code>z</code>→"z", <code>d</code> is shared by 3 so descend.</div>
+      <div class="steps-flow"><span class="chip">insert, count passes per node</span><span class="arrow">→</span><span class="chip">walk word down</span><span class="arrow">→</span><span class="chip">stop when count == 1</span></div>
+      <div class="oneliner">🔒 Keep forever: "Shortest unique prefix = the path up to the first node with pass-count 1."</div>
+    </div>
+    <div class="note">Numbers on nodes = how many words pass through. Walk each word to its first "1".</div>
+    <div class="triewrap" id="supTrie"></div>
+    <div class="status" id="supStatus">Press play to derive each word's shortest unique prefix.</div>
+    <div class="stats" id="supStats"></div>
+    <div class="controls"><button class="btn" id="supPlay">▶ Find unique prefixes</button><button class="btn ghost" id="supReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="supSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the pass-count trick powers autocomplete disambiguation and "shortest distinguishing prefix" problems.</div></div>
+  </section>
+
+  <!-- 7. BINARY TRIES -->
+  <section id="binary">
+    <h2>🔢 Storing Binary Numbers in a Trie <span class="badge">bit-trie</span></h2>
+    <p class="lead">Treat each number as a fixed-width bit-string (MSB first) and insert it like a word over the alphabet {0, 1}. This "bit-trie" unlocks XOR tricks.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Numbers are just words of 0s and 1s:</span> insert <code>3, 10, 5</code> as 4-bit strings <code>0011, 1010, 0101</code>. Every node has at most two children (bit 0 / bit 1). Depth = number of bits. Now bitwise decisions become a top-down walk.</div>
+      <div class="steps-flow"><span class="chip">fix width (MSB→LSB)</span><span class="arrow">→</span><span class="chip">insert bits like chars</span><span class="arrow">→</span><span class="chip">each node ≤ 2 children</span></div>
+      <div class="oneliner">🔒 Keep forever: "A binary trie is a trie over {0,1} — go left for a 0 bit, right for a 1 bit."</div>
+    </div>
+    <div class="note">Insert <code>3 = 0011</code>, <code>10 = 1010</code>, <code>5 = 0101</code> (4 bits, MSB first).</div>
+    <div class="triewrap" id="bnTrie"></div>
+    <div class="status" id="bnStatus">Press play to insert three numbers as bit-paths.</div>
+    <div class="stats" id="bnStats"></div>
+    <div class="controls"><button class="btn" id="bnPlay">▶ Insert 3, 10, 5</button><button class="btn ghost" id="bnReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bnSpeed" min="250" max="2000" value="720" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> always use a <b>fixed</b> width so every number reaches the same depth — that's what makes bitwise comparisons align.</div></div>
+  </section>
+
+  <!-- 8. MAXIMUM XOR -->
+  <section id="xor">
+    <h2>⚡ Maximum XOR in an Array <span class="badge">greedy bit-trie</span></h2>
+    <p class="lead">Put all numbers in a bit-trie. For a number, greedily walk toward the <b>opposite</b> bit at each step — opposite bits make XOR's bit a 1, maximizing the result.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Chase opposite bits:</span> XOR is 1 exactly when bits differ. So from the top bit down, always try to go to the child holding the <b>opposite</b> bit; only fall back to the same bit if the opposite branch is empty. The path you take spells the best partner.</div>
+      <div class="steps-flow"><span class="chip">insert all numbers</span><span class="arrow">→</span><span class="chip">per number: prefer opposite bit</span><span class="arrow">→</span><span class="chip">track max XOR</span></div>
+      <div class="oneliner">🔒 Keep forever: "Max XOR = greedily grab the opposite bit at every level of the bit-trie."</div>
+    </div>
+    <div class="note">Array <code>[3, 10, 5, 25, 2, 8]</code> (5 bits). Querying <b>25 = 11001</b> for its best partner.</div>
+    <div class="triewrap" id="xrTrie"></div>
+    <div class="status" id="xrStatus">Press play to build the bit-trie and greedily maximize XOR for 25.</div>
+    <div class="stats" id="xrStats"></div>
+    <div class="controls"><button class="btn" id="xrPlay">▶ Max XOR (query 25)</button><button class="btn ghost" id="xrReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="xrSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> insert-then-query each number → overall max XOR in O(N·bits). Here the max pair is <b>25 ⊕ 5 = 28</b>.</div></div>
+    <pre><code><span class="fn">maxXor</span>(x){ Node cur=root; <span class="kw">int</span> res=<span class="num">0</span>;
+  <span class="kw">for</span>(b=BITS-<span class="num">1</span>; b&gt;=<span class="num">0</span>; b--){
+    <span class="kw">int</span> bit=(x&gt;&gt;b)&amp;<span class="num">1</span>, want=bit^<span class="num">1</span>;
+    <span class="kw">if</span>(cur.child[want]!=<span class="kw">null</span>){ res|=(<span class="num">1</span>&lt;&lt;b); cur=cur.child[want]; }
+    <span class="kw">else</span> cur=cur.child[bit];
+  } <span class="kw">return</span> res; }</code></pre>
+
+    <div class="note key">🏆 <b>Tries mastered!</b> Prefix match motivates them · a trie shares prefixes as paths · search walks a path · insert reuses-or-creates · delete prunes only dead nodes · pass-counts give shortest unique prefixes · bit-tries store numbers · and greedy opposite-bit walks solve maximum XOR. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Tries — Animated Guide • Replay any animation, turn on 🎵 sound • Watch prefixes share a single path 🌱</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.06 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ================= TRIE core ================= */
+let UID=0;
+function newNode(ch){ return {ch, children:{}, isEnd:false, id:++UID, cnt:0, _cls:'', _ecls:''}; }
+function tInsert(root,word){ let cur=root; for(const ch of word){ if(!cur.children[ch]) cur.children[ch]=newNode(ch); cur=cur.children[ch]; cur.cnt++; } cur.isEnd=true; }
+function buildTrie(words){ const r=newNode('•'); words.forEach(w=>tInsert(r,w)); return r; }
+function clearCls(root){ (function c(n){ n._cls=''; n._ecls=''; Object.values(n.children).forEach(c); })(root); }
+function childKeys(n){ return Object.keys(n.children).sort(); }
+
+function trieSVG(container, root, opt={}){
+  let leaf=0;
+  (function lay(n,d){ n._d=d; const ks=childKeys(n); if(!ks.length){ n._x=leaf++; } else { ks.forEach(k=>lay(n.children[k],d+1)); const xs=ks.map(k=>n.children[k]._x); n._x=(xs[0]+xs[xs.length-1])/2; } })(root,0);
+  const leaves=Math.max(leaf,1);
+  const maxD=(function md(n){ let m=n._d; Object.values(n.children).forEach(c=>m=Math.max(m,md(c))); return m; })(root);
+  const padX=30, padY=30, gapX=54, gapY=68;
+  const W=Math.max(padX*2+(leaves-1)*gapX, 160);
+  const H=padY*2+maxD*gapY+ (opt.showCnt?16:0);
+  const sx=x=>padX+x*gapX, sy=d=>padY+d*gapY;
+  let edges='', nodes='';
+  (function draw(n){ childKeys(n).forEach(k=>{ const c=n.children[k]; const cls=c._ecls||''; edges+=`<line class="tedge ${cls}" x1="${sx(n._x)}" y1="${sy(n._d)}" x2="${sx(c._x)}" y2="${sy(c._d)}"/>`; draw(c); }); })(root);
+  (function draw(n){ const cls=n._cls||''; const fade=cls.includes('fade')?'fade':''; const endCls=n.isEnd?'tend':'';
+    nodes+=`<circle class="tnode ${cls} ${endCls}" cx="${sx(n._x)}" cy="${sy(n._d)}" r="17"/>`;
+    nodes+=`<text class="tnodelbl ${fade}" x="${sx(n._x)}" y="${sy(n._d)}">${n===root?'•':n.ch}</text>`;
+    if(opt.showCnt && n!==root){ nodes+=`<text class="tcnt" x="${sx(n._x)+15}" y="${sy(n._d)-15}">${n.cnt}</text>`; }
+    Object.values(n.children).forEach(draw); })(root);
+  container.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="triesvg">${edges}${nodes}</svg>`;
+}
+function pathNodes(root,word){ const out=[root]; let cur=root; for(const ch of word){ if(!cur.children[ch]) return null; cur=cur.children[ch]; out.push(cur); } return out; }
+function wordsFrom(node,prefix,out){ if(node.isEnd) out.push(prefix); childKeys(node).forEach(k=>wordsFrom(node.children[k],prefix+k,out)); }
+function markSubtree(node,cls){ node._cls=cls; Object.values(node.children).forEach(c=>markSubtree(c,cls)); }
+
+/* ================= 1. Prefix match ================= */
+(function(){
+  const words=["apple","app","apt","bat","bad"], pre="ap"; const st=$('#pmStatus'), sp=$('#pmSpeed'), stats=$('#pmStats'), list=$('#pmList');
+  function render(states){ list.innerHTML=words.map((w,wi)=>{ const s=states[wi]||{}; const cells=[...w].map((ch,ci)=>{ let c='cell'; if(s.status==='rej')c+=' rej'; else if(s.status==='match'&&ci<pre.length)c+=' match'; else if(s.scan!==undefined&&ci<=s.scan&&ci<pre.length)c+=' scan'; else if(s.status==='match')c+=''; return `<div class="${c}">${ch}</div>`; }).join(''); return `<div class="wordrow"><span class="tagw">${s.mark||''}</span>${cells}</div>`; }).join(''); }
+  function build(){ render(words.map(()=>({}))); stats.innerHTML=''; st.textContent='Press play: naively test each word against the prefix "ap".'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const states=words.map(()=>({})); let matches=[];
+    for(let wi=0;wi<words.length;wi++){ const w=words[wi]; let ok=w.length>=pre.length;
+      for(let ci=0;ci<pre.length;ci++){ states[wi]={scan:ci}; render(states); tickSound(); st.innerHTML=`Word <span class="k">${w}</span>: compare '${w[ci]||'∅'}' vs prefix '${pre[ci]}'…`; await sleep(+sp.value); if(w[ci]!==pre[ci]){ ok=false; break; } }
+      states[wi]={status:ok?'match':'rej', mark:ok?'✅':'✕'}; render(states); if(ok){ matches.push(w); blip(700,0.1,'sine',0.1);} st.innerHTML=ok?`<span class="k">${w}</span> starts with "${pre}" ✓`:`<span class="k">${w}</span> rejected.`; stats.innerHTML=`<span class="pill green">matches: ${matches.join(', ')||'—'}</span>`; await sleep(+sp.value*0.7);
+    }
+    st.innerHTML=`🔎 ${matches.length} words match prefix "${pre}": <span class="k">${matches.join(', ')}</span>. A trie would walk "ap" just <b>once</b>!`; ANIM=false; celebrate(list);
+  }
+  $('#pmPlay').onclick=play; $('#pmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Intro (build) ================= */
+(function(){
+  const words=["cat","car","card","dog"]; const st=$('#itStatus'), sp=$('#itSpeed'), stats=$('#itStats'), cont=$('#itTrie');
+  function build(){ trieSVG(cont, newNode('•')); stats.innerHTML=''; st.textContent='Press play to grow the trie from cat, car, card, dog.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const root=newNode('•'); trieSVG(cont,root);
+    for(const w of words){ let cur=root;
+      for(const ch of w){ let created=false; if(!cur.children[ch]){ cur.children[ch]=newNode(ch); created=true; } cur=cur.children[ch]; clearCls(root); cur._cls=created?'new':'path'; trieSVG(cont,root); tickSound(); st.innerHTML=`Insert "${w}": ${created?`create node <span class="k">${ch}</span>`:`reuse <span class="k">${ch}</span>`}.`; await sleep(+sp.value); }
+      cur.isEnd=true; clearCls(root); cur._cls='match'; trieSVG(cont,root); blip(680,0.12,'sine',0.1); stats.innerHTML=`<span class="pill green">inserted: ${words.slice(0,words.indexOf(w)+1).join(', ')}</span>`; await sleep(+sp.value*0.8);
+    }
+    clearCls(root); trieSVG(cont,root); st.innerHTML=`🌱 Trie built! "cat" &amp; "car" share the <span class="k">c → a</span> branch; 🟢 rings mark the 4 word-ends.`; ANIM=false; celebrate(cont);
+  }
+  $('#itPlay').onclick=play; $('#itReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Prefix search ================= */
+(function(){
+  const words=["cat","car","card","cup","dog"], pre="car"; const st=$('#psStatus'), sp=$('#psSpeed'), stats=$('#psStats'), cont=$('#psTrie');
+  let root=buildTrie(words);
+  function build(){ root=buildTrie(words); clearCls(root); trieSVG(cont,root); stats.innerHTML=''; st.textContent='Press play to walk "car" and light up its subtree.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; clearCls(root); trieSVG(cont,root);
+    let cur=root; let acc='';
+    for(const ch of pre){ if(!cur.children[ch]){ st.innerHTML=`No edge '${ch}' — prefix "${pre}" absent!`; ANIM=false; return; } cur=cur.children[ch]; cur._ecls='path'; cur._cls='path'; acc+=ch; trieSVG(cont,root); tickSound(); st.innerHTML=`Walk '${ch}' → landed on prefix <span class="k">${acc}</span>.`; await sleep(+sp.value); }
+    st.innerHTML=`Reached "${pre}". Now every word in this subtree matches…`; await sleep(+sp.value); markSubtree(cur,'match'); trieSVG(cont,root);
+    const out=[]; wordsFrom(cur,pre,out); stats.innerHTML=`<span class="pill green">prefix "${pre}" → ${out.join(', ')}</span>`; st.innerHTML=`🎯 Prefix "${pre}" matches <span class="k">${out.join(', ')}</span> — one O(L) walk!`; ANIM=false; celebrate(cont);
+  }
+  $('#psPlay').onclick=play; $('#psReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Insertion ================= */
+(function(){
+  const words=["to","tea","ten","in","inn"]; const st=$('#inStatus'), sp=$('#inSpeed'), stats=$('#inStats'), cont=$('#inTrie');
+  function build(){ trieSVG(cont, newNode('•')); stats.innerHTML=''; st.textContent='Press play to insert to, tea, ten, in, inn one by one.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const root=newNode('•'); trieSVG(cont,root);
+    for(const w of words){ let cur=root, created=0, reused=0;
+      for(const ch of w){ let isNew=false; if(!cur.children[ch]){ cur.children[ch]=newNode(ch); isNew=true; created++; } else reused++; cur=cur.children[ch]; clearCls(root); cur._cls=isNew?'new':'path'; cur._ecls=isNew?'new':'path'; trieSVG(cont,root); tickSound(); st.innerHTML=`Insert "${w}": ${isNew?`<span class="k">new</span> node ${ch}`:`<span style="color:var(--accent)">reuse</span> ${ch}`}.`; await sleep(+sp.value); }
+      cur.isEnd=true; clearCls(root); cur._cls='match'; trieSVG(cont,root); blip(680,0.12,'sine',0.1); stats.innerHTML=`<span class="pill green">"${w}" → +${created} new, ${reused} reused</span>`; await sleep(+sp.value*0.8);
+    }
+    clearCls(root); trieSVG(cont,root); st.innerHTML=`➕ All inserted! "ten" reused <span class="k">t → e</span>, "inn" reused all of <span class="k">in</span> — nothing duplicated.`; ANIM=false; celebrate(cont);
+  }
+  $('#inPlay').onclick=play; $('#inReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. Deletion ================= */
+(function(){
+  const words=["tea","ten","to"], del="tea"; const st=$('#dlStatus'), sp=$('#dlSpeed'), stats=$('#dlStats'), cont=$('#dlTrie');
+  let root=buildTrie(words);
+  function build(){ root=buildTrie(words); clearCls(root); trieSVG(cont,root); stats.innerHTML=''; st.textContent='Press play to delete "tea" while keeping ten and to.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; clearCls(root); trieSVG(cont,root);
+    const path=pathNodes(root,del); if(!path){ st.textContent='word not found'; ANIM=false; return; }
+    for(let i=1;i<path.length;i++){ path[i]._cls='path'; path[i]._ecls='path'; trieSVG(cont,root); tickSound(); st.innerHTML=`Walk to '${path[i].ch}' along "${del}".`; await sleep(+sp.value); }
+    const last=path[path.length-1]; last.isEnd=false; clearCls(root); last._cls='hl'; trieSVG(cont,root); st.innerHTML=`Clear end-flag on final <span class="k">${last.ch}</span>. Now prune dead nodes upward…`; await sleep(+sp.value*1.1);
+    let removed=[];
+    for(let i=path.length-1;i>=1;i--){ const node=path[i], parent=path[i-1]; if(Object.keys(node.children).length===0 && !node.isEnd){ clearCls(root); node._cls='del'; node._ecls='del'; trieSVG(cont,root); blip(300,0.14,'sawtooth',0.08); st.innerHTML=`Node '${node.ch}' is childless &amp; not an end → remove it.`; await sleep(+sp.value); delete parent.children[node.ch]; removed.push(node.ch); clearCls(root); trieSVG(cont,root); await sleep(+sp.value*0.5); }
+      else { clearCls(root); node._cls='path'; trieSVG(cont,root); st.innerHTML=`Node '${node.ch}' is shared (has children or is an end) → <span class="k">stop</span>.`; await sleep(+sp.value); break; } }
+    clearCls(root); trieSVG(cont,root); const left=[]; wordsFrom(root,'',left); stats.innerHTML=`<span class="pill pink">removed nodes: ${removed.join(', ')||'—'}</span><span class="pill green">remaining: ${left.join(', ')}</span>`; st.innerHTML=`🗑️ Deleted "tea" (removed <span class="k">${removed.join(', ')}</span>). "ten" &amp; "to" survive — the shared "te" stayed!`; ANIM=false; celebrate(cont);
+  }
+  $('#dlPlay').onclick=play; $('#dlReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. Shortest unique prefix ================= */
+(function(){
+  const words=["zebra","dog","duck","dove"]; const st=$('#supStatus'), sp=$('#supSpeed'), stats=$('#supStats'), cont=$('#supTrie');
+  let root=buildTrie(words);
+  function build(){ root=buildTrie(words); clearCls(root); trieSVG(cont,root,{showCnt:true}); stats.innerHTML=''; st.textContent='Press play to derive each word\u2019s shortest unique prefix.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; clearCls(root); trieSVG(cont,root,{showCnt:true}); const results=[];
+    for(const w of words){ clearCls(root); let cur=root, acc='', done=false;
+      for(const ch of w){ cur=cur.children[ch]; acc+=ch; cur._cls='path'; cur._ecls='path'; trieSVG(cont,root,{showCnt:true}); tickSound(); st.innerHTML=`"${w}": at '${acc}', pass-count = <span class="k">${cur.cnt}</span>.`; await sleep(+sp.value); if(cur.cnt===1){ cur._cls='match'; trieSVG(cont,root,{showCnt:true}); done=true; break; } }
+      results.push(w+' → '+acc); blip(700,0.12,'sine',0.1); stats.innerHTML=`<span class="pill gold">${results.join(' &nbsp;|&nbsp; ')}</span>`; st.innerHTML=`Shortest unique prefix of "${w}" = <span class="k">${acc}</span> (first count-1 node).`; await sleep(+sp.value); }
+    clearCls(root); trieSVG(cont,root,{showCnt:true}); st.innerHTML=`🔑 Unique prefixes: <span class="k">zebra→z, dog→dog, duck→du, dove→dov</span>.`; ANIM=false; celebrate(cont);
+  }
+  $('#supPlay').onclick=play; $('#supReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Binary trie ================= */
+(function(){
+  const nums=[3,10,5], BITS=4; const st=$('#bnStatus'), sp=$('#bnSpeed'), stats=$('#bnStats'), cont=$('#bnTrie');
+  const bin=n=>n.toString(2).padStart(BITS,'0');
+  function build(){ trieSVG(cont, newNode('•')); stats.innerHTML=''; st.textContent='Press play to insert three numbers as bit-paths.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const root=newNode('•'); trieSVG(cont,root);
+    for(const num of nums){ const bits=bin(num); let cur=root;
+      for(const b of bits){ let isNew=false; if(!cur.children[b]){ cur.children[b]=newNode(b); isNew=true; } cur=cur.children[b]; clearCls(root); cur._cls=isNew?'new':'path'; cur._ecls=isNew?'new':'path'; trieSVG(cont,root); tickSound(); st.innerHTML=`Insert ${num} = <span class="k">${bits}</span>: bit '${b}'.`; await sleep(+sp.value); }
+      cur.isEnd=true; clearCls(root); cur._cls='match'; trieSVG(cont,root); blip(680,0.12,'sine',0.1); stats.innerHTML=`<span class="pill blue">${num} = ${bits}</span>`; await sleep(+sp.value*0.8); }
+    clearCls(root); trieSVG(cont,root); st.innerHTML=`🔢 Three numbers stored as 4-bit paths — every node has ≤ 2 children (0 / 1). Ready for XOR tricks!`; ANIM=false; celebrate(cont);
+  }
+  $('#bnPlay').onclick=play; $('#bnReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. Maximum XOR ================= */
+(function(){
+  const nums=[3,10,5,25,2,8], BITS=5, query=25; const st=$('#xrStatus'), sp=$('#xrSpeed'), stats=$('#xrStats'), cont=$('#xrTrie');
+  const bin=n=>n.toString(2).padStart(BITS,'0');
+  function buildBin(){ const r=newNode('•'); for(const num of nums){ let cur=r; for(const b of bin(num)){ if(!cur.children[b]) cur.children[b]=newNode(b); cur=cur.children[b]; } cur.isEnd=true; } return r; }
+  let root=buildBin();
+  function build(){ root=buildBin(); clearCls(root); trieSVG(cont,root); stats.innerHTML=''; st.textContent='Press play to build the bit-trie and greedily maximize XOR for 25.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; clearCls(root); trieSVG(cont,root);
+    st.innerHTML=`Bit-trie holds [${nums.join(', ')}]. Query <span class="k">25 = ${bin(query)}</span>, chasing opposite bits…`; await sleep(+sp.value);
+    let cur=root, comp=0;
+    for(let b=BITS-1;b>=0;b--){ const bit=(query>>b)&1, want=bit^1; let take; if(cur.children[want]){ take=want; } else take=String(bit); take=String(cur.children[want]?want:bit); cur=cur.children[take]; comp=(comp<<1)|Number(take); clearCls(root); cur._cls='path'; cur._ecls='path'; trieSVG(cont,root); tickSound(); st.innerHTML=`Bit ${b}: 25 has '${bit}', want opposite '${want}' → ${take==want?`<span style="color:var(--found)">took ${take}</span>`:`only '${take}' exists, took it`}.`; await sleep(+sp.value); }
+    const xor=query^comp; clearCls(root); let c2=root; for(const b of bin(comp)){ c2=c2.children[b]; c2._cls='match'; } trieSVG(cont,root);
+    stats.innerHTML=`<span class="pill blue">partner = ${comp} (${bin(comp)})</span><span class="pill green">25 ⊕ ${comp} = ${xor}</span>`; st.innerHTML=`⚡ Best partner for 25 is <span class="k">${comp}</span> → 25 ⊕ ${comp} = <span class="k">${xor}</span>, the array's maximum XOR!`; ANIM=false; celebrate(cont);
+  }
+  $('#xrPlay').onclick=play; $('#xrReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

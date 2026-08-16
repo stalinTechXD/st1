@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transmission Lines in Signal Integrity — Master It Forever</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel2: #1c2330;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --warn: #f0883e;
+    --danger: #f85149;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+    --wave: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #1f6feb22, #3fb95022);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 24px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0 0 8px;
+    font-size: clamp(1.6rem, 4vw, 2.6rem);
+    background: linear-gradient(90deg, #58a6ff, #3fb950);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header p { color: var(--muted); margin: 0; font-size: 1.05rem; }
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: #0d1117ee;
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px;
+    overflow-x: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  nav a:hover { background: var(--panel2); color: var(--accent); }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 20px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 28px;
+  }
+  section h2 {
+    margin-top: 0;
+    color: var(--accent);
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+  }
+  section h3 { color: var(--accent2); margin-top: 26px; }
+  .analogy {
+    background: var(--panel2);
+    border-left: 4px solid var(--warn);
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 18px 0;
+  }
+  .analogy strong { color: var(--warn); }
+  .key {
+    background: #1f6feb18;
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 18px 0;
+  }
+  .formula {
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    font-size: 1.25rem;
+    font-family: "Cambria Math", Georgia, serif;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .formula small { color: var(--muted); font-size: 0.75rem; display: block; margin-top: 8px; }
+  canvas { background: #010409; border-radius: 8px; display: block; width: 100%; }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    margin: 16px 0;
+    background: var(--panel2);
+    padding: 14px;
+    border-radius: 8px;
+  }
+  .control { display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 1; }
+  .control label { font-size: 0.82rem; color: var(--muted); display: flex; justify-content: space-between; }
+  .control label b { color: var(--accent); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  button {
+    background: var(--accent);
+    color: #0d1117;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  button:hover { filter: brightness(1.15); }
+  button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem; }
+  th, td { border: 1px solid var(--border); padding: 10px; text-align: left; }
+  th { background: var(--panel2); color: var(--accent); }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .b-good { background: #3fb95033; color: var(--accent2); }
+  .b-bad { background: #f8514933; color: var(--danger); }
+  .b-warn { background: #f0883e33; color: var(--warn); }
+  .status { font-size: 1.05rem; font-weight: 600; margin: 10px 0; }
+  ul.clean { list-style: none; padding-left: 0; }
+  ul.clean li { padding: 6px 0 6px 28px; position: relative; }
+  ul.clean li::before { content: "▸"; color: var(--accent2); position: absolute; left: 6px; }
+  .quiz-q { background: var(--panel2); padding: 16px; border-radius: 8px; margin: 14px 0; }
+  .quiz-opt {
+    display: block; width: 100%; text-align: left; background: var(--panel);
+    border: 1px solid var(--border); color: var(--text); padding: 10px 14px;
+    border-radius: 6px; margin: 6px 0; cursor: pointer; transition: all 0.15s;
+  }
+  .quiz-opt:hover { border-color: var(--accent); }
+  .quiz-opt.correct { background: #3fb95033; border-color: var(--accent2); }
+  .quiz-opt.wrong { background: #f8514933; border-color: var(--danger); }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.85rem; margin: 8px 0; }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  footer { text-align: center; color: var(--muted); padding: 30px; font-size: 0.9rem; }
+  code { background: #010409; padding: 2px 6px; border-radius: 4px; color: var(--warn); font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Transmission Lines in Signal Integrity</h1>
+  <p>Understand it once, with pictures and interactive demos — never forget it again.</p>
+</header>
+
+<nav>
+  <a href="#why">1. Why?</a>
+  <a href="#what">2. What is a T-line?</a>
+  <a href="#z0">3. Impedance Z₀</a>
+  <a href="#reflect">4. Reflections</a>
+  <a href="#play">5. Playground</a>
+  <a href="#term">6. Termination</a>
+  <a href="#cheat">7. Cheat Sheet</a>
+  <a href="#quiz">8. Quiz</a>
+</nav>
+
+<main>
+
+<!-- ================= WHY ================= -->
+<section id="why">
+  <h2>1. Why should you even care?</h2>
+  <p>In basic circuits you learn a wire is just a wire — voltage is the same everywhere on it, instantly. That is a <strong>lie that works only at low speed</strong>.</p>
+  <p>When your signal changes fast (fast edges / high frequency), electricity does <em>not</em> reach the other end instantly. The signal travels as a <strong>wave</strong>, roughly at half the speed of light on a PCB (~15 cm/ns). If the wire is "electrically long" compared to how fast your signal switches, that wave can <strong>bounce back</strong>, distort your data, and cause bit errors.</p>
+
+  <div class="key">
+    <strong>The one rule that starts everything:</strong><br>
+    Treat a wire as a <em>transmission line</em> when the signal's rise time is comparable to the round-trip travel time. Rule of thumb: if the trace length &gt; <code>rise_time × velocity / 6</code>, you MUST think about transmission lines.
+  </div>
+
+  <div class="analogy">
+    <strong>🌊 Analogy:</strong> Shout in a small room → you hear yourself once, clean. Shout in a canyon → echoes bounce back and garble the next word. A short trace = small room. A fast signal on a long trace = canyon full of echoes. Signal integrity is the art of killing the echoes.
+  </div>
+</section>
+
+<!-- ================= WHAT ================= -->
+<section id="what">
+  <h2>2. What actually IS a transmission line?</h2>
+  <p>A transmission line is <strong>any pair of conductors that carries a signal and its return current</strong>: a PCB trace over a ground plane, a coax cable, a twisted pair. It is not special hardware — it is a way of <em>modeling</em> a normal wire once speed matters.</p>
+
+  <p>We model even a "simple" trace as an infinite ladder of tiny inductors (L), capacitors (C), and small resistances. This is the <strong>RLGC model</strong>:</p>
+
+  <canvas id="rlgcCanvas" height="200"></canvas>
+  <div class="legend">
+    <span><span class="dot" style="background:#58a6ff"></span> Series L (inductance of the wire)</span>
+    <span><span class="dot" style="background:#3fb950"></span> Shunt C (capacitance to return path)</span>
+  </div>
+
+  <div class="key">
+    Every tiny segment adds a little series inductance and a little capacitance to ground. That distributed L and C is what forces the signal to travel as a wave — and it sets the line's <strong>characteristic impedance</strong>.
+  </div>
+</section>
+
+<!-- ================= Z0 ================= -->
+<section id="z0">
+  <h2>3. Characteristic Impedance Z₀ — the heart of it all</h2>
+  <p>As a wave rolls down the line, at every instant it "sees" the ratio of voltage to current. For an ideal line that ratio is a constant called <strong>characteristic impedance Z₀</strong>. It is NOT resistance — it does not burn power — it is just the ratio the wave feels while moving.</p>
+
+  <div class="formula">
+    Z₀ = √( L / C )
+    <small>L = inductance per unit length, C = capacitance per unit length</small>
+  </div>
+
+  <div class="analogy">
+    <strong>🚰 Analogy:</strong> Z₀ is like the "thickness" of a pipe as felt by the water wave. It depends on the geometry (trace width, distance to ground, dielectric), not on how long the pipe is. Common values: <b>50 Ω</b> (most single-ended digital/RF), <b>75 Ω</b> (video/coax), <b>90–100 Ω</b> (USB/differential pairs).
+  </div>
+
+  <p>Interactive: change the geometry and watch Z₀ change (simplified microstrip model).</p>
+  <div class="controls">
+    <div class="control">
+      <label>Trace width W <b><span id="wVal">6</span> mil</b></label>
+      <input type="range" id="wSlider" min="3" max="20" value="6" step="0.5">
+    </div>
+    <div class="control">
+      <label>Height above ground H <b><span id="hVal">5</span> mil</b></label>
+      <input type="range" id="hSlider" min="2" max="20" value="5" step="0.5">
+    </div>
+    <div class="control">
+      <label>Dielectric εr <b><span id="erVal">4.2</span></b></label>
+      <input type="range" id="erSlider" min="2" max="6" value="4.2" step="0.1">
+    </div>
+  </div>
+  <div class="status">Estimated Z₀ = <span id="z0Val" style="color:var(--accent2)">50</span> Ω</div>
+  <p style="color:var(--muted);font-size:0.88rem">Notice: wider trace or closer ground → more capacitance → <em>lower</em> Z₀. Thicker dielectric → higher Z₀.</p>
+</section>
+
+<!-- ================= REFLECT ================= -->
+<section id="reflect">
+  <h2>4. Reflections — the villain of signal integrity</h2>
+  <p>The wave travels happily at Z₀ until it hits a point where the impedance <strong>changes</strong> (the end of the line, a connector, a via). At that discontinuity, part of the energy <strong>reflects back</strong>, like an echo.</p>
+
+  <p>How much reflects is given by the <strong>reflection coefficient Γ (gamma)</strong>:</p>
+  <div class="formula">
+    Γ = ( Z<sub>Load</sub> − Z₀ ) / ( Z<sub>Load</sub> + Z₀ )
+    <small>Γ ranges from −1 (short) to +1 (open). Γ = 0 means NO reflection = perfect.</small>
+  </div>
+
+  <table>
+    <tr><th>Situation</th><th>Z<sub>Load</sub></th><th>Γ</th><th>Meaning</th></tr>
+    <tr><td>Matched (perfect)</td><td>= Z₀</td><td>0</td><td><span class="badge b-good">No echo 🎉</span></td></tr>
+    <tr><td>Open circuit</td><td>∞</td><td>+1</td><td><span class="badge b-bad">Full echo, same sign</span></td></tr>
+    <tr><td>Short circuit</td><td>0</td><td>−1</td><td><span class="badge b-bad">Full echo, flipped</span></td></tr>
+    <tr><td>Under-terminated</td><td>&lt; Z₀</td><td>negative</td><td><span class="badge b-warn">Partial flipped echo</span></td></tr>
+    <tr><td>Over-terminated</td><td>&gt; Z₀</td><td>positive</td><td><span class="badge b-warn">Partial echo (overshoot)</span></td></tr>
+  </table>
+
+  <div class="key">
+    Reflections cause the ugly stuff you see on a scope: <strong>overshoot, undershoot, ringing, and stair-steps</strong>. That is what corrupts your logic levels and timing. Kill reflections → clean signal.
+  </div>
+</section>
+
+<!-- ================= PLAYGROUND ================= -->
+<section id="play">
+  <h2>5. 🎮 Reflection Playground (the "aha!" moment)</h2>
+  <p>Send a pulse down a line and <strong>watch it bounce</strong>. Change the load impedance and see reflections appear or vanish. This single demo is where transmission lines "click".</p>
+
+  <canvas id="waveCanvas" height="260"></canvas>
+  <div class="legend">
+    <span><span class="dot" style="background:#58a6ff"></span> Forward wave →</span>
+    <span><span class="dot" style="background:#f0883e"></span> Reflected wave ←</span>
+    <span><span class="dot" style="background:#3fb950"></span> Total voltage (what a scope sees)</span>
+  </div>
+
+  <div class="controls">
+    <div class="control">
+      <label>Source impedance Zs <b><span id="zsVal">50</span> Ω</b></label>
+      <input type="range" id="zsSlider" min="0" max="150" value="50" step="5">
+    </div>
+    <div class="control">
+      <label>Line Z₀ <b>50 Ω (fixed)</b></label>
+      <input type="range" min="50" max="50" value="50" disabled>
+    </div>
+    <div class="control">
+      <label>Load impedance Zl <b><span id="zlVal">1000000</span> Ω</b></label>
+      <input type="range" id="zlSlider" min="0" max="200" value="200" step="5">
+    </div>
+  </div>
+  <div class="controls" style="justify-content:center">
+    <button id="sendBtn">▶ Send Pulse</button>
+    <button id="pauseBtn" class="ghost">⏸ Pause</button>
+    <button id="presetMatch" class="ghost">Preset: Matched (Γ=0)</button>
+    <button id="presetOpen" class="ghost">Preset: Open end</button>
+    <button id="presetShort" class="ghost">Preset: Short end</button>
+  </div>
+  <div class="status">Load Γ = <span id="gammaVal" style="color:var(--warn)">+1.00</span> &nbsp;|&nbsp; <span id="playStatus">Ready</span></div>
+</section>
+
+<!-- ================= TERMINATION ================= -->
+<section id="term">
+  <h2>6. How engineers fix it: Termination</h2>
+  <p>Termination = deliberately adding resistors so the impedance is matched and Γ → 0. The main styles:</p>
+
+  <div class="grid2">
+    <div style="background:var(--panel2);padding:16px;border-radius:8px">
+      <h3 style="margin-top:0">Series (Source) Termination</h3>
+      <p>Put a resistor <code>Rs</code> at the driver so <code>Rs + Zdriver = Z₀</code>. The reflection comes back and is absorbed at the source. Cheap, low power, great for point-to-point. Very common in FPGAs/CPUs.</p>
+      <span class="badge b-good">Low power</span> <span class="badge b-warn">One receiver only</span>
+    </div>
+    <div style="background:var(--panel2);padding:16px;border-radius:8px">
+      <h3 style="margin-top:0">Parallel (End) Termination</h3>
+      <p>Put a resistor <code>= Z₀</code> to ground (or Vtt) at the receiver. Kills the reflection immediately at the load. Great for buses / multi-drop, but burns DC power.</p>
+      <span class="badge b-good">Clean for buses</span> <span class="badge b-bad">Burns power</span>
+    </div>
+  </div>
+
+  <ul class="clean">
+    <li><strong>Thevenin termination</strong> — two resistors to VCC and GND, sets a bias level; used in DDR/SSTL.</li>
+    <li><strong>AC termination</strong> — resistor + capacitor in series, blocks DC to save power.</li>
+    <li><strong>Differential termination</strong> — a single resistor across the pair (e.g. 100 Ω) for USB/Ethernet/LVDS.</li>
+  </ul>
+
+  <div class="key">
+    Golden goal of signal integrity routing: keep <strong>Z₀ constant everywhere</strong> (no width changes, smooth returns, few vias) AND <strong>terminate the ends</strong> so reflections die. That's 90% of the job.
+  </div>
+</section>
+
+<!-- ================= CHEAT ================= -->
+<section id="cheat">
+  <h2>7. 🧠 Forever Cheat Sheet</h2>
+  <table>
+    <tr><th>Concept</th><th>Remember this</th></tr>
+    <tr><td>When to care</td><td>Fast edges + long trace → wire becomes a transmission line</td></tr>
+    <tr><td>Z₀</td><td>√(L/C). Geometry-based ratio the wave feels. Usually 50 Ω.</td></tr>
+    <tr><td>Velocity</td><td>~15 cm/ns on FR4 (~half speed of light). v = 1/√(LC)</td></tr>
+    <tr><td>Reflection Γ</td><td>(Zl − Z₀)/(Zl + Z₀). Want 0.</td></tr>
+    <tr><td>Open end</td><td>Γ = +1 → overshoot/ringing</td></tr>
+    <tr><td>Short end</td><td>Γ = −1 → inverted echo</td></tr>
+    <tr><td>Fix</td><td>Match impedance + terminate (series or parallel)</td></tr>
+    <tr><td>Symptoms on scope</td><td>Overshoot, undershoot, ringing, stair-steps = reflections</td></tr>
+  </table>
+
+  <div class="analogy">
+    <strong>One-sentence memory hook:</strong> "A fast signal is a wave in a pipe of impedance Z₀; anywhere the pipe changes width, it echoes — so keep the pipe uniform and cap the ends."
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="quiz">
+  <h2>8. ✅ Quick Quiz (lock it in)</h2>
+  <div id="quizContainer"></div>
+  <div class="status" id="quizScore"></div>
+</section>
+
+</main>
+
+<footer>
+  Built to make transmission lines finally click. Refresh anytime to replay the demos. ⚡
+</footer>
+
+<script>
+/* ---------- RLGC ladder drawing ---------- */
+(function(){
+  const c = document.getElementById('rlgcCanvas');
+  const ctx = c.getContext('2d');
+  function resize(){ c.width = c.clientWidth; draw(); }
+  function draw(){
+    const w = c.width, h = c.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 2;
+    const yTop = 50, yBot = 150;
+    const segments = 5;
+    const segW = (w - 80) / segments;
+    // top rail with inductors
+    ctx.beginPath();
+    for(let i=0;i<=segments;i++){
+      const x = 40 + i*segW;
+      if(i===0){ ctx.moveTo(40, yTop); }
+    }
+    let x = 40;
+    ctx.beginPath(); ctx.moveTo(20,yTop);
+    for(let i=0;i<segments;i++){
+      const startX = 20 + i*segW + (i===0?20:0);
+      const sx = 40 + i*segW;
+      // straight bit
+      ctx.moveTo(20 + i*segW, yTop);
+      ctx.lineTo(20 + i*segW + segW*0.25, yTop);
+      // inductor coils
+      ctx.strokeStyle = '#58a6ff';
+      const coilStart = 20 + i*segW + segW*0.25;
+      const coilW = segW*0.5;
+      const loops = 4;
+      for(let l=0;l<loops;l++){
+        const cx = coilStart + coilW*(l+0.5)/loops;
+        ctx.moveTo(coilStart + coilW*l/loops, yTop);
+        ctx.arc(cx, yTop, coilW/(loops*2), Math.PI, 0, false);
+      }
+    }
+    ctx.stroke();
+    // redraw cleanly segment by segment
+    ctx.clearRect(0,0,w,h);
+    // bottom ground rail
+    ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(20, yBot); ctx.lineTo(w-20, yBot); ctx.stroke();
+    ctx.fillStyle = '#8b949e'; ctx.font = '12px sans-serif';
+    ctx.fillText('GND / return path', 24, yBot+20);
+    for(let i=0;i<segments;i++){
+      const x0 = 30 + i*segW;
+      const x1 = 30 + (i+1)*segW;
+      // top wire straight
+      ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x0, yTop); ctx.lineTo(x0+segW*0.15, yTop); ctx.stroke();
+      // inductor
+      ctx.strokeStyle = '#58a6ff';
+      const cs = x0 + segW*0.15, cw = segW*0.45, loops = 4;
+      ctx.beginPath();
+      for(let l=0;l<loops;l++){
+        const cx = cs + cw*(l+0.5)/loops;
+        ctx.arc(cx, yTop, cw/(loops*2), Math.PI, 0, false);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = '#8b949e';
+      ctx.beginPath(); ctx.moveTo(cs+cw, yTop); ctx.lineTo(x1, yTop); ctx.stroke();
+      // capacitor down to ground at node
+      const capX = x1;
+      ctx.strokeStyle = '#3fb950';
+      ctx.beginPath();
+      ctx.moveTo(capX, yTop); ctx.lineTo(capX, yTop+35);
+      ctx.moveTo(capX-9, yTop+35); ctx.lineTo(capX+9, yTop+35);
+      ctx.moveTo(capX-9, yTop+43); ctx.lineTo(capX+9, yTop+43);
+      ctx.moveTo(capX, yTop+43); ctx.lineTo(capX, yBot);
+      ctx.stroke();
+    }
+    // input/output labels
+    ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(20,yTop); ctx.lineTo(30,yTop); ctx.stroke();
+    ctx.fillStyle = '#e6edf3'; ctx.font = '13px sans-serif';
+    ctx.fillText('IN →', 18, yTop-10);
+    ctx.fillText('→ OUT', w-70, yTop-10);
+    ctx.fillStyle = '#58a6ff'; ctx.fillText('L', 60, yTop-8);
+    ctx.fillStyle = '#3fb950'; ctx.fillText('C', 30+segW+4, yTop+60);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+})();
+
+/* ---------- Z0 microstrip calculator ---------- */
+(function(){
+  const wS=document.getElementById('wSlider'), hS=document.getElementById('hSlider'), erS=document.getElementById('erSlider');
+  const wV=document.getElementById('wVal'), hV=document.getElementById('hVal'), erV=document.getElementById('erVal'), z0V=document.getElementById('z0Val');
+  function calc(){
+    const W=parseFloat(wS.value), H=parseFloat(hS.value), er=parseFloat(erS.value);
+    wV.textContent=W; hV.textContent=H; erV.textContent=er.toFixed(1);
+    // IPC-2141 microstrip approximation
+    const z0 = (87/Math.sqrt(er+1.41))*Math.log(5.98*H/(0.8*W + 1)); // t small
+    z0V.textContent = Math.max(5, z0).toFixed(1);
+  }
+  [wS,hS,erS].forEach(s=>s.addEventListener('input',calc));
+  calc();
+})();
+
+/* ---------- Reflection playground ---------- */
+(function(){
+  const c=document.getElementById('waveCanvas');
+  const ctx=c.getContext('2d');
+  const zsS=document.getElementById('zsSlider'), zlS=document.getElementById('zlSlider');
+  const zsV=document.getElementById('zsVal'), zlV=document.getElementById('zlVal');
+  const gammaV=document.getElementById('gammaVal'), statusEl=document.getElementById('playStatus');
+  const Z0=50;
+  let running=true, t=0, pulses=[];
+  const N=200; // spatial resolution
+
+  function resize(){ c.width=c.clientWidth; }
+  window.addEventListener('resize', resize); resize();
+
+  function zl(){ return parseFloat(zlS.value); }
+  function zs(){ return parseFloat(zsS.value); }
+  function gammaLoad(){ const Z=zl(); return (Z-Z0)/(Z+Z0); }
+  function gammaSource(){ const Z=zs(); return (Z-Z0)/(Z+Z0); }
+
+  function updateLabels(){
+    zsV.textContent=zs();
+    zlV.textContent=zl();
+    gammaV.textContent=(gammaLoad()>=0?'+':'')+gammaLoad().toFixed(2);
+  }
+  zsS.addEventListener('input',updateLabels);
+  zlS.addEventListener('input',updateLabels);
+  updateLabels();
+
+  // Each pulse: position (0..1), direction (+1 right / -1 left), amplitude
+  function send(){
+    pulses=[];
+    // initial launched amplitude depends on source divider, normalize to 1 for clarity
+    pulses.push({pos:0, dir:1, amp:1.0, width:0.08});
+    t=0; running=true;
+    statusEl.textContent='Pulse traveling →';
+  }
+
+  document.getElementById('sendBtn').addEventListener('click', send);
+  document.getElementById('pauseBtn').addEventListener('click', ()=>{ running=!running; statusEl.textContent = running?'Running':'Paused'; });
+  document.getElementById('presetMatch').addEventListener('click', ()=>{ zlS.value=50; zsS.value=50; updateLabels(); send(); });
+  document.getElementById('presetOpen').addEventListener('click', ()=>{ zlS.value=200; zsS.value=50; updateLabels(); send(); });
+  document.getElementById('presetShort').addEventListener('click', ()=>{ zlS.value=0; zsS.value=50; updateLabels(); send(); });
+
+  const speed=0.006;
+
+  function step(){
+    if(running){
+      for(const p of pulses){ p.pos += p.dir*speed; }
+      // handle boundary reflections
+      const newPulses=[];
+      for(let i=pulses.length-1;i>=0;i--){
+        const p=pulses[i];
+        if(p.dir>0 && p.pos>=1){
+          // hit load
+          const g=gammaLoad();
+          p.pos=1; 
+          if(Math.abs(g)>0.02 && Math.abs(p.amp)>0.02){
+            pulses.push({pos:1, dir:-1, amp:p.amp*g, width:p.width});
+            statusEl.textContent='Reflected at LOAD (Γ='+(g>=0?'+':'')+g.toFixed(2)+') ←';
+          } else {
+            statusEl.textContent='Absorbed at LOAD — no echo 🎉';
+          }
+          pulses.splice(i,1);
+        } else if(p.dir<0 && p.pos<=0){
+          const g=gammaSource();
+          p.pos=0;
+          if(Math.abs(g)>0.02 && Math.abs(p.amp)>0.02){
+            pulses.push({pos:0, dir:1, amp:p.amp*g, width:p.width});
+            statusEl.textContent='Re-reflected at SOURCE (Γ='+(g>=0?'+':'')+g.toFixed(2)+') →';
+          } else {
+            statusEl.textContent='Absorbed at SOURCE — settled ✔';
+          }
+          pulses.splice(i,1);
+        }
+      }
+      // remove tiny pulses
+      for(let i=pulses.length-1;i>=0;i--){ if(Math.abs(pulses[i].amp)<0.02) pulses.splice(i,1); }
+    }
+    draw();
+    requestAnimationFrame(step);
+  }
+
+  function voltageAt(xNorm){
+    // sum gaussian pulses
+    let v=0;
+    for(const p of pulses){
+      const d=xNorm-p.pos;
+      v += p.amp*Math.exp(-(d*d)/(2*p.width*p.width/4));
+    }
+    return v;
+  }
+
+  function draw(){
+    const w=c.width, h=c.height;
+    ctx.clearRect(0,0,w,h);
+    const marginX=50, marginY=30;
+    const lineY=h/2;
+    const lineX0=marginX, lineX1=w-marginX;
+    const lineW=lineX1-lineX0;
+    const amp=70;
+
+    // baseline / the transmission line
+    ctx.strokeStyle='#30363d'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(lineX0,lineY); ctx.lineTo(lineX1,lineY); ctx.stroke();
+
+    // source and load boxes
+    ctx.fillStyle='#1c2330'; ctx.strokeStyle='#8b949e';
+    ctx.fillRect(lineX0-40,lineY-30,34,60); ctx.strokeRect(lineX0-40,lineY-30,34,60);
+    ctx.fillRect(lineX1+6,lineY-30,34,60); ctx.strokeRect(lineX1+6,lineY-30,34,60);
+    ctx.fillStyle='#e6edf3'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('SRC',lineX0-23,lineY-36);
+    ctx.fillText('Zs='+zs(),lineX0-23,lineY+46);
+    ctx.fillText('LOAD',lineX1+23,lineY-36);
+    ctx.fillText('Zl='+zl(),lineX1+23,lineY+46);
+    ctx.fillStyle='#58a6ff'; ctx.fillText('Z₀='+Z0+'Ω  →',w/2,lineY-amp-14);
+    ctx.textAlign='left';
+
+    // draw forward, reflected, and total
+    function plot(color, filterDir){
+      ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath();
+      for(let i=0;i<=N;i++){
+        const xn=i/N;
+        let v=0;
+        for(const p of pulses){
+          if(filterDir!==null && p.dir!==filterDir) continue;
+          const d=xn-p.pos;
+          v += p.amp*Math.exp(-(d*d)/(2*(p.width*p.width/4)));
+        }
+        const px=lineX0+xn*lineW;
+        const py=lineY - v*amp;
+        if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      ctx.stroke();
+    }
+    plot('#58a6ff', 1);   // forward
+    plot('#f0883e', -1);  // reflected
+    // total (thicker)
+    ctx.strokeStyle='#3fb950'; ctx.lineWidth=3; ctx.globalAlpha=0.85; ctx.beginPath();
+    for(let i=0;i<=N;i++){
+      const xn=i/N; const v=voltageAt(xn);
+      const px=lineX0+xn*lineW; const py=lineY - v*amp;
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.stroke(); ctx.globalAlpha=1;
+  }
+
+  send();
+  step();
+})();
+
+/* ---------- Quiz ---------- */
+(function(){
+  const quiz=[
+    {q:"When must you treat a PCB trace as a transmission line?",
+     opts:["Always, no matter the speed","When the signal edge is fast relative to the trace's travel time","Only for power supply traces","Only when using copper"],
+     a:1},
+    {q:"What does characteristic impedance Z₀ depend on?",
+     opts:["The length of the trace","The DC resistance only","The geometry: L and C per unit length (√(L/C))","The clock frequency"],
+     a:2},
+    {q:"A wave hits an OPEN end (Zl = ∞). What is Γ?",
+     opts:["0 (no reflection)","−1 (inverted echo)","+1 (full echo, same sign)","+0.5"],
+     a:2},
+    {q:"How do you make reflections disappear?",
+     opts:["Make the trace longer","Match the load impedance to Z₀ (Γ→0)","Increase the voltage","Add more vias"],
+     a:1},
+    {q:"Ringing and overshoot on a scope are caused by...",
+     opts:["Too much current","Reflections from impedance mismatches","The dielectric color","Slow rise times"],
+     a:1},
+  ];
+  const cont=document.getElementById('quizContainer');
+  const scoreEl=document.getElementById('quizScore');
+  let answered=0, correct=0;
+  quiz.forEach((item,qi)=>{
+    const div=document.createElement('div'); div.className='quiz-q';
+    const p=document.createElement('p'); p.innerHTML='<strong>Q'+(qi+1)+'.</strong> '+item.q; div.appendChild(p);
+    item.opts.forEach((opt,oi)=>{
+      const b=document.createElement('button'); b.className='quiz-opt'; b.textContent=opt;
+      b.addEventListener('click',()=>{
+        if(b.dataset.done) return;
+        [...div.querySelectorAll('.quiz-opt')].forEach(x=>x.dataset.done="1");
+        if(oi===item.a){ b.classList.add('correct'); correct++; }
+        else { b.classList.add('wrong'); div.querySelectorAll('.quiz-opt')[item.a].classList.add('correct'); }
+        answered++;
+        scoreEl.textContent='Score: '+correct+' / '+quiz.length+(answered===quiz.length?' — done! 🎓':'');
+      });
+      div.appendChild(b);
+    });
+    cont.appendChild(div);
+  });
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

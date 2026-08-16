@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mathematics for DSA — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(26px,5vw,48px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:5px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11px; font-weight:600; padding:5px 9px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(19px,3.3vw,28px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12px; margin:8px 0 4px}
+  .row{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; min-height:44px; margin:6px 0}
+  .cell{position:relative; min-width:42px; height:44px; padding:0 6px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:15px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s; font-family:'Consolas',monospace}
+  .cell .ix{position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--muted); font-weight:700}
+  .cell.cur{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  .cell.dep{border-color:var(--accent); background:#22345f}
+  .cell.done{border-color:var(--found); background:#0d3b30}
+  .cell.ans{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .cell.bad{border-color:var(--accent2); background:#3a1d2a; opacity:.6}
+  .cell.prime{border-color:var(--found); background:#0d3b30}
+  .cell.comp{border-color:#5a3a4a; background:#241820; color:#7a6472; text-decoration:line-through}
+  .cell.sm{min-width:34px;height:34px;font-size:12.5px}
+  .cell.open{border-color:var(--found); background:#0d3b30}
+  .cell.closed{border-color:#5a3a4a; background:#241820; color:#8a94b8}
+  .grid{display:inline-grid; gap:5px}
+  .vwrap{overflow-x:auto; display:flex; justify-content:center; margin:12px 0; padding:4px}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0}
+  .chip2{background:#22345f; border:2px solid var(--accent); border-radius:9px; padding:5px 11px; font-weight:800; font-family:'Consolas',monospace; font-size:14px; color:var(--accent)}
+  .chip2.gold{border-color:var(--mid); color:var(--mid); background:#3a3620}
+  .pascal{display:flex; flex-direction:column; align-items:center; gap:5px; margin:10px 0}
+  .prow{display:flex; gap:5px; justify-content:center}
+  .pc{min-width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:8px; font-weight:800; font-size:13px; background:#1d2a52; border:2px solid #2c3d6e; font-family:'Consolas',monospace; transition:.3s}
+  .pc.cur{border-color:var(--mid); background:#3a3620}
+  .pc.dep{border-color:var(--accent); background:#22345f}
+  .pc.ans{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .work{font-family:'Consolas',monospace; font-size:14px; background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:8px auto; max-width:600px; text-align:center}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Mathematics for DSA — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>GCD, sieves, factorization, modular arithmetic &amp; combinatorics — the number theory every coder needs, animated. Built so math tricks stick for life.</p>
+</header>
+
+<nav>
+  <a href="#gcd">🔗 GCD</a>
+  <a href="#gc2">🧮 More on GCD</a>
+  <a href="#lcm">♾️ LCM</a>
+  <a href="#fac">🧩 All Factors</a>
+  <a href="#door">🚪 Open/Close</a>
+  <a href="#prm">✅ Primality</a>
+  <a href="#prr">📋 Primes in Range</a>
+  <a href="#sv">🧹 Sieve</a>
+  <a href="#pf">🌿 Prime Factorization</a>
+  <a href="#ff">⚡ Fast Factorization</a>
+  <a href="#cd">🔢 Counting Divisors</a>
+  <a href="#seg">📐 Segmented Sieve</a>
+  <a href="#sgi">🎯 Segmented Sieve Impl.</a>
+  <a href="#mod">🕐 Modular Arithmetic</a>
+  <a href="#pr">👯 Counting Pairs</a>
+  <a href="#tr">🔺 Counting Triplets</a>
+  <a href="#cmb">🎲 Combinatorics</a>
+  <a href="#pc">🔀 Perm &amp; Comb</a>
+  <a href="#ncr">🧊 Understanding nCr</a>
+  <a href="#pas">🔻 Pascal's Triangle</a>
+  <a href="#cat">🐱 Catalan Numbers</a>
+  <a href="#cap">🌟 Catalan Applications</a>
+</nav>
+
+<main>
+
+  <!-- 1 GCD -->
+  <section id="gcd">
+    <h2>🔗 Greatest Common Divisor <span class="badge">Euclidean algorithm</span></h2>
+    <p class="lead">The largest number dividing both a and b. Euclid: repeatedly replace the pair with (b, a mod b) until the remainder is 0.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Shrink by remainders:</span> <code>gcd(a, b) = gcd(b, a mod b)</code>, and <code>gcd(a, 0) = a</code>. Each step the numbers shrink fast (like Fibonacci), so it's O(log min(a,b)). gcd(48, 18): 48 mod 18 = 12 → 18 mod 12 = 6 → 12 mod 6 = 0 → <b>6</b>.</div>
+      <div class="steps-flow"><span class="chip">gcd(a,b)=gcd(b, a mod b)</span><span class="arrow">→</span><span class="chip">stop when b = 0</span><span class="arrow">→</span><span class="chip">answer = a</span></div>
+      <div class="oneliner">🔒 Keep forever: "GCD by Euclid: replace (a,b) with (b, a mod b) until b is 0 — the survivor is the GCD."</div>
+    </div>
+    <div class="work" id="gcdWork"></div>
+    <div class="status" id="gcdStatus">Press play to compute gcd(48, 18).</div>
+    <div class="stats" id="gcdStats"></div>
+    <div class="controls"><button class="btn" id="gcdPlay">▶ gcd(48, 18)</button><button class="btn ghost" id="gcdReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="gcdSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the subtraction form gcd(a,b)=gcd(a−b,b) also works but is slower; the modulo form is the fast one.</div></div>
+  </section>
+
+  <!-- 2 MORE ON GCD -->
+  <section id="gc2">
+    <h2>🧮 More on GCD (of an Array) <span class="badge">fold the GCD</span></h2>
+    <p class="lead">GCD is associative, so the GCD of a whole array is found by folding: gcd of the running result with each next element.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Accumulate pairwise:</span> <code>gcd(a,b,c) = gcd(gcd(a,b), c)</code>. Start with the first element and repeatedly combine. If the running GCD ever hits 1, you can stop early. [24, 36, 48] → gcd(24,36)=12 → gcd(12,48)=<b>12</b>.</div>
+      <div class="steps-flow"><span class="chip">g = a[0]</span><span class="arrow">→</span><span class="chip">g = gcd(g, a[i])</span><span class="arrow">→</span><span class="chip">final g = array GCD</span></div>
+      <div class="oneliner">🔒 Keep forever: "Array GCD = fold gcd left-to-right; LCM of an array folds the same way."</div>
+    </div>
+    <div class="lbl">array</div><div class="row" id="gc2Arr"></div>
+    <div class="work" id="gc2Work"></div>
+    <div class="status" id="gc2Status">Press play to compute the GCD of [24, 36, 48].</div>
+    <div class="stats" id="gc2Stats"></div>
+    <div class="controls"><button class="btn" id="gc2Play">▶ Array GCD</button><button class="btn ghost" id="gc2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="gc2Speed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the Extended Euclidean algorithm additionally finds x, y with ax + by = gcd(a,b) — key for modular inverses.</div></div>
+  </section>
+
+  <!-- 3 LCM -->
+  <section id="lcm">
+    <h2>♾️ Lowest Common Multiple <span class="badge">via GCD</span></h2>
+    <p class="lead">The smallest number divisible by both a and b. Compute it from the GCD: <code>lcm(a,b) = a·b / gcd(a,b)</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Product minus the overlap:</span> a·b double-counts the shared factors (the GCD), so divide them out once. To avoid overflow, compute <code>a / gcd(a,b) · b</code>. lcm(4, 6) = 4·6 / gcd(4,6)=2 = <b>12</b>.</div>
+      <div class="steps-flow"><span class="chip">g = gcd(a,b)</span><span class="arrow">→</span><span class="chip">lcm = a / g · b</span></div>
+      <div class="oneliner">🔒 Keep forever: "lcm(a,b) = a·b / gcd(a,b); divide before multiplying to prevent overflow."</div>
+    </div>
+    <div class="work" id="lcmWork"></div>
+    <div class="status" id="lcmStatus">Press play to compute lcm(4, 6).</div>
+    <div class="stats" id="lcmStats"></div>
+    <div class="controls"><button class="btn" id="lcmPlay">▶ lcm(4, 6)</button><button class="btn ghost" id="lcmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lcmSpeed" min="300" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> for a·b to be exact, gcd must divide it — which it always does, so integer division is safe.</div></div>
+  </section>
+
+  <!-- 4 ALL FACTORS -->
+  <section id="fac">
+    <h2>🧩 Generating All Factors <span class="badge">O(√n) pairing</span></h2>
+    <p class="lead">Divisors come in pairs (i, n/i). Iterate i only up to √n and collect both members of each pair.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pair up around the square root:</span> if <code>i</code> divides <code>n</code>, so does <code>n/i</code>. So checking i from 1 to √n finds every factor. Add both i and n/i (once if they're equal). n = 36 → {1,2,3,4,6,9,12,18,36} = <b>9</b> factors.</div>
+      <div class="steps-flow"><span class="chip">for i = 1 … √n</span><span class="arrow">→</span><span class="chip">n % i == 0? add i and n/i</span></div>
+      <div class="oneliner">🔒 Keep forever: "Factors pair as (i, n/i); iterate only to √n to find them all in O(√n)."</div>
+    </div>
+    <div class="lbl">factors found</div><div class="chips" id="facChips"></div>
+    <div class="status" id="facStatus">Press play to list all factors of 36.</div>
+    <div class="stats" id="facStats"></div>
+    <div class="controls"><button class="btn" id="facPlay">▶ Factors of 36</button><button class="btn ghost" id="facReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="facSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a perfect square has its middle factor √n counted once — that's why perfect squares have an odd number of divisors.</div></div>
+  </section>
+
+  <!-- 5 OPEN CLOSE -->
+  <section id="door">
+    <h2>🚪 The Open/Close (Doors) Problem <span class="badge">divisor parity</span></h2>
+    <p class="lead">100 doors, pass k toggles every k-th door. Which stay open? A door ends open iff it was toggled an odd number of times — iff it's a perfect square.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Toggled once per divisor:</span> door <code>d</code> is flipped on pass <code>k</code> exactly when <code>k</code> divides <code>d</code>. So it ends open iff <code>d</code> has an <b>odd</b> number of divisors — which happens only for perfect squares. For 10 doors → open = {1, 4, 9} = <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">pass k toggles multiples of k</span><span class="arrow">→</span><span class="chip">open ⇔ odd # divisors</span><span class="arrow">→</span><span class="chip">⇔ perfect square</span></div>
+      <div class="oneliner">🔒 Keep forever: "Doors open ⇔ odd divisor count ⇔ perfect square. Divisor parity is the whole trick."</div>
+    </div>
+    <div class="lbl">doors (🟩 open / ⬛ closed)</div><div class="row" id="doorRow"></div>
+    <div class="status" id="doorStatus">Press play to run all the toggle passes.</div>
+    <div class="stats" id="doorStats"></div>
+    <div class="controls"><button class="btn" id="doorPlay">▶ Run passes</button><button class="btn ghost" id="doorReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="doorSpeed" min="250" max="1800" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "count how many times something is toggled" almost always reduces to counting divisors / parity.</div></div>
+  </section>
+
+  <!-- 6 PRIMALITY -->
+  <section id="prm">
+    <h2>✅ Primality Test <span class="badge">trial up to √n</span></h2>
+    <p class="lead">A number is prime if no integer from 2 to √n divides it. Checking beyond √n is redundant (factors pair up).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A factor above √n implies one below:</span> if n = a·b with a ≤ b, then a ≤ √n. So testing divisors up to √n catches any factor. 29: test 2,3,5 (√29 ≈ 5.4) — none divide → <b>prime</b>.</div>
+      <div class="steps-flow"><span class="chip">for i = 2 … √n</span><span class="arrow">→</span><span class="chip">n % i == 0? composite</span><span class="arrow">→</span><span class="chip">none → prime</span></div>
+      <div class="oneliner">🔒 Keep forever: "Primality = no divisor in [2, √n]. Never check past the square root."</div>
+    </div>
+    <div class="work" id="prmWork"></div>
+    <div class="status" id="prmStatus">Press play to test if 29 is prime.</div>
+    <div class="stats" id="prmStats"></div>
+    <div class="controls"><button class="btn" id="prmPlay">▶ Is 29 prime?</button><button class="btn ghost" id="prmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="prmSpeed" min="300" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> handle n &lt; 2 (not prime) and 2 (prime) as edge cases; you can also skip even divisors after checking 2.</div></div>
+  </section>
+
+  <!-- 7 PRIMES IN RANGE -->
+  <section id="prr">
+    <h2>📋 Primality Test in a Range <span class="badge">test each</span></h2>
+    <p class="lead">To list primes up to N, run the √n primality test on every number. Simple, though a sieve is faster.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Brute but clear:</span> for each candidate 2..N, do trial division to √candidate. Total cost ≈ O(N·√N). Great for understanding; use a sieve when N is large. Primes ≤ 20 → 2,3,5,7,11,13,17,19 (<b>8</b>).</div>
+      <div class="steps-flow"><span class="chip">for x = 2 … N</span><span class="arrow">→</span><span class="chip">isPrime(x)?</span><span class="arrow">→</span><span class="chip">collect primes</span></div>
+      <div class="oneliner">🔒 Keep forever: "Primes in a range = repeat the √n test per number — O(N√N), fine for small N."</div>
+    </div>
+    <div class="lbl">numbers 2..20 (🟩 prime / ✗ composite)</div><div class="row" id="prrRow"></div>
+    <div class="status" id="prrStatus">Press play to test each number up to 20.</div>
+    <div class="stats" id="prrStats"></div>
+    <div class="controls"><button class="btn" id="prrPlay">▶ Primes ≤ 20</button><button class="btn ghost" id="prrReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="prrSpeed" min="200" max="1600" value="550" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> when you need <b>all</b> primes up to N (not just testing one), the sieve is dramatically faster.</div></div>
+  </section>
+
+  <!-- 8 SIEVE -->
+  <section id="sv">
+    <h2>🧹 Sieve of Eratosthenes <span class="badge">O(n log log n)</span></h2>
+    <p class="lead">Cross out multiples of each prime. Whatever survives is prime. The classic way to list all primes up to N.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Strike the composites:</span> start with 2 — mark 4,6,8,… as composite. Move to the next unmarked number (3) and mark its multiples, and so on up to √N. Everything left standing is prime. Primes ≤ 30 → <b>10</b> primes.</div>
+      <div class="steps-flow"><span class="chip">for p = 2 … √N</span><span class="arrow">→</span><span class="chip">if p unmarked, mark p·p, p·p+p, …</span><span class="arrow">→</span><span class="chip">survivors = primes</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sieve: for each prime p, cross out multiples from p·p upward — survivors are prime."</div>
+    </div>
+    <div class="vwrap" id="svGrid"></div>
+    <div class="status" id="svStatus">Press play to sieve the numbers up to 30.</div>
+    <div class="stats" id="svStats"></div>
+    <div class="controls"><button class="btn" id="svPlay">▶ Sieve to 30</button><button class="btn ghost" id="svReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="svSpeed" min="200" max="1600" value="450" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> start marking from p·p (smaller multiples already got crossed by smaller primes) — that's the efficiency trick.</div></div>
+  </section>
+
+  <!-- 9 PRIME FACTORIZATION -->
+  <section id="pf">
+    <h2>🌿 Prime Factorization <span class="badge">trial division</span></h2>
+    <p class="lead">Break n into its prime factors by repeatedly dividing out the smallest prime that fits.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Peel off small primes:</span> while <code>d·d ≤ n</code>, divide out d as many times as possible, then increment d. Any leftover &gt; 1 is a prime factor itself. 60 = 2·2·3·5 = <b>2²·3·5</b>.</div>
+      <div class="steps-flow"><span class="chip">for d = 2 while d·d ≤ n</span><span class="arrow">→</span><span class="chip">divide out all d's</span><span class="arrow">→</span><span class="chip">leftover &gt; 1 is prime</span></div>
+      <div class="oneliner">🔒 Keep forever: "Factorize by dividing out primes up to √n; any remainder &gt; 1 is a final prime factor."</div>
+    </div>
+    <div class="lbl">prime factors of 60</div><div class="chips" id="pfChips"></div>
+    <div class="work" id="pfWork"></div>
+    <div class="status" id="pfStatus">Press play to factorize 60.</div>
+    <div class="stats" id="pfStats"></div>
+    <div class="controls"><button class="btn" id="pfPlay">▶ Factorize 60</button><button class="btn ghost" id="pfReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pfSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> once you divide out a prime fully, n shrinks — so √n shrinks too, making later checks cheaper.</div></div>
+  </section>
+
+  <!-- 10 FAST FACTORIZATION -->
+  <section id="ff">
+    <h2>⚡ Fast Factorization (Smallest Prime Factor) <span class="badge">O(log n) per query</span></h2>
+    <p class="lead">Precompute the smallest prime factor (SPF) of every number with a sieve; then factorize any number by repeatedly jumping to its SPF.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sieve once, factor instantly:</span> a modified sieve stores <code>spf[x]</code> = the smallest prime dividing x. To factorize n, divide by <code>spf[n]</code>, then by <code>spf[n/spf[n]]</code>, and so on — each step removes a prime in O(1). 60 → spf 2, 2, 3, 5 = <b>2²·3·5</b>.</div>
+      <div class="steps-flow"><span class="chip">precompute spf[] via sieve</span><span class="arrow">→</span><span class="chip">n /= spf[n], repeat</span><span class="arrow">→</span><span class="chip">O(log n) per factorization</span></div>
+      <div class="oneliner">🔒 Keep forever: "Store the smallest prime factor per number; factorization becomes repeated O(1) SPF jumps."</div>
+    </div>
+    <div class="lbl">spf[] for 2..12</div><div class="row" id="ffSpf"></div>
+    <div class="lbl">factors of 60</div><div class="chips" id="ffChips"></div>
+    <div class="status" id="ffStatus">Press play to factorize 60 using SPF jumps.</div>
+    <div class="stats" id="ffStats"></div>
+    <div class="controls"><button class="btn" id="ffPlay">▶ SPF factorize 60</button><button class="btn ghost" id="ffReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ffSpeed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> SPF factorization is what makes "factorize many numbers up to N" fast — one sieve, then O(log) per query.</div></div>
+  </section>
+
+  <!-- 11 COUNTING DIVISORS -->
+  <section id="cd">
+    <h2>🔢 Counting Divisors Faster <span class="badge">exponent product</span></h2>
+    <p class="lead">From the prime factorization, the divisor count is the product of (each exponent + 1) — no need to list divisors.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pick an exponent per prime:</span> if <code>n = p₁^e₁ · p₂^e₂ · …</code>, a divisor chooses each prime's power from 0..eᵢ — that's (eᵢ+1) choices each, multiplied. 60 = 2²·3¹·5¹ → (2+1)(1+1)(1+1) = <b>12</b> divisors.</div>
+      <div class="steps-flow"><span class="chip">factorize n</span><span class="arrow">→</span><span class="chip">∏ (exponent + 1)</span><span class="arrow">→</span><span class="chip">= divisor count</span></div>
+      <div class="oneliner">🔒 Keep forever: "Number of divisors = product of (exponent + 1) over all prime powers."</div>
+    </div>
+    <div class="work" id="cdWork"></div>
+    <div class="status" id="cdStatus">Press play to count the divisors of 60.</div>
+    <div class="stats" id="cdStats"></div>
+    <div class="controls"><button class="btn" id="cdPlay">▶ Count divisors of 60</button><button class="btn ghost" id="cdReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cdSpeed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the <b>sum</b> of divisors uses ∏ (pⁱ summed from 0..e) = ∏ (p^(e+1)−1)/(p−1) — same factorization, different formula.</div></div>
+  </section>
+
+  <!-- 12 SEGMENTED SIEVE -->
+  <section id="seg">
+    <h2>📐 Segmented Sieve <span class="badge">primes in [L, R]</span></h2>
+    <p class="lead">Find primes in a high range [L, R] without sieving from 0. Use base primes up to √R to mark composites in just that window.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Only the window matters:</span> any composite in [L, R] has a prime factor ≤ √R. So sieve base primes up to √R, then for each base prime mark its multiples that fall inside [L, R]. Memory is O(R−L), not O(R). Range [10, 20] → <b>11, 13, 17, 19</b>.</div>
+      <div class="steps-flow"><span class="chip">base primes ≤ √R</span><span class="arrow">→</span><span class="chip">mark their multiples in [L,R]</span><span class="arrow">→</span><span class="chip">survivors = primes</span></div>
+      <div class="oneliner">🔒 Keep forever: "Segmented sieve: base primes up to √R strike composites inside [L,R] — O(R−L) memory."</div>
+    </div>
+    <div class="lbl">segment [10, 20]</div><div class="row" id="segRow"></div>
+    <div class="status" id="segStatus">Press play to sieve the segment [10, 20].</div>
+    <div class="stats" id="segStats"></div>
+    <div class="controls"><button class="btn" id="segPlay">▶ Sieve [10, 20]</button><button class="btn ghost" id="segReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="segSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> segmented sieve is how you list primes in ranges like [10⁹, 10⁹+10⁶] where a full sieve won't fit in memory.</div></div>
+  </section>
+
+  <!-- 13 SEGMENTED SIEVE IMPL -->
+  <section id="sgi">
+    <h2>🎯 Implementing the Segmented Sieve <span class="badge">offset marking</span></h2>
+    <p class="lead">The key implementation detail: for each base prime p, find the first multiple of p that is ≥ L, then step by p through the local array.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Start at the right offset:</span> the first multiple of p in the segment is <code>ceil(L/p)·p</code> (but at least p²). Map it to the local index <code>start − L</code> and mark every p-th cell. Range [20, 30] → primes <b>23, 29</b>.</div>
+      <div class="steps-flow"><span class="chip">start = max(p·p, ⌈L/p⌉·p)</span><span class="arrow">→</span><span class="chip">mark start, start+p, … ≤ R</span><span class="arrow">→</span><span class="chip">local index = value − L</span></div>
+      <div class="oneliner">🔒 Keep forever: "Offset = first multiple ≥ L (and ≥ p²); mark local indices value−L stepping by p."</div>
+    </div>
+    <div class="lbl">segment [20, 30]</div><div class="row" id="sgiRow"></div>
+    <div class="status" id="sgiStatus">Press play to sieve the segment [20, 30].</div>
+    <div class="stats" id="sgiStats"></div>
+    <div class="controls"><button class="btn" id="sgiPlay">▶ Sieve [20, 30]</button><button class="btn ghost" id="sgiReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="sgiSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> guard against marking p itself — start at max(p·p, first multiple ≥ L) so small primes inside the range survive.</div></div>
+  </section>
+
+  <!-- 14 MODULAR ARITHMETIC -->
+  <section id="mod">
+    <h2>🕐 Fundamentals of Modular Arithmetic <span class="badge">clock math</span></h2>
+    <p class="lead">Arithmetic that wraps around a modulus m. The mod distributes over +, −, and ×, letting you keep numbers small.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Reduce as you go:</span> <code>(a + b) mod m = ((a mod m) + (b mod m)) mod m</code>, and the same for multiplication. So you never let intermediate values explode. (17 + 25) mod 7: 42 mod 7 = 0 = (3 + 4) mod 7 = <b>0</b>.</div>
+      <div class="steps-flow"><span class="chip">(a+b)%m = (a%m + b%m)%m</span><span class="arrow">·</span><span class="chip">(a·b)%m = (a%m · b%m)%m</span></div>
+      <div class="oneliner">🔒 Keep forever: "Mod distributes over +, −, ×; reduce every step to avoid overflow (subtraction needs a +m fix)."</div>
+    </div>
+    <div class="work" id="modWork"></div>
+    <div class="status" id="modStatus">Press play to verify modular addition &amp; multiplication.</div>
+    <div class="stats" id="modStats"></div>
+    <div class="controls"><button class="btn" id="modPlay">▶ Mod properties</button><button class="btn ghost" id="modReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="modSpeed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> after subtraction, add m before taking mod: <code>((a−b)%m + m)%m</code> — otherwise you can get a negative result.</div></div>
+  </section>
+
+  <!-- 15 COUNTING PAIRS -->
+  <section id="pr">
+    <h2>👯 Counting Pairs <span class="badge">frequency → C(f,2)</span></h2>
+    <p class="lead">Count unordered pairs (i&lt;j) of equal elements. For a value appearing f times, it forms <code>f·(f−1)/2</code> pairs.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Choose 2 from each group:</span> count frequencies, then for each value with count f add <code>C(f,2) = f(f−1)/2</code>. [1,2,1,3,1] → value 1 appears 3× → C(3,2) = <b>3</b> pairs.</div>
+      <div class="steps-flow"><span class="chip">count frequencies</span><span class="arrow">→</span><span class="chip">Σ C(f, 2)</span><span class="arrow">→</span><span class="chip">= pair count</span></div>
+      <div class="oneliner">🔒 Keep forever: "Equal-pair count = Σ f·(f−1)/2 over each value's frequency f."</div>
+    </div>
+    <div class="lbl">array</div><div class="row" id="prArr"></div>
+    <div class="work" id="prWork"></div>
+    <div class="status" id="prStatus">Press play to count equal-element pairs.</div>
+    <div class="stats" id="prStats"></div>
+    <div class="controls"><button class="btn" id="prPlay">▶ Count pairs</button><button class="btn ghost" id="prReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="prSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "pairs summing to k" uses a hash of complements instead — but "equal pairs" is pure C(f,2).</div></div>
+  </section>
+
+  <!-- 16 COUNTING TRIPLETS -->
+  <section id="tr">
+    <h2>🔺 Counting Triplets <span class="badge">C(f,3)</span></h2>
+    <p class="lead">Count unordered triplets of equal elements: a value appearing f times forms <code>C(f,3) = f(f−1)(f−2)/6</code> triplets.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Choose 3 from each group:</span> same idea as pairs, one level up. [1,1,1,1] → value 1 appears 4× → C(4,3) = 4·3·2/6 = <b>4</b> triplets.</div>
+      <div class="steps-flow"><span class="chip">count frequencies</span><span class="arrow">→</span><span class="chip">Σ C(f, 3)</span><span class="arrow">→</span><span class="chip">= triplet count</span></div>
+      <div class="oneliner">🔒 Keep forever: "Equal-triplet count = Σ f·(f−1)·(f−2)/6 = Σ C(f,3)."</div>
+    </div>
+    <div class="lbl">array</div><div class="row" id="trArr"></div>
+    <div class="work" id="trWork"></div>
+    <div class="status" id="trStatus">Press play to count equal-element triplets.</div>
+    <div class="stats" id="trStats"></div>
+    <div class="controls"><button class="btn" id="trPlay">▶ Count triplets</button><button class="btn ghost" id="trReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="trSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the general pattern: k-element groups from a frequency f contribute C(f, k) — Pascal / binomial coefficients.</div></div>
+  </section>
+
+  <!-- 17 COMBINATORICS -->
+  <section id="cmb">
+    <h2>🎲 Basics of Combinatorics <span class="badge">factorial &amp; rules</span></h2>
+    <p class="lead">Two rules power counting: the <b>multiplication principle</b> (independent choices multiply) and factorials for arrangements.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Multiply the choices:</span> arranging n distinct items = n × (n−1) × … × 1 = <code>n!</code> — n choices for the first slot, n−1 for the next, and so on. 4! = 4·3·2·1 = <b>24</b> arrangements.</div>
+      <div class="steps-flow"><span class="chip">multiplication principle</span><span class="arrow">→</span><span class="chip">n! arrangements</span><span class="arrow">→</span><span class="chip">building block for nPr, nCr</span></div>
+      <div class="oneliner">🔒 Keep forever: "Independent choices multiply; n! counts the arrangements of n distinct items."</div>
+    </div>
+    <div class="work" id="cmbWork"></div>
+    <div class="status" id="cmbStatus">Press play to build 4! step by step.</div>
+    <div class="stats" id="cmbStats"></div>
+    <div class="controls"><button class="btn" id="cmbPlay">▶ Compute 4!</button><button class="btn ghost" id="cmbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cmbSpeed" min="350" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> 0! = 1 (one way to arrange nothing) — a convention that keeps all the formulas consistent.</div></div>
+  </section>
+
+  <!-- 18 PERM & COMB -->
+  <section id="pc">
+    <h2>🔀 Permutations &amp; Combinations <span class="badge">order matters?</span></h2>
+    <p class="lead"><b>Permutations</b> count ordered selections: <code>P(n,r)=n!/(n−r)!</code>. <b>Combinations</b> ignore order: <code>C(n,r)=n!/(r!(n−r)!)</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Divide out the ordering:</span> P(n,r) picks r items in order. Since each group of r can be arranged r! ways, dividing by r! gives the unordered count C(n,r). n=5, r=2 → P = 20, C = 20/2! = <b>10</b>.</div>
+      <div class="steps-flow"><span class="chip">P(n,r) = n!/(n−r)!</span><span class="arrow">→</span><span class="chip">÷ r!</span><span class="arrow">→</span><span class="chip">C(n,r)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Permutations count order; divide by r! to get combinations (order-blind)."</div>
+    </div>
+    <div class="work" id="pcWork"></div>
+    <div class="status" id="pcStatus">Press play to compute P(5,2) and C(5,2).</div>
+    <div class="stats" id="pcStats"></div>
+    <div class="controls"><button class="btn" id="pcPlay">▶ P &amp; C of (5,2)</button><button class="btn ghost" id="pcReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pcSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "arrangement/order/rank" → permutations; "selection/group/team" → combinations.</div></div>
+  </section>
+
+  <!-- 19 UNDERSTANDING nCr -->
+  <section id="ncr">
+    <h2>🧊 Understanding nCr <span class="badge">Pascal's identity</span></h2>
+    <p class="lead">C(n,r) counts r-subsets of n items. Its recurrence: fix one item — either include it (C(n−1,r−1)) or exclude it (C(n−1,r)).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Include or exclude:</span> <code>C(n,r) = C(n−1,r−1) + C(n−1,r)</code>. Every r-subset either contains a chosen element (then pick r−1 from the rest) or doesn't (pick r from the rest). C(5,2) = C(4,1) + C(4,2) = 4 + 6 = <b>10</b>.</div>
+      <div class="steps-flow"><span class="chip">include item → C(n−1,r−1)</span><span class="arrow">+</span><span class="chip">exclude item → C(n−1,r)</span></div>
+      <div class="oneliner">🔒 Keep forever: "C(n,r) = C(n−1,r−1) + C(n−1,r) — the include/exclude recurrence behind Pascal's triangle."</div>
+    </div>
+    <div class="work" id="ncrWork"></div>
+    <div class="status" id="ncrStatus">Press play to expand C(5,2) via Pascal's identity.</div>
+    <div class="stats" id="ncrStats"></div>
+    <div class="controls"><button class="btn" id="ncrPlay">▶ Expand C(5,2)</button><button class="btn ghost" id="ncrReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ncrSpeed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> symmetry C(n,r) = C(n,n−r) — choosing r to keep is the same as choosing n−r to drop.</div></div>
+  </section>
+
+  <!-- 20 PASCAL TRIANGLE -->
+  <section id="pas">
+    <h2>🔻 Pascal's Triangle for nCr <span class="badge">DP table</span></h2>
+    <p class="lead">Build every C(n,r) at once: each entry is the sum of the two directly above it. Row n, position r gives C(n,r).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sum the two parents:</span> the edges are all 1 (C(n,0)=C(n,n)=1); every interior entry = left-parent + right-parent (Pascal's identity). Read C(5,2) off row 5 → <b>10</b>.</div>
+      <div class="steps-flow"><span class="chip">edges = 1</span><span class="arrow">→</span><span class="chip">interior = sum of two above</span><span class="arrow">→</span><span class="chip">row n = all C(n, ·)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Pascal's triangle tabulates every C(n,r) via the sum-of-two-above rule — O(n²) for all coefficients."</div>
+    </div>
+    <div class="pascal" id="pasTri"></div>
+    <div class="status" id="pasStatus">Press play to build Pascal's triangle.</div>
+    <div class="stats" id="pasStats"></div>
+    <div class="controls"><button class="btn" id="pasPlay">▶ Build triangle</button><button class="btn ghost" id="pasReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pasSpeed" min="200" max="1800" value="500" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Pascal's triangle avoids huge factorials — great when you need many nCr values (often mod a prime).</div></div>
+  </section>
+
+  <!-- 21 CATALAN -->
+  <section id="cat">
+    <h2>🐱 Introduction to Catalan Numbers <span class="badge">1,1,2,5,14,…</span></h2>
+    <p class="lead">A famous counting sequence. <code>Cₙ = Σ Cᵢ·Cₙ₋₁₋ᵢ</code> (or <code>C(2n,n)/(n+1)</code>) — it appears everywhere in "balanced" structures.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Split at the matching partner:</span> <code>Cₙ = C₀Cₙ₋₁ + C₁Cₙ₋₂ + … + Cₙ₋₁C₀</code>. Each term splits a structure into a left part of size i and a right part of size n−1−i. C₀=1, then 1, 2, 5, <b>14</b>, 42, …</div>
+      <div class="steps-flow"><span class="chip">C₀ = 1</span><span class="arrow">→</span><span class="chip">Cₙ = Σ Cᵢ·Cₙ₋₁₋ᵢ</span><span class="arrow">→</span><span class="chip">1,1,2,5,14,…</span></div>
+      <div class="oneliner">🔒 Keep forever: "Catalan: Cₙ = Σ Cᵢ·Cₙ₋₁₋ᵢ = C(2n,n)/(n+1). Sequence 1,1,2,5,14,42…"</div>
+    </div>
+    <div class="lbl">Catalan sequence C₀..C₅</div><div class="row" id="catRow"></div>
+    <div class="work" id="catWork"></div>
+    <div class="status" id="catStatus">Press play to build the Catalan sequence.</div>
+    <div class="stats" id="catStats"></div>
+    <div class="controls"><button class="btn" id="catPlay">▶ Build Catalan</button><button class="btn ghost" id="catReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="catSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the convolution recurrence is the "split into two independent sub-structures" pattern — the heart of Catalan.</div></div>
+  </section>
+
+  <!-- 22 CATALAN APPLICATIONS -->
+  <section id="cap">
+    <h2>🌟 Applications of Catalan Numbers <span class="badge">Cₙ counts…</span></h2>
+    <p class="lead">Cₙ counts balanced parentheses, distinct BSTs, triangulations, valid stack sequences, monotonic lattice paths — all the same number.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One number, many shapes:</span> C₃ = 5 equals the number of valid strings of 3 pairs of parentheses, the number of BSTs with 3 nodes, and the triangulations of a pentagon. Here are the <b>5</b> balanced parenthesis strings for n=3.</div>
+      <div class="steps-flow"><span class="chip">balanced parens</span><span class="arrow">·</span><span class="chip">distinct BSTs</span><span class="arrow">·</span><span class="chip">polygon triangulations</span></div>
+      <div class="oneliner">🔒 Keep forever: "If a structure splits into two independent halves around a 'root', its count is Catalan."</div>
+    </div>
+    <div class="lbl">the 5 balanced parenthesis strings (n = 3)</div><div class="chips" id="capChips"></div>
+    <div class="status" id="capStatus">Press play to generate all valid parenthesizations.</div>
+    <div class="stats" id="capStats"></div>
+    <div class="controls"><button class="btn" id="capPlay">▶ Generate (n=3)</button><button class="btn ghost" id="capReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="capSpeed" min="350" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> spotting a Catalan structure instantly gives the count — no need to derive a new recurrence each time.</div></div>
+
+    <div class="note key">🏆 <b>Math for DSA mastered!</b> Euclid's GCD &amp; LCM · factor generation &amp; divisor parity · primality, sieves (plain, SPF, segmented) &amp; factorization · counting divisors by exponents · modular arithmetic · and combinatorics — pairs/triplets, factorials, nPr/nCr, Pascal's triangle, and Catalan numbers with their many applications. Precompute, reduce mod m, and count with binomials! 🎯</div>
+  </section>
+
+</main>
+
+<footer>Mathematics for DSA — Animated Guide • Replay any animation, turn on 🎵 sound • Number theory made visible 🔢</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- renderers ---- */
+function row(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>{ const cls=(opt.cls&&opt.cls[i])||''; return `<div class="cell ${opt.sm?'sm':''} ${cls}">${opt.idx?`<span class="ix">${opt.idx[i]!==undefined?opt.idx[i]:i}</span>`:''}${v}</div>`; }).join(''); }
+function chips(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>`<span class="chip2 ${(opt.cls&&opt.cls[i])||''}">${v}</span>`).join(''); }
+function gcd(a,b){ while(b){ [a,b]=[b,a%b]; } return a; }
+
+/* ================= 1. GCD ================= */
+(function(){
+  const st=$('#gcdStatus'),sp=$('#gcdSpeed'),stats=$('#gcdStats'),w=$('#gcdWork');
+  function build(){ w.innerHTML='gcd(48, 18)'; stats.innerHTML=''; st.textContent='Press play to compute gcd(48, 18).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let a=48,b=18; const lines=[];
+    while(b){ const r=a%b; lines.push(`gcd(${a}, ${b}) → ${a} mod ${b} = ${r}`); w.innerHTML=lines.join('<br>'); tickSound(); st.innerHTML=`${a} mod ${b} = <span class="k">${r}</span>; now gcd(${b}, ${r}).`; await sleep(+sp.value); a=b; b=r; }
+    lines.push(`gcd(${a}, 0) = <b style="color:var(--found)">${a}</b>`); w.innerHTML=lines.join('<br>'); stats.innerHTML=`<span class="pill green">gcd = ${a}</span>`; st.innerHTML=`🔗 gcd(48, 18) = <span class="k">${a}</span>!`; ANIM=false; celebrate(w);
+  }
+  $('#gcdPlay').onclick=play; $('#gcdReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. more on GCD ================= */
+(function(){
+  const A=[24,36,48]; const st=$('#gc2Status'),sp=$('#gc2Speed'),stats=$('#gc2Stats'),w=$('#gc2Work'); const idx=A.map((_,i)=>i);
+  function build(){ row($('#gc2Arr'),A,{idx}); w.innerHTML='g = ?'; stats.innerHTML=''; st.textContent='Press play to compute the GCD of [24, 36, 48].'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let g=A[0]; row($('#gc2Arr'),A,{idx,cls:{0:'done'}}); w.innerHTML=`g = a[0] = ${g}`; st.innerHTML=`Start: g = ${g}.`; await sleep(+sp.value);
+    for(let i=1;i<A.length;i++){ const ng=gcd(g,A[i]); row($('#gc2Arr'),A,{idx,cls:{[i]:'cur'}}); tickSound(); w.innerHTML=`g = gcd(${g}, ${A[i]}) = ${ng}`; st.innerHTML=`g = gcd(${g}, ${A[i]}) = <span class="k">${ng}</span>.`; await sleep(+sp.value); g=ng; row($('#gc2Arr'),A,{idx,cls:{[i]:'done'}}); stats.innerHTML=`<span class="pill blue">g = ${g}</span>`; await sleep(+sp.value*0.4); }
+    st.innerHTML=`🧮 GCD of the array = <span class="k">${g}</span>!`; ANIM=false; celebrate($('#gc2Arr'));
+  }
+  $('#gc2Play').onclick=play; $('#gc2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. LCM ================= */
+(function(){
+  const st=$('#lcmStatus'),sp=$('#lcmSpeed'),stats=$('#lcmStats'),w=$('#lcmWork');
+  function build(){ w.innerHTML='lcm(4, 6) = 4·6 / gcd(4,6)'; stats.innerHTML=''; st.textContent='Press play to compute lcm(4, 6).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const a=4,b=6; const g=gcd(a,b);
+    w.innerHTML=`gcd(4, 6) = ${g}`; tickSound(); st.innerHTML=`First, gcd(4, 6) = <span class="k">${g}</span>.`; await sleep(+sp.value);
+    const l=a/g*b; w.innerHTML=`lcm = 4 / ${g} · 6 = ${a/g} · 6 = <b style="color:var(--found)">${l}</b>`; stats.innerHTML=`<span class="pill green">lcm = ${l}</span>`; st.innerHTML=`♾️ lcm(4, 6) = 4·6/${g} = <span class="k">${l}</span>!`; ANIM=false; celebrate(w);
+  }
+  $('#lcmPlay').onclick=play; $('#lcmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. all factors ================= */
+(function(){
+  const N=36; const st=$('#facStatus'),sp=$('#facSpeed'),stats=$('#facStats');
+  function build(){ chips($('#facChips'),[]); stats.innerHTML=''; st.textContent='Press play to list all factors of 36.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const found=new Set();
+    for(let i=1;i*i<=N;i++){ if(N%i===0){ found.add(i); found.add(N/i); const arr=[...found].sort((a,b)=>a-b); chips($('#facChips'),arr,{cls:Object.fromEntries(arr.map((v,k)=>[k,(v===i||v===N/i)?'gold':'']))}); tickSound(); st.innerHTML=`${i} divides 36 → add ${i} and ${N/i}.`; stats.innerHTML=`<span class="pill blue">${found.size} factors so far</span>`; await sleep(+sp.value); } }
+    const arr=[...found].sort((a,b)=>a-b); chips($('#facChips'),arr); st.innerHTML=`🧩 36 has <span class="k">${found.size}</span> factors: ${arr.join(', ')}!`; ANIM=false; celebrate($('#facChips'));
+  }
+  $('#facPlay').onclick=play; $('#facReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. open/close doors ================= */
+(function(){
+  const N=10; const st=$('#doorStatus'),sp=$('#doorSpeed'),stats=$('#doorStats');
+  function render(state,cur){ row($('#doorRow'), state.map(s=>s?'🟩':'⬛'), {idx:[...Array(N).keys()].map(i=>i+1), cls:Object.fromEntries(state.map((_,i)=>[i,cur&&cur.has(i)?'cur':(state[i]?'open':'closed')]))}); }
+  function build(){ render(Array(N).fill(false)); stats.innerHTML=''; st.textContent='Press play to run all the toggle passes.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const state=Array(N).fill(false);
+    for(let k=1;k<=N;k++){ const toggled=new Set(); for(let d=k;d<=N;d+=k){ state[d-1]=!state[d-1]; toggled.add(d-1); } render(state,toggled); tickSound(); st.innerHTML=`Pass ${k}: toggle every ${k}-th door.`; await sleep(+sp.value); }
+    render(state); const open=state.map((s,i)=>s?i+1:null).filter(x=>x); stats.innerHTML=`<span class="pill green">open: ${open.join(', ')}</span>`; st.innerHTML=`🚪 Doors left open = <span class="k">${open.join(', ')}</span> — the perfect squares!`; ANIM=false; celebrate($('#doorRow'));
+  }
+  $('#doorPlay').onclick=play; $('#doorReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. primality ================= */
+(function(){
+  const N=29; const st=$('#prmStatus'),sp=$('#prmSpeed'),stats=$('#prmStats'),w=$('#prmWork');
+  function build(){ w.innerHTML=`is ${N} prime? test 2..⌊√${N}⌋=5`; stats.innerHTML=''; st.textContent='Press play to test if 29 is prime.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let prime=true; const lines=[];
+    for(let i=2;i*i<=N;i++){ const r=N%i; lines.push(`${N} mod ${i} = ${r}${r===0?' → divisor!':' ✓'}`); w.innerHTML=lines.join('<br>'); tickSound(); st.innerHTML=`${N} mod ${i} = <span class="k">${r}</span>${r===0?' → not prime':''}.`; if(r===0){ prime=false; break; } await sleep(+sp.value); }
+    stats.innerHTML=prime?`<span class="pill green">29 is prime</span>`:`<span class="pill pink">not prime</span>`; st.innerHTML=`✅ 29 is <span class="k">${prime?'PRIME':'composite'}</span> (no divisor ≤ √29)!`; ANIM=false; celebrate(w);
+  }
+  $('#prmPlay').onclick=play; $('#prmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. primes in range ================= */
+(function(){
+  const N=20; const st=$('#prrStatus'),sp=$('#prrSpeed'),stats=$('#prrStats');
+  const nums=[]; for(let i=2;i<=N;i++)nums.push(i);
+  function isP(n){ if(n<2)return false; for(let i=2;i*i<=n;i++) if(n%i===0)return false; return true; }
+  function render(states,cur){ row($('#prrRow'), nums.map((n,i)=> states[i]==='p'?n:(states[i]==='c'?'✗':n)), {sm:true, cls:Object.fromEntries(nums.map((_,i)=>[i, cur===i?'cur':(states[i]==='p'?'prime':(states[i]==='c'?'comp':''))]))}); }
+  function build(){ render(nums.map(()=>'')); stats.innerHTML=''; st.textContent='Press play to test each number up to 20.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const states=nums.map(()=>''); let cnt=0;
+    for(let i=0;i<nums.length;i++){ render(states,i); tickSound(); const p=isP(nums[i]); states[i]=p?'p':'c'; if(p)cnt++; render(states); st.innerHTML=`${nums[i]} is ${p?'<span style="color:var(--found)">prime</span>':'composite'}.`; stats.innerHTML=`<span class="pill blue">${cnt} primes</span>`; await sleep(+sp.value); }
+    st.innerHTML=`📋 Primes ≤ 20: <span class="k">${nums.filter((n,i)=>states[i]==='p').join(', ')}</span> (${cnt})!`; ANIM=false; celebrate($('#prrRow'));
+  }
+  $('#prrPlay').onclick=play; $('#prrReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. sieve ================= */
+(function(){
+  const N=30; const st=$('#svStatus'),sp=$('#svSpeed'),stats=$('#svStats'),cont=$('#svGrid'); const C=10;
+  const nums=[]; for(let i=2;i<=N;i++)nums.push(i);
+  function render(state,cur){ let h=`<div class="grid" style="grid-template-columns:repeat(${C},1fr)">`; for(let i=0;i<nums.length;i++){ const s=state[i]; const cls= cur&&cur.has(i)?'cur':(s==='c'?'comp':(s==='p'?'prime':'')); h+=`<div class="cell sm ${cls}">${nums[i]}</div>`; } h+='</div>'; cont.innerHTML=h; }
+  function build(){ render(nums.map(()=>'')); stats.innerHTML=''; st.textContent='Press play to sieve the numbers up to 30.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const state=nums.map(()=>''); const idxOf=v=>v-2;
+    for(let p=2;p*p<=N;p++){ if(state[idxOf(p)]==='c')continue; state[idxOf(p)]='p'; const marked=new Set(); for(let m=p*p;m<=N;m+=p){ if(state[idxOf(m)]!=='c'){ state[idxOf(m)]='c'; marked.add(idxOf(m)); } } render(state,new Set([idxOf(p),...marked])); tickSound(); st.innerHTML=`Prime ${p}: cross out multiples from ${p*p}.`; await sleep(+sp.value); }
+    for(let i=0;i<nums.length;i++) if(state[i]!=='c')state[i]='p'; render(state); const primes=nums.filter((n,i)=>state[i]==='p'); stats.innerHTML=`<span class="pill green">${primes.length} primes</span>`; st.innerHTML=`🧹 Primes ≤ 30: <span class="k">${primes.join(', ')}</span> (${primes.length})!`; ANIM=false; celebrate(cont);
+  }
+  $('#svPlay').onclick=play; $('#svReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. prime factorization ================= */
+(function(){
+  const st=$('#pfStatus'),sp=$('#pfSpeed'),stats=$('#pfStats'),w=$('#pfWork');
+  function build(){ chips($('#pfChips'),[]); w.innerHTML='n = 60'; stats.innerHTML=''; st.textContent='Press play to factorize 60.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let n=60; const facs=[];
+    for(let d=2;d*d<=n;d++){ while(n%d===0){ facs.push(d); n/=d; chips($('#pfChips'),facs,{cls:{[facs.length-1]:'gold'}}); w.innerHTML=`divide by ${d} → n = ${n}`; tickSound(); st.innerHTML=`60 ÷ ${d} chain → factor <span class="k">${d}</span>, n = ${n}.`; await sleep(+sp.value); } }
+    if(n>1){ facs.push(n); chips($('#pfChips'),facs,{cls:{[facs.length-1]:'gold'}}); w.innerHTML=`leftover ${n} is prime`; st.innerHTML=`Leftover ${n} is prime → factor.`; await sleep(+sp.value); }
+    chips($('#pfChips'),facs); stats.innerHTML=`<span class="pill green">60 = ${facs.join(' × ')}</span>`; st.innerHTML=`🌿 60 = <span class="k">${facs.join(' × ')}</span> = 2²·3·5!`; ANIM=false; celebrate($('#pfChips'));
+  }
+  $('#pfPlay').onclick=play; $('#pfReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. fast factorization (SPF) ================= */
+(function(){
+  const st=$('#ffStatus'),sp=$('#ffSpeed'),stats=$('#ffStats');
+  const M=60; const spf=Array(M+1).fill(0); for(let i=2;i<=M;i++) if(!spf[i]) for(let j=i;j<=M;j+=i) if(!spf[j])spf[j]=i;
+  const showN=12; const spfDisp=[]; for(let i=2;i<=showN;i++)spfDisp.push(spf[i]);
+  function build(){ row($('#ffSpf'),spfDisp,{sm:true,idx:[...Array(showN-1).keys()].map(i=>i+2)}); chips($('#ffChips'),[]); stats.innerHTML=''; st.textContent='Press play to factorize 60 using SPF jumps.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let n=60; const facs=[];
+    while(n>1){ const p=spf[n]; facs.push(p); const idx=(p>=2&&p<=showN)?p-2:-1; row($('#ffSpf'),spfDisp,{sm:true,idx:[...Array(showN-1).keys()].map(i=>i+2),cls:idx>=0?{[idx]:'cur'}:{}}); chips($('#ffChips'),facs,{cls:{[facs.length-1]:'gold'}}); tickSound(); st.innerHTML=`spf[${n}] = ${p} → factor ${p}, n = ${n/p}.`; await sleep(+sp.value); n/=p; }
+    row($('#ffSpf'),spfDisp,{sm:true,idx:[...Array(showN-1).keys()].map(i=>i+2)}); chips($('#ffChips'),facs); stats.innerHTML=`<span class="pill green">60 = ${facs.join(' × ')}</span>`; st.innerHTML=`⚡ SPF factorization: 60 = <span class="k">${facs.join(' × ')}</span> in O(log n)!`; ANIM=false; celebrate($('#ffChips'));
+  }
+  $('#ffPlay').onclick=play; $('#ffReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. counting divisors ================= */
+(function(){
+  const st=$('#cdStatus'),sp=$('#cdSpeed'),stats=$('#cdStats'),w=$('#cdWork');
+  function build(){ w.innerHTML='60 = 2² · 3¹ · 5¹'; stats.innerHTML=''; st.textContent='Press play to count the divisors of 60.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let n=60; const exp={};
+    for(let d=2;d*d<=n;d++){ while(n%d===0){ exp[d]=(exp[d]||0)+1; n/=d; } } if(n>1)exp[n]=(exp[n]||0)+1;
+    const primes=Object.keys(exp).map(Number); let prod=1; const terms=[];
+    for(let i=0;i<primes.length;i++){ const p=primes[i],e=exp[p]; prod*=(e+1); terms.push(`(${e}+1)`); w.innerHTML=`60 = ${primes.map(q=>`${q}^${exp[q]}`).join(' · ')}<br>divisors = ${terms.join(' · ')} = <b style="color:var(--found)">${prod}</b>`; tickSound(); st.innerHTML=`Prime ${p} has exponent ${e} → factor (${e}+1). Running product = ${prod}.`; stats.innerHTML=`<span class="pill blue">product = ${prod}</span>`; await sleep(+sp.value); }
+    st.innerHTML=`🔢 60 has <span class="k">${prod}</span> divisors = (2+1)(1+1)(1+1)!`; ANIM=false; celebrate(w);
+  }
+  $('#cdPlay').onclick=play; $('#cdReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. segmented sieve ================= */
+(function(){
+  const L=10,R=20; const st=$('#segStatus'),sp=$('#segSpeed'),stats=$('#segStats');
+  const nums=[]; for(let v=L;v<=R;v++)nums.push(v);
+  function render(state,cur){ row($('#segRow'), nums.map((n,i)=> state[i]==='c'?'✗':n), {sm:true, idx:nums, cls:Object.fromEntries(nums.map((_,i)=>[i, cur&&cur.has(i)?'cur':(state[i]==='c'?'comp':(state[i]==='p'?'prime':''))]))}); }
+  function build(){ render(nums.map(()=>'')); stats.innerHTML=''; st.textContent='Press play to sieve the segment [10, 20].'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const state=nums.map(()=>''); const bases=[2,3]; // √20 < 5
+    st.innerHTML=`Base primes ≤ √20 = {2, 3}. Mark their multiples in [10,20]…`; await sleep(+sp.value);
+    for(const p of bases){ let start=Math.max(p*p, Math.ceil(L/p)*p); const marked=new Set(); for(let m=start;m<=R;m+=p){ const idx=m-L; if(state[idx]!=='c'){ state[idx]='c'; marked.add(idx); } } render(state,marked); tickSound(); st.innerHTML=`Prime ${p}: mark ${[...marked].map(i=>nums[i]).join(', ')||'—'}.`; await sleep(+sp.value); }
+    for(let i=0;i<nums.length;i++) if(state[i]!=='c'&&nums[i]>1)state[i]='p'; render(state); const primes=nums.filter((n,i)=>state[i]==='p'); stats.innerHTML=`<span class="pill green">primes: ${primes.join(', ')}</span>`; st.innerHTML=`📐 Primes in [10, 20]: <span class="k">${primes.join(', ')}</span>!`; ANIM=false; celebrate($('#segRow'));
+  }
+  $('#segPlay').onclick=play; $('#segReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. segmented sieve impl ================= */
+(function(){
+  const L=20,R=30; const st=$('#sgiStatus'),sp=$('#sgiSpeed'),stats=$('#sgiStats');
+  const nums=[]; for(let v=L;v<=R;v++)nums.push(v);
+  function render(state,cur){ row($('#sgiRow'), nums.map((n,i)=> state[i]==='c'?'✗':n), {sm:true, idx:nums, cls:Object.fromEntries(nums.map((_,i)=>[i, cur&&cur.has(i)?'cur':(state[i]==='c'?'comp':(state[i]==='p'?'prime':''))]))}); }
+  function build(){ render(nums.map(()=>'')); stats.innerHTML=''; st.textContent='Press play to sieve the segment [20, 30].'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const state=nums.map(()=>''); const bases=[2,3,5]; // √30 < 6
+    st.innerHTML=`Base primes ≤ √30 = {2, 3, 5}.`; await sleep(+sp.value);
+    for(const p of bases){ const start=Math.max(p*p, Math.ceil(L/p)*p); const marked=new Set(); for(let m=start;m<=R;m+=p){ const idx=m-L; if(state[idx]!=='c'){ state[idx]='c'; marked.add(idx); } } render(state,marked); tickSound(); st.innerHTML=`Prime ${p}: offset = max(${p*p}, ⌈${L}/${p}⌉·${p}) = ${start}; mark ${[...marked].map(i=>nums[i]).join(', ')||'—'}.`; await sleep(+sp.value); }
+    for(let i=0;i<nums.length;i++) if(state[i]!=='c'&&nums[i]>1)state[i]='p'; render(state); const primes=nums.filter((n,i)=>state[i]==='p'); stats.innerHTML=`<span class="pill green">primes: ${primes.join(', ')}</span>`; st.innerHTML=`🎯 Primes in [20, 30]: <span class="k">${primes.join(', ')}</span> via offset marking!`; ANIM=false; celebrate($('#sgiRow'));
+  }
+  $('#sgiPlay').onclick=play; $('#sgiReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 14. modular arithmetic ================= */
+(function(){
+  const st=$('#modStatus'),sp=$('#modSpeed'),stats=$('#modStats'),w=$('#modWork');
+  function build(){ w.innerHTML='a = 17, b = 25, m = 7'; stats.innerHTML=''; st.textContent='Press play to verify modular addition & multiplication.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const a=17,b=25,m=7; const lines=[];
+    lines.push(`(a + b) mod m = ${a+b} mod ${m} = <b>${(a+b)%m}</b>`); w.innerHTML=lines.join('<br>'); tickSound(); st.innerHTML=`(17 + 25) mod 7 = 42 mod 7 = <span class="k">${(a+b)%m}</span>.`; await sleep(+sp.value);
+    lines.push(`= (a%m + b%m) mod m = (${a%m} + ${b%m}) mod ${m} = <b style="color:var(--found)">${(a%m+b%m)%m}</b>`); w.innerHTML=lines.join('<br>'); tickSound(); st.innerHTML=`Distributes! = (3 + 4) mod 7 = <span class="k">${(a%m+b%m)%m}</span>.`; await sleep(+sp.value);
+    lines.push(`(a · b) mod m = ${a*b} mod ${m} = ${(a*b)%m} = (a%m · b%m) mod m = (${a%m}·${b%m}) mod ${m} = <b style="color:var(--found)">${(a%m*(b%m))%m}</b>`); w.innerHTML=lines.join('<br>'); stats.innerHTML=`<span class="pill green">both properties hold</span>`; st.innerHTML=`🕐 Mod distributes over + and × → keep numbers small!`; ANIM=false; celebrate(w);
+  }
+  $('#modPlay').onclick=play; $('#modReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. counting pairs ================= */
+(function(){
+  const A=[1,2,1,3,1]; const st=$('#prStatus'),sp=$('#prSpeed'),stats=$('#prStats'),w=$('#prWork'); const idx=A.map((_,i)=>i);
+  function build(){ row($('#prArr'),A,{idx}); w.innerHTML='freq = {}'; stats.innerHTML=''; st.textContent='Press play to count equal-element pairs.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const freq={};
+    for(let i=0;i<A.length;i++){ freq[A[i]]=(freq[A[i]]||0)+1; row($('#prArr'),A,{idx,cls:{[i]:'cur'}}); w.innerHTML='freq = { '+Object.entries(freq).map(([k,v])=>`${k}:${v}`).join(', ')+' }'; tickSound(); st.innerHTML=`Count ${A[i]} → freq ${freq[A[i]]}.`; await sleep(+sp.value); }
+    let total=0; const terms=[]; for(const k in freq){ const f=freq[k]; const c=f*(f-1)/2; total+=c; if(c>0)terms.push(`C(${f},2)=${c}`); }
+    row($('#prArr'),A,{idx}); w.innerHTML='pairs = '+(terms.join(' + ')||'0')+` = <b style="color:var(--found)">${total}</b>`; stats.innerHTML=`<span class="pill green">pairs = ${total}</span>`; st.innerHTML=`👯 Equal-element pairs = <span class="k">${total}</span> (value 1 gives C(3,2)=3)!`; ANIM=false; celebrate(w);
+  }
+  $('#prPlay').onclick=play; $('#prReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 16. counting triplets ================= */
+(function(){
+  const A=[1,1,1,1]; const st=$('#trStatus'),sp=$('#trSpeed'),stats=$('#trStats'),w=$('#trWork'); const idx=A.map((_,i)=>i);
+  function build(){ row($('#trArr'),A,{idx}); w.innerHTML='freq = {}'; stats.innerHTML=''; st.textContent='Press play to count equal-element triplets.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const freq={};
+    for(let i=0;i<A.length;i++){ freq[A[i]]=(freq[A[i]]||0)+1; row($('#trArr'),A,{idx,cls:{[i]:'cur'}}); w.innerHTML='freq = { '+Object.entries(freq).map(([k,v])=>`${k}:${v}`).join(', ')+' }'; tickSound(); await sleep(+sp.value); }
+    let total=0; const terms=[]; for(const k in freq){ const f=freq[k]; const c=f*(f-1)*(f-2)/6; total+=c; terms.push(`C(${f},3)=${c}`); }
+    row($('#trArr'),A,{idx}); w.innerHTML='triplets = '+terms.join(' + ')+` = <b style="color:var(--found)">${total}</b>`; stats.innerHTML=`<span class="pill green">triplets = ${total}</span>`; st.innerHTML=`🔺 Equal-element triplets = <span class="k">${total}</span> (C(4,3) = 4)!`; ANIM=false; celebrate(w);
+  }
+  $('#trPlay').onclick=play; $('#trReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 17. combinatorics (factorial) ================= */
+(function(){
+  const N=4; const st=$('#cmbStatus'),sp=$('#cmbSpeed'),stats=$('#cmbStats'),w=$('#cmbWork');
+  function build(){ w.innerHTML='4! = ?'; stats.innerHTML=''; st.textContent='Press play to build 4! step by step.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let f=1; const parts=[];
+    for(let i=1;i<=N;i++){ f*=i; parts.push(i); w.innerHTML=`${parts.join(' × ')} = ${f}`; tickSound(); st.innerHTML=`× ${i} → running product = <span class="k">${f}</span>.`; stats.innerHTML=`<span class="pill blue">${f}</span>`; await sleep(+sp.value); }
+    st.innerHTML=`🎲 4! = 4·3·2·1 = <span class="k">${f}</span> arrangements!`; ANIM=false; celebrate(w);
+  }
+  $('#cmbPlay').onclick=play; $('#cmbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 18. perm & comb ================= */
+(function(){
+  const n=5,r=2; const st=$('#pcStatus'),sp=$('#pcSpeed'),stats=$('#pcStats'),w=$('#pcWork');
+  function fact(x){ let f=1; for(let i=2;i<=x;i++)f*=i; return f; }
+  function build(){ w.innerHTML='P(5,2) &amp; C(5,2) = ?'; stats.innerHTML=''; st.textContent='Press play to compute P(5,2) and C(5,2).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const P=fact(n)/fact(n-r);
+    w.innerHTML=`P(5,2) = 5!/(5−2)! = 120/6 = <b>${P}</b>`; tickSound(); st.innerHTML=`P(5,2) = 5!/3! = <span class="k">${P}</span> (ordered).`; await sleep(+sp.value);
+    const C=P/fact(r); w.innerHTML=`P(5,2) = 5!/(5−2)! = 120/6 = <b>${P}</b><br>C(5,2) = P/2! = ${P}/2 = <b style="color:var(--found)">${C}</b>`; stats.innerHTML=`<span class="pill blue">P = ${P}</span><span class="pill green">C = ${C}</span>`; st.innerHTML=`🔀 P(5,2)=<span class="k">${P}</span>, C(5,2)=P/2!=<span class="k">${C}</span>!`; ANIM=false; celebrate(w);
+  }
+  $('#pcPlay').onclick=play; $('#pcReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 19. understanding nCr ================= */
+(function(){
+  const st=$('#ncrStatus'),sp=$('#ncrSpeed'),stats=$('#ncrStats'),w=$('#ncrWork');
+  function C(n,r){ if(r<0||r>n)return 0; let res=1; for(let i=0;i<r;i++)res=res*(n-i)/(i+1); return Math.round(res); }
+  function build(){ w.innerHTML='C(5,2) = C(4,1) + C(4,2)'; stats.innerHTML=''; st.textContent='Press play to expand C(5,2) via Pascal\u2019s identity.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true;
+    w.innerHTML=`C(5,2) = C(4,1) + C(4,2)`; tickSound(); st.innerHTML=`Include the 1st item → C(4,1); exclude it → C(4,2).`; await sleep(+sp.value);
+    w.innerHTML=`C(5,2) = C(4,1) + C(4,2) = ${C(4,1)} + ${C(4,2)}`; tickSound(); st.innerHTML=`C(4,1) = ${C(4,1)}, C(4,2) = ${C(4,2)}.`; await sleep(+sp.value);
+    w.innerHTML=`C(5,2) = ${C(4,1)} + ${C(4,2)} = <b style="color:var(--found)">${C(5,2)}</b>`; stats.innerHTML=`<span class="pill green">C(5,2) = ${C(5,2)}</span>`; st.innerHTML=`🧊 C(5,2) = C(4,1)+C(4,2) = ${C(4,1)}+${C(4,2)} = <span class="k">${C(5,2)}</span>!`; ANIM=false; celebrate(w);
+  }
+  $('#ncrPlay').onclick=play; $('#ncrReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 20. pascal triangle ================= */
+(function(){
+  const ROWS=7; const st=$('#pasStatus'),sp=$('#pasSpeed'),stats=$('#pasStats'),cont=$('#pasTri');
+  function render(tri,hl){ cont.innerHTML=tri.map((rowArr,n)=>`<div class="prow">${rowArr.map((v,r)=>`<div class="pc ${hl&&hl.n===n&&hl.set&&hl.set.has(r)?hl.cls:''}">${v===null?'':v}</div>`).join('')}</div>`).join(''); }
+  function build(){ const tri=[]; for(let n=0;n<ROWS;n++)tri.push(Array(n+1).fill(null)); render(tri); stats.innerHTML=''; st.textContent='Press play to build Pascal\u2019s triangle.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const tri=[];
+    for(let n=0;n<ROWS;n++){ tri.push(Array(n+1).fill(null)); for(let r=0;r<=n;r++){ tri[n][r]= (r===0||r===n)?1: tri[n-1][r-1]+tri[n-1][r]; render(tri,{n,set:new Set([r]),cls:'cur'}); tickSound(); await sleep(+sp.value*0.7); } stats.innerHTML=`<span class="pill blue">row ${n} done</span>`; }
+    render(tri,{n:5,set:new Set([2]),cls:'ans'}); stats.innerHTML=`<span class="pill green">C(5,2) = ${tri[5][2]}</span>`; st.innerHTML=`🔻 Pascal's triangle built — row 5 pos 2 = C(5,2) = <span class="k">${tri[5][2]}</span>!`; ANIM=false; celebrate(cont);
+  }
+  $('#pasPlay').onclick=play; $('#pasReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 21. catalan ================= */
+(function(){
+  const N=5; const st=$('#catStatus'),sp=$('#catSpeed'),stats=$('#catStats'),w=$('#catWork'); const idx=[...Array(N+1).keys()].map(i=>'C'+i);
+  function build(){ row($('#catRow'),Array(N+1).fill('·'),{idx}); w.innerHTML='C₀ = 1'; stats.innerHTML=''; st.textContent='Press play to build the Catalan sequence.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const C=[1]; row($('#catRow'),['1',...Array(N).fill('·')],{idx,cls:{0:'done'}}); w.innerHTML='C₀ = 1'; st.innerHTML=`Base: C₀ = 1.`; await sleep(+sp.value);
+    for(let n=1;n<=N;n++){ let s=0; const parts=[]; for(let i=0;i<n;i++){ s+=C[i]*C[n-1-i]; parts.push(`C${i}·C${n-1-i}`); } C[n]=s; const disp=C.map(String); while(disp.length<N+1)disp.push('·'); row($('#catRow'),disp,{idx,cls:{[n]:'cur'}}); w.innerHTML=`C${n} = ${parts.join(' + ')} = ${s}`; tickSound(); st.innerHTML=`C${n} = Σ Cᵢ·C${n}₋₁₋ᵢ = <span class="k">${s}</span>.`; stats.innerHTML=`<span class="pill blue">[${C.join(', ')}]</span>`; await sleep(+sp.value); }
+    row($('#catRow'),C.map(String),{idx,cls:{4:'ans'}}); st.innerHTML=`🐱 Catalan: [${C.join(', ')}] — C₄ = <span class="k">${C[4]}</span>!`; ANIM=false; celebrate($('#catRow'));
+  }
+  $('#catPlay').onclick=play; $('#catReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 22. catalan applications ================= */
+(function(){
+  const st=$('#capStatus'),sp=$('#capSpeed'),stats=$('#capStats');
+  function gen(open,close,cur,out){ if(open===0&&close===0){ out.push(cur); return; } if(open>0)gen(open-1,close,cur+'(',out); if(close>open)gen(open,close-1,cur+')',out); }
+  function build(){ chips($('#capChips'),[]); stats.innerHTML=''; st.textContent='Press play to generate all valid parenthesizations.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const out=[]; gen(3,3,'',out); const shown=[];
+    for(const s of out){ shown.push(s); chips($('#capChips'),shown,{cls:{[shown.length-1]:'gold'}}); tickSound(); st.innerHTML=`Valid string ${shown.length}: <span class="k">${s}</span>.`; stats.innerHTML=`<span class="pill blue">${shown.length} / 5</span>`; await sleep(+sp.value); }
+    chips($('#capChips'),out); stats.innerHTML=`<span class="pill green">count = ${out.length} = C₃</span>`; st.innerHTML=`🌟 <span class="k">${out.length}</span> valid parenthesizations of 3 pairs = Catalan C₃ = 5!`; ANIM=false; celebrate($('#capChips'));
+  }
+  $('#capPlay').onclick=play; $('#capReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

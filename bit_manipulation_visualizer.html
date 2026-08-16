@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bit Manipulation — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:720px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:7px; justify-content:center;
+      padding:12px; background:rgba(11,16,32,.8); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12.5px; font-weight:600; padding:6px 11px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(21px,3.4vw,30px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12.5px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  /* bit panel */
+  .bitpanel{margin:20px 0; padding:10px; background:#0a1330; border:1px solid var(--line); border-radius:12px}
+  .bline{display:flex; align-items:center; gap:12px; justify-content:center; margin:7px 0}
+  .bname{width:72px; text-align:right; font-weight:800; color:var(--muted); font-family:'Consolas',monospace; font-size:14px}
+  .bits{display:flex; gap:5px}
+  .bit{width:34px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-family:'Consolas',monospace;font-size:17px;border:2px solid #2c3d6e;transition:all .3s cubic-bezier(.2,.8,.2,1)}
+  .bit.zero{background:#131d3a;color:#4a5a86}
+  .bit.one{background:#22345f;color:#8ff0ff;border-color:var(--accent)}
+  .bit.hl{box-shadow:0 0 0 3px rgba(255,209,102,.55); transform:translateY(-5px) scale(1.06); border-color:var(--mid)}
+  .bit.diff{box-shadow:0 0 0 3px rgba(247,37,133,.55); border-color:var(--hi); color:#ff9ecb}
+  .bit.gone{opacity:.25; text-decoration:line-through}
+  .bval{width:96px; font-weight:800; color:var(--ink); font-family:'Consolas',monospace; font-size:15px}
+  .bval.found{color:var(--found)}
+
+  /* cells */
+  .cellrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:22px 0 28px; min-height:66px}
+  .cell{position:relative; min-width:50px; height:50px; padding:0 8px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:16px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .35s cubic-bezier(.2,.8,.2,1)}
+  .cell .idx{position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--muted); font-weight:700}
+  .cell .ptr{position:absolute; bottom:-23px; left:50%; transform:translateX(-50%); font-size:11.5px; font-weight:800; white-space:nowrap; color:var(--accent); background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 6px}
+  .cell.in-range{border-color:var(--accent); background:#22345f}
+  .cell.lo{border-color:var(--lo); background:#182a5a; box-shadow:0 0 0 3px rgba(67,97,238,.4)}
+  .cell.hi{border-color:var(--hi); background:#3a1d2a; box-shadow:0 0 0 3px rgba(247,37,133,.4)}
+  .cell.mid{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 4px rgba(255,209,102,.45); transform:scale(1.1) translateY(-4px)}
+  .cell.found{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 4px rgba(6,214,160,.55)}
+  .cell.dead{opacity:.3; filter:grayscale(.5)}
+
+  .hashpanel{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:8px 0 6px; min-height:44px; padding:8px; background:#0a1330; border:1px solid var(--line); border-radius:12px}
+  .hashpanel .label{align-self:center; color:var(--muted); font-weight:700; font-size:13px; margin-right:6px}
+  .hentry{display:inline-flex; align-items:center; gap:6px; background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:5px 10px; font-weight:700; font-size:13px; animation:pop .3s ease}
+  .hentry b{color:var(--accent)}
+  .hentry.hit{border-color:var(--found); box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .hentry.new{border-color:var(--mid)}
+  .hashpanel .empty{color:var(--muted); font-style:italic; align-self:center}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Bit Manipulation — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch bits flip, cancel, and shift in real time. Built so every bit trick sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#ops1">🔣 Operators I</a>
+  <a href="#ops2">↔️ Operators II</a>
+  <a href="#usingops">🛠️ Using Operators</a>
+  <a href="#countbits">🔢 Count Set Bits</a>
+  <a href="#cumand">🔗 Cumulative AND</a>
+  <a href="#oddoneout">🎯 Odd One Out</a>
+  <a href="#hamming">📏 Hamming Distance</a>
+  <a href="#orsub">🪟 OR of Subarrays</a>
+  <a href="#minxor">🔽 Minimum XOR</a>
+  <a href="#xorqueries">📊 XOR Queries</a>
+  <a href="#pairxor">👥 Pair with XOR</a>
+  <a href="#findtwo">✌️ Find Two Elements</a>
+</nav>
+
+<main>
+
+  <!-- OPERATORS I -->
+  <section id="ops1">
+    <h2>🔣 Bitwise Operators I — AND · OR · XOR <span class="badge">Foundation</span></h2>
+    <p class="lead">The three core gates, applied bit-by-bit between two numbers.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Three voting rules per column:</span> <b>AND</b> = 1 only if <i>both</i> bits are 1 (strict). <b>OR</b> = 1 if <i>either</i> is 1 (generous). <b>XOR</b> = 1 if the bits <i>differ</i> (the disagreement detector). Every column decides independently.</div>
+      <div class="steps-flow"><span class="chip">AND: both 1</span><span class="arrow">·</span><span class="chip">OR: at least one 1</span><span class="arrow">·</span><span class="chip">XOR: exactly one 1</span></div>
+      <div class="oneliner">🔒 Keep forever: "AND intersects, OR unions, XOR flags differences."</div>
+    </div>
+    <div class="note">a = 12 <code>(00001100)</code>, b = 10 <code>(00001010)</code>.</div>
+    <div class="bitpanel" id="op1Panel"></div>
+    <div class="status" id="op1Status">Press play to compute AND, OR, then XOR bit by bit.</div>
+    <div class="controls"><button class="btn" id="op1Play">▶ AND · OR · XOR</button><button class="btn ghost" id="op1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="op1Speed" min="150" max="1400" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> AND(12,10)=8, OR=14, XOR=6. XOR is self-inverse: <code>x^x=0</code>, <code>x^0=x</code> — the key to half these problems.</div></div>
+    <pre><code>a &amp; b   <span class="cm">// AND — keep bits set in both</span>
+a | b   <span class="cm">// OR  — set bits in either</span>
+a ^ b   <span class="cm">// XOR — set bits that differ</span>
+~a      <span class="cm">// NOT — flip every bit</span></code></pre>
+  </section>
+
+  <!-- OPERATORS II -->
+  <section id="ops2">
+    <h2>↔️ Bitwise Operators II — Shifts &amp; Masks <span class="badge">Move &amp; edit</span></h2>
+    <p class="lead">Shifting multiplies/divides by powers of two; masks let you get, set, clear, or toggle any single bit.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sliding an abacus:</span> <b>x &lt;&lt; k</b> slides bits left → multiply by 2ᵏ. <b>x &gt;&gt; k</b> slides right → divide by 2ᵏ. To touch one bit, build a mask <code>1&lt;&lt;i</code> and OR (set), AND-NOT (clear), or XOR (toggle) with it.</div>
+      <div class="steps-flow"><span class="chip">x&lt;&lt;1 = ×2</span><span class="arrow">·</span><span class="chip">x&gt;&gt;1 = ÷2</span><span class="arrow">·</span><span class="chip">set: x | (1&lt;&lt;i)</span><span class="arrow">·</span><span class="chip">toggle: x ^ (1&lt;&lt;i)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Shift to scale by powers of two; mask with 1&lt;&lt;i to edit one bit."</div>
+    </div>
+    <div class="note">Starting x = 6 <code>(00000110)</code>. Watch shift and set-a-bit.</div>
+    <div class="bitpanel" id="op2Panel"></div>
+    <div class="status" id="op2Status">Press play to shift left, shift right, and set a bit.</div>
+    <div class="controls"><button class="btn" id="op2Play">▶ Shift &amp; Mask</button><button class="btn ghost" id="op2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="op2Speed" min="250" max="2000" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> get bit i → <code>(x&gt;&gt;i)&amp;1</code>; set → <code>x|(1&lt;&lt;i)</code>; clear → <code>x&amp;~(1&lt;&lt;i)</code>; toggle → <code>x^(1&lt;&lt;i)</code>.</div></div>
+    <pre><code>x &lt;&lt; 1;          <span class="cm">// 6 → 12  (×2)</span>
+x &gt;&gt; 1;          <span class="cm">// 6 → 3   (÷2)</span>
+x | (1 &lt;&lt; 5);    <span class="cm">// set bit 5</span>
+x &amp; ~(1 &lt;&lt; i);   <span class="cm">// clear bit i</span></code></pre>
+  </section>
+
+  <!-- USING OPERATORS -->
+  <section id="usingops">
+    <h2>🛠️ Using Bitwise Operators (Tricks) <span class="badge">Toolbox</span></h2>
+    <p class="lead">Three everyday one-liners: odd/even, power-of-two test, and isolating the lowest set bit.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Reading the rightmost bits:</span> the last bit alone tells odd/even. A power of two has exactly <b>one</b> set bit, so <code>x &amp; (x−1)</code> wipes it to 0. And <code>x &amp; −x</code> magically isolates just the lowest set bit (thanks to two's complement).</div>
+      <div class="steps-flow"><span class="chip">odd? x&amp;1</span><span class="arrow">·</span><span class="chip">pow2? x&amp;(x−1)==0</span><span class="arrow">·</span><span class="chip">lowest bit: x&amp;−x</span></div>
+      <div class="oneliner">🔒 Keep forever: "x&amp;1 = parity · x&amp;(x−1) clears lowest bit · x&amp;−x isolates it."</div>
+    </div>
+    <div class="bitpanel" id="uoPanel"></div>
+    <div class="status" id="uoStatus">Press play: parity → power-of-two → lowest set bit.</div>
+    <div class="controls"><button class="btn" id="uoPlay">▶ Run Tricks</button><button class="btn ghost" id="uoReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="uoSpeed" min="300" max="2200" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> XOR-swap <code>a^=b; b^=a; a^=b;</code> swaps without a temp. <code>x&amp;(x-1)</code> also removes the lowest set bit (used to count bits below).</div></div>
+    <pre><code><span class="kw">boolean</span> odd  = (x &amp; <span class="num">1</span>) == <span class="num">1</span>;
+<span class="kw">boolean</span> pow2 = x &gt; <span class="num">0</span> &amp;&amp; (x &amp; (x - <span class="num">1</span>)) == <span class="num">0</span>;
+<span class="kw">int</span> lowestBit = x &amp; -x;   <span class="cm">// isolates rightmost 1</span></code></pre>
+  </section>
+
+  <!-- COUNT SET BITS -->
+  <section id="countbits">
+    <h2>🔢 Count of Set Bits (Kernighan) <span class="badge">O(set bits)</span></h2>
+    <p class="lead">Count the 1-bits by repeatedly stripping off the lowest set bit.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Snuffing out candles:</span> <code>x &amp; (x−1)</code> extinguishes exactly the lowest lit candle each round. Count the rounds until the number is dark (0). You only loop once per set bit — faster than checking all 32.</div>
+      <div class="steps-flow"><span class="chip">while x≠0</span><span class="arrow">→</span><span class="chip">x &amp;= x−1 (kill lowest 1)</span><span class="arrow">→</span><span class="chip">count++</span></div>
+      <div class="oneliner">🔒 Keep forever: "x &amp; (x−1) drops the lowest 1 — count the drops."</div>
+    </div>
+    <div class="note">x = 13 <code>(00001101)</code> → 3 set bits.</div>
+    <div class="bitpanel" id="cbPanel"></div>
+    <div class="status" id="cbStatus">Press play to strip the lowest 1 each step.</div>
+    <div class="stats" id="cbStats"></div>
+    <div class="controls"><button class="btn" id="cbPlay">▶ Count Bits</button><button class="btn ghost" id="cbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cbSpeed" min="300" max="2200" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> loops exactly (number of set bits) times, not 32. Also known as <code>popcount</code> / <code>Integer.bitCount</code>.</div></div>
+    <pre><code><span class="kw">int</span> count = <span class="num">0</span>;
+<span class="kw">while</span> (x != <span class="num">0</span>) { x &amp;= (x - <span class="num">1</span>); count++; }
+<span class="kw">return</span> count;</code></pre>
+  </section>
+
+  <!-- CUMULATIVE AND -->
+  <section id="cumand">
+    <h2>🔗 Cumulative Bitwise AND <span class="badge">Bits only drop</span></h2>
+    <p class="lead">AND across many numbers keeps a bit set only if <b>every</b> number has it — bits can only turn off.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Unanimous jury:</span> a bit survives only if <b>all</b> numbers vote 1 for it. The instant one number has a 0 in that column, the bit is gone forever. So the running AND only loses bits — never gains them.</div>
+      <div class="oneliner">🔒 Keep forever: "AND is monotonic downward — one 0 in a column kills that bit for good."</div>
+    </div>
+    <div class="note">Array <code>[15, 14, 12, 8]</code> → cumulative AND = 8.</div>
+    <div class="bitpanel" id="caPanel"></div>
+    <div class="status" id="caStatus">Press play. Bits fall away as zeros appear.</div>
+    <div class="controls"><button class="btn" id="caPlay">▶ Cumulative AND</button><button class="btn ghost" id="caReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="caSpeed" min="300" max="2200" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> AND of a range [m..n] = common binary prefix of m and n (shift both right until equal, then shift back).</div></div>
+    <pre><code><span class="kw">int</span> result = a[<span class="num">0</span>];
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">1</span>; i&lt;n; i++) result &amp;= a[i]; <span class="cm">// bits only drop</span></code></pre>
+  </section>
+
+  <!-- ODD ONE OUT -->
+  <section id="oddoneout">
+    <h2>🎯 Detecting the Odd One Out <span class="badge">XOR magic</span></h2>
+    <p class="lead">Every element appears twice except one — XOR them all and the pairs cancel, leaving the loner.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Cancelling twins:</span> since <code>x ^ x = 0</code>, every duplicated pair XORs down to zero. XOR the whole array and all the twins vanish, leaving only the single unmatched number.</div>
+      <div class="steps-flow"><span class="chip">acc = 0</span><span class="arrow">→</span><span class="chip">acc ^= each element</span><span class="arrow">→</span><span class="chip">pairs cancel → loner remains</span></div>
+      <div class="oneliner">🔒 Keep forever: "XOR everything; identical pairs self-destruct; the unique survives."</div>
+    </div>
+    <div class="note">Array <code>[4, 2, 7, 2, 4]</code> → single = 7.</div>
+    <div class="cellrow" id="ooRow"></div>
+    <div class="bitpanel" id="ooPanel"></div>
+    <div class="status" id="ooStatus">Press play. Running XOR cancels the pairs.</div>
+    <div class="controls"><button class="btn" id="ooPlay">▶ Find Single</button><button class="btn ghost" id="ooReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ooSpeed" min="300" max="2200" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n) time, O(1) space, no sorting. XOR's cancellation is the trick behind missing-number and swapped-value puzzles too.</div></div>
+    <pre><code><span class="kw">int</span> acc = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">int</span> x : a) acc ^= x;  <span class="cm">// pairs vanish</span>
+<span class="kw">return</span> acc;                <span class="cm">// the unique element</span></code></pre>
+  </section>
+
+  <!-- HAMMING DISTANCE -->
+  <section id="hamming">
+    <h2>📏 Hamming Distance <span class="badge">XOR + popcount</span></h2>
+    <p class="lead">Count the positions where two numbers' bits differ — just popcount of their XOR.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Spot the differences:</span> XOR lights up exactly the columns where the two numbers <b>disagree</b>. Count those lit bits and you have the Hamming distance — how many single-bit flips turn one number into the other.</div>
+      <div class="steps-flow"><span class="chip">d = a ^ b</span><span class="arrow">→</span><span class="chip">count set bits of d</span></div>
+      <div class="oneliner">🔒 Keep forever: "Differences = XOR; distance = popcount(a ^ b)."</div>
+    </div>
+    <div class="note">a = 9 <code>(1001)</code>, b = 14 <code>(1110)</code> → distance 3.</div>
+    <div class="bitpanel" id="hmPanel"></div>
+    <div class="status" id="hmStatus">Press play. XOR flags differing bits, then count them.</div>
+    <div class="stats" id="hmStats"></div>
+    <div class="controls"><button class="btn" id="hmPlay">▶ Hamming Distance</button><button class="btn ghost" id="hmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="hmSpeed" min="250" max="2000" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> total Hamming distance over an array = for each bit, (count of 1s) × (count of 0s), summed over bits.</div></div>
+    <pre><code><span class="kw">int</span> hamming(<span class="kw">int</span> a, <span class="kw">int</span> b) {
+  <span class="kw">int</span> d = a ^ b, count = <span class="num">0</span>;
+  <span class="kw">while</span> (d != <span class="num">0</span>) { d &amp;= d - <span class="num">1</span>; count++; }
+  <span class="kw">return</span> count;
+}</code></pre>
+  </section>
+
+  <!-- OR OF SUBARRAYS -->
+  <section id="orsub">
+    <h2>🪟 Bitwise OR of Subarrays <span class="badge">Monotonic OR</span></h2>
+    <p class="lead">As a subarray grows, its OR only <b>gains</b> bits — collect all distinct OR values.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A one-way ratchet:</span> extend a subarray to the right and OR the new element in — bits can only switch <b>on</b>, never off. So from any start there are at most ~30 distinct OR values (one per new bit). That bounds the whole distinct-OR set.</div>
+      <div class="steps-flow"><span class="chip">fix start i</span><span class="arrow">→</span><span class="chip">extend right, OR in</span><span class="arrow">→</span><span class="chip">collect distinct results</span></div>
+      <div class="oneliner">🔒 Keep forever: "OR only turns bits on — few distinct values, easy to enumerate."</div>
+    </div>
+    <div class="note">Array <code>[1, 2, 4]</code> → distinct subarray ORs.</div>
+    <div class="cellrow" id="orRow"></div>
+    <div class="bitpanel" id="orPanel"></div>
+    <div class="status" id="orStatus">Press play. Each subarray's OR only adds bits.</div>
+    <div class="stats" id="orStats"></div>
+    <div class="controls"><button class="btn" id="orPlay">▶ OR Subarrays</button><button class="btn ghost" id="orReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="orSpeed" min="300" max="2200" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the "OR is monotonic" insight caps distinct ORs at O(n · bits) — the basis of efficient subarray-OR problems.</div></div>
+    <pre><code>Set&lt;Integer&gt; distinct = <span class="kw">new</span> HashSet&lt;&gt;();
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++) {
+  <span class="kw">int</span> cur = <span class="num">0</span>;
+  <span class="kw">for</span> (<span class="kw">int</span> j=i; j&lt;n; j++) { cur |= a[j]; distinct.add(cur); }
+}</code></pre>
+  </section>
+
+  <!-- MINIMUM XOR -->
+  <section id="minxor">
+    <h2>🔽 Finding Minimum XOR (Pair) <span class="badge">Sort + adjacent</span></h2>
+    <p class="lead">The pair with the smallest XOR is always <b>adjacent</b> after sorting — so just compare neighbors.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Closest neighbours share bits:</span> numbers that are numerically close share the most high bits, so their XOR is tiny. Sort the array, then the minimum XOR hides between some <b>adjacent</b> pair — check just n−1 pairs instead of all n².</div>
+      <div class="steps-flow"><span class="chip">sort</span><span class="arrow">→</span><span class="chip">xor each adjacent pair</span><span class="arrow">→</span><span class="chip">track the minimum</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sort first — the minimum XOR pair is always neighbours."</div>
+    </div>
+    <div class="note">Array <code>[3, 10, 5, 25, 2, 8]</code> → minimum XOR = 1 (from 2, 3).</div>
+    <div class="cellrow" id="mxRow"></div>
+    <div class="status" id="mxStatus">Press play. Sort, then compare adjacent XORs.</div>
+    <div class="stats" id="mxStats"></div>
+    <div class="controls"><button class="btn" id="mxPlay">▶ Min XOR</button><button class="btn ghost" id="mxReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mxSpeed" min="300" max="2200" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> sorting gives O(n log n); a binary Trie of bits gives O(n·32) and also solves "max XOR" queries.</div></div>
+    <pre><code>sort(a);
+<span class="kw">int</span> best = MAX;
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">1</span>; i&lt;n; i++) best = min(best, a[i] ^ a[i-<span class="num">1</span>]);</code></pre>
+  </section>
+
+  <!-- XOR QUERIES -->
+  <section id="xorqueries">
+    <h2>📊 Multiple XOR Queries (Prefix XOR) <span class="badge">O(1) per query</span></h2>
+    <p class="lead">Precompute prefix XORs so any range XOR is answered instantly, like prefix sums.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">XOR odometer:</span> record the running XOR at every index. The XOR of a range [l..r] is <code>prefix[r] ^ prefix[l−1]</code> — the shared front part cancels itself out (because x^x=0), leaving exactly the middle stretch.</div>
+      <div class="steps-flow"><span class="chip">prefix[i] = prefix[i−1] ^ a[i]</span><span class="arrow">→</span><span class="chip">query(l,r) = prefix[r] ^ prefix[l−1]</span></div>
+      <div class="oneliner">🔒 Keep forever: "Prefix XOR + cancellation = range XOR in O(1)."</div>
+    </div>
+    <div class="note">Array <code>[3, 8, 2, 6, 4]</code>, query XOR of range <b>[1..3]</b>.</div>
+    <div class="cellrow" id="xqRow"></div>
+    <div class="cellrow" id="xqPrefix"></div>
+    <div class="status" id="xqStatus">Press play. Build prefix XOR, then answer [1..3].</div>
+    <div class="stats" id="xqStats"></div>
+    <div class="controls"><button class="btn" id="xqPlay">▶ Answer Query</button><button class="btn ghost" id="xqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="xqSpeed" min="300" max="2200" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> use <code>prefix[-1]=0</code> so queries starting at index 0 work: <code>query(0,r)=prefix[r]</code>.</div></div>
+    <pre><code>prefix[<span class="num">0</span>] = a[<span class="num">0</span>];
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">1</span>; i&lt;n; i++) prefix[i] = prefix[i-<span class="num">1</span>] ^ a[i];
+<span class="cm">// XOR of [l..r]:</span>
+<span class="kw">return</span> (l==<span class="num">0</span>) ? prefix[r] : prefix[r] ^ prefix[l-<span class="num">1</span>];</code></pre>
+  </section>
+
+  <!-- PAIR WITH XOR -->
+  <section id="pairxor">
+    <h2>👥 Pair with Given XOR <span class="badge">Hashing</span></h2>
+    <p class="lead">Find two numbers whose XOR equals K — for each x, its partner is <code>x ^ K</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The XOR key fits one lock:</span> if <code>a ^ b = K</code> then <code>b = a ^ K</code> — each number has exactly one partner. Walk the array asking "has my partner <code>x ^ K</code> already appeared?" using a hash set.</div>
+      <div class="steps-flow"><span class="chip">for each x</span><span class="arrow">→</span><span class="chip">partner = x ^ K</span><span class="arrow">→</span><span class="chip">seen partner? pair!</span><span class="arrow">/</span><span class="chip">else add x</span></div>
+      <div class="oneliner">🔒 Keep forever: "b = a ^ K — hash what you've seen and ask for the partner."</div>
+    </div>
+    <div class="note">Array <code>[1, 5, 3, 7, 2]</code>, K = <b>6</b>.</div>
+    <div class="cellrow" id="pxRow"></div>
+    <div class="hashpanel" id="pxHash"><span class="label">seen:</span></div>
+    <div class="status" id="pxStatus">Press play to find a pair with XOR 6.</div>
+    <div class="controls"><button class="btn" id="pxPlay">▶ Find Pair (XOR=6)</button><button class="btn ghost" id="pxReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pxSpeed" min="300" max="2200" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> same shape as two-sum, but the partner is <code>x ^ K</code> instead of <code>K − x</code>. O(n) time.</div></div>
+    <pre><code>Set&lt;Integer&gt; seen = <span class="kw">new</span> HashSet&lt;&gt;();
+<span class="kw">for</span> (<span class="kw">int</span> x : a) {
+  <span class="kw">if</span> (seen.contains(x ^ K)) <span class="kw">return</span> {x ^ K, x};
+  seen.add(x);
+}</code></pre>
+  </section>
+
+  <!-- FIND TWO ELEMENTS -->
+  <section id="findtwo">
+    <h2>✌️ Find Two Unique Elements <span class="badge">XOR + partition</span></h2>
+    <p class="lead">Every number appears twice except <b>two</b> singles — separate them with a differing bit.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Split the crowd by one trait:</span> XOR everything → you get <code>x ^ y</code> (the two loners combined; all pairs cancelled). Pick any set bit of that result — the two loners <b>differ</b> there. Split all numbers into "has that bit / doesn't", and XOR each group: the twins cancel within their group, revealing x and y.</div>
+      <div class="steps-flow"><span class="chip">XOR all = x^y</span><span class="arrow">→</span><span class="chip">pick a set bit</span><span class="arrow">→</span><span class="chip">partition by that bit</span><span class="arrow">→</span><span class="chip">XOR each group</span></div>
+      <div class="oneliner">🔒 Keep forever: "XOR all, find a differing bit, split into two groups, XOR each → the two singles."</div>
+    </div>
+    <div class="note">Array <code>[2, 4, 7, 9, 2, 4]</code> → the two uniques are 7 and 9.</div>
+    <div class="cellrow" id="ftRow"></div>
+    <div class="bitpanel" id="ftPanel"></div>
+    <div class="status" id="ftStatus">Press play. XOR all, pick a bit, split, XOR groups.</div>
+    <div class="stats" id="ftStats"></div>
+    <div class="controls"><button class="btn" id="ftPlay">▶ Find Both</button><button class="btn ghost" id="ftReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ftSpeed" min="300" max="2200" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> use the <b>lowest</b> set bit <code>d &amp; -d</code> to partition — it's guaranteed to differ between the two answers.</div></div>
+    <pre><code><span class="kw">int</span> xorAll = <span class="num">0</span>; <span class="kw">for</span> (<span class="kw">int</span> v : a) xorAll ^= v;  <span class="cm">// = x ^ y</span>
+<span class="kw">int</span> bit = xorAll &amp; -xorAll;                     <span class="cm">// a differing bit</span>
+<span class="kw">int</span> x = <span class="num">0</span>, y = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">int</span> v : a) <span class="kw">if</span> ((v &amp; bit) != <span class="num">0</span>) x ^= v; <span class="kw">else</span> y ^= v;
+<span class="kw">return</span> {x, y};</code></pre>
+
+    <div class="note key">🏆 <b>Bit mastery unlocked!</b> AND intersects · OR unions · XOR flags &amp; cancels · shifts scale by powers of two · masks edit single bits · and prefix-XOR + partition tricks solve whole families of problems. Picture the bits flipping and you'll never fear a bitwise question again. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Bit Manipulation — Animated Guide • Replay any animation, turn on 🎵 sound • Learn by watching the bits flip 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.1 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(440+Math.random()*120,0.05,'square',0.05); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- Bit panel ---- */
+function bitsOf(v,w){ v = v & ((1<<w)-1); return Array.from({length:w},(_,i)=>(v>>(w-1-i))&1); }
+function bitPanel(container){
+  return { render(rows, width){
+    container.innerHTML='';
+    rows.forEach(r=>{
+      const line=document.createElement('div'); line.className='bline';
+      const nm=document.createElement('div'); nm.className='bname'; nm.innerHTML=r.name||''; line.appendChild(nm);
+      const wrap=document.createElement('div'); wrap.className='bits';
+      if(r.value==null){ for(let i=0;i<width;i++){ const c=document.createElement('div'); c.className='bit zero'; c.textContent='·'; wrap.appendChild(c);} }
+      else { const bits=bitsOf(r.value,width);
+        bits.forEach((b,i)=>{ const lsb=width-1-i; const c=document.createElement('div'); c.className='bit '+(b?'one':'zero'); if(r.hl&&r.hl.includes(lsb))c.classList.add('hl'); if(r.diff&&r.diff.includes(lsb))c.classList.add('diff'); if(r.gone&&r.gone.includes(lsb))c.classList.add('gone'); c.textContent=b; wrap.appendChild(c); }); }
+      line.appendChild(wrap);
+      const val=document.createElement('div'); val.className='bval'+(r.state?(' '+r.state):''); val.innerHTML = r.value!=null? ('= '+(r.label!=null?r.label:r.value)) : (r.rlabel||''); line.appendChild(val);
+      container.appendChild(line);
+    });
+  } };
+}
+/* ---- Cells ---- */
+function cellViz(container){
+  let cells=[];
+  function ensure(n){ if(cells.length!==n){ container.innerHTML=''; cells=[]; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='cell'; container.appendChild(c); cells.push(c);} } }
+  function render(arr,o={}){ ensure(arr.length); arr.forEach((v,i)=>{ const c=cells[i]; c.className='cell'; c.innerHTML = `${o.sub&&o.sub[i]!=null?`<span class="idx">${o.sub[i]}</span>`:''}${v}${o.ptr&&o.ptr[i]!=null?`<span class="ptr">${o.ptr[i]}</span>`:''}`; if(o.compare&&o.compare.includes(i))c.classList.add('mid'); if(o.groupA&&o.groupA.includes(i))c.classList.add('lo'); if(o.groupB&&o.groupB.includes(i))c.classList.add('hi'); if(o.done&&o.done.has(i))c.classList.add('found'); if(o.dead&&o.dead.has(i))c.classList.add('dead'); if(o.range&&i>=o.range[0]&&i<=o.range[1])c.classList.add('in-range'); }); }
+  return { render };
+}
+function hashPanel(container,label){ return { render(entries){ container.innerHTML=`<span class="label">${label}</span>`+(entries.length?'':'<span class="empty">∅ empty</span>'); entries.forEach(e=>{ const d=document.createElement('div'); d.className='hentry'+(e.state?(' '+e.state):''); d.innerHTML=`<b>${e.k}</b>`; container.appendChild(d); }); } }; }
+function idxSub(n){ return Array.from({length:n},(_,i)=>i); }
+const W=8;
+
+/* ================= 1. Operators I ================= */
+(function(){
+  const a=12,b=10; const P=bitPanel($('#op1Panel')); const st=$('#op1Status'); const sp=$('#op1Speed');
+  function build(){ P.render([{name:'a',value:a},{name:'b',value:b},{name:'result',value:null}],W); st.textContent='Press play to compute AND, OR, then XOR bit by bit.'; }
+  build();
+  async function op(name,sym,fn){
+    let res=0;
+    for(let bit=W-1;bit>=0;bit--){ const ab=(a>>bit)&1, bb=(b>>bit)&1, rb=fn(ab,bb); if(rb) res|=(1<<bit);
+      P.render([{name:'a',value:a,hl:[bit]},{name:'b',value:b,hl:[bit]},{name:name,value:res,hl:[bit]}],W);
+      st.innerHTML=`bit ${bit}: ${ab} ${sym} ${bb} = <span class="k">${rb}</span>`; tickSound(); await sleep(+sp.value*0.55);
+    }
+    P.render([{name:'a',value:a},{name:'b',value:b},{name:name,value:res,state:'found'}],W);
+    st.innerHTML=`${name}: ${a} ${sym} ${b} = <span class="k">${res}</span>`; await sleep(+sp.value*1.4);
+    return res;
+  }
+  async function play(){ if(ANIM)return; ANIM=true; build();
+    await op('AND','&',(x,y)=>x&y); await op('OR','|',(x,y)=>x|y); await op('XOR','^',(x,y)=>x^y);
+    st.innerHTML='✅ AND=8, OR=14, XOR=6. Same bits, three different rules!'; ANIM=false; celebrate($('#op1Panel'));
+  }
+  $('#op1Play').onclick=play; $('#op1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Operators II ================= */
+(function(){
+  const P=bitPanel($('#op2Panel')); const st=$('#op2Status'); const sp=$('#op2Speed');
+  function build(){ P.render([{name:'x',value:6}],W); st.textContent='Press play to shift left, shift right, and set a bit.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const x=6;
+    P.render([{name:'x',value:x,hl:[2,1]}],W); st.innerHTML='x = 6 (bits 1 and 2 set).'; await sleep(+sp.value);
+    P.render([{name:'x',value:x},{name:'x&lt;&lt;1',value:x<<1,hl:[3,2]}],W); st.innerHTML='x &lt;&lt; 1 slides bits left → <span class="k">12</span> (×2).'; tickSound(); await sleep(+sp.value*1.4);
+    P.render([{name:'x',value:x},{name:'x&gt;&gt;1',value:x>>1,hl:[1,0]}],W); st.innerHTML='x &gt;&gt; 1 slides bits right → <span class="k">3</span> (÷2).'; tickSound(); await sleep(+sp.value*1.4);
+    P.render([{name:'x',value:x},{name:'mask 1&lt;&lt;5',value:(1<<5),hl:[5]},{name:'x | mask',value:x|(1<<5),hl:[5]}],W); st.innerHTML='Set bit 5: x | (1&lt;&lt;5) → <span class="k">38</span>.'; tickSound(); await sleep(+sp.value*1.4);
+    P.render([{name:'x',value:x},{name:'result',value:x|(1<<5),state:'found'}],W); st.innerHTML='✅ Shifts scale by powers of two; masks edit single bits.'; ANIM=false; celebrate($('#op2Panel'));
+  }
+  $('#op2Play').onclick=play; $('#op2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Using operators ================= */
+(function(){
+  const P=bitPanel($('#uoPanel')); const st=$('#uoStatus'); const sp=$('#uoSpeed');
+  function build(){ P.render([{name:'x',value:13}],W); st.textContent='Press play: parity → power-of-two → lowest set bit.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build();
+    // parity
+    P.render([{name:'x = 13',value:13,hl:[0]}],W); st.innerHTML='x &amp; 1 = <span class="k">1</span> → 13 is <b>ODD</b> (last bit set).'; tickSound(); await sleep(+sp.value*1.4);
+    // power of two
+    P.render([{name:'n = 16',value:16,hl:[4]},{name:'n-1 = 15',value:15},{name:'n &amp; (n-1)',value:16&15,state:'found'}],W); st.innerHTML='16 &amp; 15 = <span class="k">0</span> → 16 <b>is</b> a power of two (single bit).'; tickSound(); await sleep(+sp.value*1.6);
+    P.render([{name:'n = 12',value:12},{name:'n-1 = 11',value:11},{name:'n &amp; (n-1)',value:12&11}],W); st.innerHTML='12 &amp; 11 = <span class="k">8</span> ≠ 0 → 12 is <b>not</b> a power of two.'; tickSound(); await sleep(+sp.value*1.6);
+    // lowest set bit
+    P.render([{name:'x = 12',value:12,hl:[3,2]},{name:'x &amp; -x',value:12&(-12&255),hl:[2],state:'found'}],W); st.innerHTML='x &amp; −x isolates the lowest set bit → <span class="k">4</span>.'; tickSound(); await sleep(+sp.value*1.5);
+    st.innerHTML='✅ x&amp;1 = parity · x&amp;(x−1) tests power of two · x&amp;−x isolates lowest bit.'; ANIM=false; celebrate($('#uoPanel'));
+  }
+  $('#uoPlay').onclick=play; $('#uoReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Count set bits ================= */
+(function(){
+  const P=bitPanel($('#cbPanel')); const st=$('#cbStatus'); const sp=$('#cbSpeed'); const stats=$('#cbStats');
+  function build(){ P.render([{name:'x = 13',value:13}],W); stats.innerHTML=''; st.textContent='Press play to strip the lowest 1 each step.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); let x=13, count=0;
+    while(x!==0){ const low=x&-x; const lowBit=Math.log2(low);
+      P.render([{name:'x',value:x,hl:[lowBit]},{name:'x-1',value:x-1},{name:'x &amp; (x-1)',value:x&(x-1)}],W);
+      st.innerHTML=`Lowest set bit = <span class="k">${low}</span>. x &amp;= x−1 removes it.`; stats.innerHTML=`<span class="pill blue">count = ${count}</span>`; tickSound(); await sleep(+sp.value);
+      x=x&(x-1); count++;
+      P.render([{name:'x',value:x}],W); stats.innerHTML=`<span class="pill blue">count = ${count}</span>`; await sleep(+sp.value*0.7);
+    }
+    P.render([{name:'x',value:0,state:'found'}],W); stats.innerHTML=`<span class="pill green">set bits = ${count}</span>`; st.innerHTML=`🔢 13 has <span class="k">${count}</span> set bits!`; ANIM=false; celebrate($('#cbPanel'));
+  }
+  $('#cbPlay').onclick=play; $('#cbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. Cumulative AND ================= */
+(function(){
+  const arr=[15,14,12,8]; const P=bitPanel($('#caPanel')); const st=$('#caStatus'); const sp=$('#caSpeed');
+  function build(){ P.render([{name:'result',value:arr[0]}],W); st.textContent='Press play. Bits fall away as zeros appear.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); let res=arr[0];
+    P.render([{name:'a[0]',value:arr[0]},{name:'result',value:res,state:'found'}],W); st.innerHTML=`Start: result = ${arr[0]}.`; await sleep(+sp.value);
+    for(let i=1;i<arr.length;i++){ const nres=res&arr[i]; const dropped=[]; for(let b=0;b<W;b++){ if(((res>>b)&1)&&!((nres>>b)&1)) dropped.push(b); }
+      P.render([{name:'result',value:res},{name:'a['+i+']',value:arr[i]},{name:'AND',value:nres,gone:dropped}],W);
+      st.innerHTML=`result &amp; ${arr[i]} → ${nres}. ${dropped.length?`Bits ${dropped.join(',')} dropped.`:'no change.'}`; tickSound(); await sleep(+sp.value*1.3); res=nres;
+      P.render([{name:'result',value:res,state:'found'}],W); await sleep(+sp.value*0.5);
+    }
+    st.innerHTML=`🔗 Cumulative AND = <span class="k">${res}</span> (only bits common to ALL survive).`; ANIM=false; celebrate($('#caPanel'));
+  }
+  $('#caPlay').onclick=play; $('#caReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. Odd one out ================= */
+(function(){
+  const arr=[4,2,7,2,4]; const viz=cellViz($('#ooRow')); const P=bitPanel($('#ooPanel')); const st=$('#ooStatus'); const sp=$('#ooSpeed');
+  function build(){ viz.render(arr,{sub:idxSub(arr.length)}); P.render([{name:'acc',value:0}],W); st.textContent='Press play. Running XOR cancels the pairs.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); let acc=0;
+    for(let i=0;i<arr.length;i++){ const nacc=acc^arr[i];
+      viz.render(arr,{sub:idxSub(arr.length),compare:[i]}); P.render([{name:'acc',value:acc},{name:'^ '+arr[i],value:arr[i]},{name:'new acc',value:nacc}],W);
+      st.innerHTML=`acc ^ ${arr[i]} = <span class="k">${nacc}</span> ${nacc===0?'(pair cancelled → 0!)':''}`; tickSound(); await sleep(+sp.value); acc=nacc;
+    }
+    const idx=arr.indexOf(acc); const done=new Set(); arr.forEach((v,i)=>{ if(v===acc) done.add(i); });
+    viz.render(arr,{sub:idxSub(arr.length),done}); P.render([{name:'acc',value:acc,state:'found'}],W); st.innerHTML=`🎯 The odd one out = <span class="k">${acc}</span>!`; ANIM=false; celebrate($('#ooRow'));
+  }
+  $('#ooPlay').onclick=play; $('#ooReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Hamming distance ================= */
+(function(){
+  const a=9,b=14; const P=bitPanel($('#hmPanel')); const st=$('#hmStatus'); const sp=$('#hmSpeed'); const stats=$('#hmStats');
+  function build(){ P.render([{name:'a = 9',value:a},{name:'b = 14',value:b}],W); stats.innerHTML=''; st.textContent='Press play. XOR flags differing bits, then count them.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const x=a^b; const diff=[]; for(let bit=0;bit<W;bit++) if((x>>bit)&1) diff.push(bit);
+    for(let bit=W-1;bit>=0;bit--){ const differ=((a>>bit)&1)!==((b>>bit)&1);
+      P.render([{name:'a',value:a,hl:[bit]},{name:'b',value:b,hl:[bit]},{name:'a ^ b',value:x,hl:[bit],diff:differ?[bit]:[]}],W);
+      st.innerHTML=`bit ${bit}: ${(a>>bit)&1} vs ${(b>>bit)&1} → ${differ?'<b style="color:#ff9ecb">differ</b>':'same'}`; tickSound(); await sleep(+sp.value*0.6);
+    }
+    P.render([{name:'a',value:a},{name:'b',value:b},{name:'a ^ b',value:x,diff:diff,state:'found'}],W);
+    stats.innerHTML=`<span class="pill pink">differing bits: ${diff.length}</span>`; st.innerHTML=`📏 Hamming distance = <span class="k">${diff.length}</span> (popcount of a ^ b).`; ANIM=false; celebrate($('#hmPanel'));
+  }
+  $('#hmPlay').onclick=play; $('#hmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. OR of subarrays ================= */
+(function(){
+  const arr=[1,2,4]; const viz=cellViz($('#orRow')); const P=bitPanel($('#orPanel')); const st=$('#orStatus'); const sp=$('#orSpeed'); const stats=$('#orStats');
+  function build(){ viz.render(arr,{sub:idxSub(arr.length)}); P.render([{name:'OR',value:0}],5); stats.innerHTML=''; st.textContent='Press play. Each subarray OR only adds bits.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const distinct=new Set(); const show=()=>stats.innerHTML=`<span class="pill blue">distinct ORs: {${[...distinct].sort((a,b)=>a-b).join(', ')}}</span>`;
+    for(let i=0;i<arr.length;i++){ let cur=0;
+      for(let j=i;j<arr.length;j++){ const prev=cur; cur|=arr[j]; const added=[]; for(let b=0;b<5;b++){ if(!((prev>>b)&1)&&((cur>>b)&1)) added.push(b); }
+        viz.render(arr,{sub:idxSub(arr.length),range:[i,j]}); P.render([{name:`[${i}..${j}]`,value:cur,hl:added}],5);
+        distinct.add(cur); show(); st.innerHTML=`subarray [${i}..${j}] OR = <span class="k">${cur}</span> ${added.length?`(added bit ${added.join(',')})`:''}`; tickSound(); await sleep(+sp.value);
+      }
+    }
+    viz.render(arr,{sub:idxSub(arr.length)}); st.innerHTML=`🪟 Distinct subarray ORs: {${[...distinct].sort((a,b)=>a-b).join(', ')}} — ${distinct.size} values.`; ANIM=false; celebrate($('#orRow'));
+  }
+  $('#orPlay').onclick=play; $('#orReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. Minimum XOR ================= */
+(function(){
+  const base=[3,10,5,25,2,8]; const viz=cellViz($('#mxRow')); const st=$('#mxStatus'); const sp=$('#mxSpeed'); const stats=$('#mxStats');
+  function build(){ viz.render(base,{sub:idxSub(base.length)}); stats.innerHTML=''; st.textContent='Press play. Sort, then compare adjacent XORs.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const a=base.slice(); const n=a.length;
+    st.innerHTML='Step 1: sort ascending.'; await sleep(+sp.value);
+    for(let i=1;i<n;i++){ let key=a[i],j=i-1; while(j>=0&&a[j]>key){ a[j+1]=a[j]; j--; } a[j+1]=key; viz.render(a,{sub:idxSub(n),compare:[j+1]}); tickSound(); await sleep(+sp.value*0.5); }
+    viz.render(a,{sub:idxSub(n)}); st.innerHTML='Sorted. Step 2: XOR each adjacent pair.'; await sleep(+sp.value);
+    let best=Infinity,bi=0;
+    for(let i=1;i<n;i++){ const x=a[i]^a[i-1]; viz.render(a,{sub:idxSub(n),compare:[i-1,i]}); st.innerHTML=`${a[i-1]} ^ ${a[i]} = <span class="k">${x}</span>`; stats.innerHTML=`<span class="pill blue">min so far: ${best===Infinity?'—':best}</span>`; tickSound(); await sleep(+sp.value);
+      if(x<best){ best=x; bi=i; } }
+    viz.render(a,{sub:idxSub(n),done:new Set([bi-1,bi])}); stats.innerHTML=`<span class="pill green">min XOR = ${best}</span>`; st.innerHTML=`🔽 Minimum XOR = <span class="k">${best}</span> from (${a[bi-1]}, ${a[bi]}).`; ANIM=false; celebrate($('#mxRow'));
+  }
+  $('#mxPlay').onclick=play; $('#mxReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. XOR queries (prefix XOR) ================= */
+(function(){
+  const a=[3,8,2,6,4]; const viz=cellViz($('#xqRow')); const pv=cellViz($('#xqPrefix')); const st=$('#xqStatus'); const sp=$('#xqSpeed'); const stats=$('#xqStats');
+  const L=1,R=3;
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); pv.render(a.map(()=>'·'),{sub:idxSub(a.length)}); stats.innerHTML=''; st.textContent='Press play. Build prefix XOR, then answer [1..3].'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const pre=[];
+    let run=0;
+    for(let i=0;i<a.length;i++){ run^=a[i]; pre[i]=run; const shown=pre.map((v,k)=>k<=i?v:'·');
+      viz.render(a,{sub:idxSub(a.length),compare:[i]}); pv.render(shown,{sub:idxSub(a.length),compare:[i]}); st.innerHTML=`prefix[${i}] = prefix[${i-1}] ^ ${a[i]} = <span class="k">${run}</span>`; tickSound(); await sleep(+sp.value); }
+    pv.render(pre,{sub:idxSub(a.length)}); st.innerHTML=`Query XOR of [${L}..${R}] = prefix[${R}] ^ prefix[${L-1}] = ${pre[R]} ^ ${pre[L-1]}`; await sleep(+sp.value*1.3);
+    const ans=pre[R]^pre[L-1];
+    viz.render(a,{sub:idxSub(a.length),range:[L,R],done:new Set([L,R])}); pv.render(pre,{sub:idxSub(a.length),compare:[R,L-1]}); stats.innerHTML=`<span class="pill green">XOR[${L}..${R}] = ${ans}</span>`; st.innerHTML=`📊 XOR of range [${L}..${R}] = <span class="k">${ans}</span> (verify: 8^2^6 = ${8^2^6}).`; ANIM=false; celebrate($('#xqRow'));
+  }
+  $('#xqPlay').onclick=play; $('#xqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. Pair with given XOR ================= */
+(function(){
+  const a=[1,5,3,7,2], K=6; const viz=cellViz($('#pxRow')); const hp=hashPanel($('#pxHash'),'seen:'); const st=$('#pxStatus'); const sp=$('#pxSpeed');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); hp.render([]); st.textContent='Press play to find a pair with XOR 6.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const seen=[];
+    for(let i=0;i<a.length;i++){ const need=a[i]^K;
+      viz.render(a,{sub:idxSub(a.length),compare:[i]}); hp.render(seen.map(x=>({k:x,state:x===need?'hit':''}))); st.innerHTML=`x=<span class="k">${a[i]}</span>, partner = ${a[i]} ^ ${K} = <span class="k">${need}</span>. Seen it?`; tickSound(); await sleep(+sp.value);
+      if(seen.includes(need)){ const other=a.indexOf(need); viz.render(a,{sub:idxSub(a.length),done:new Set([other,i])}); hp.render(seen.map(x=>({k:x,state:x===need?'hit':''}))); st.innerHTML=`🎉 Pair (${need}, ${a[i]}) → ${need} ^ ${a[i]} = ${K}!`; ANIM=false; celebrate($('#pxRow')); return; }
+      seen.push(a[i]); hp.render(seen.map((x,k)=>({k:x,state:k===seen.length-1?'new':''}))); st.innerHTML=`Not seen → add ${a[i]}.`; await sleep(+sp.value*0.6);
+    }
+    st.innerHTML='No pair found.'; ANIM=false;
+  }
+  $('#pxPlay').onclick=play; $('#pxReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. Find two elements ================= */
+(function(){
+  const a=[2,4,7,9,2,4]; const viz=cellViz($('#ftRow')); const P=bitPanel($('#ftPanel')); const st=$('#ftStatus'); const sp=$('#ftSpeed'); const stats=$('#ftStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); P.render([{name:'xorAll',value:0}],W); stats.innerHTML=''; st.textContent='Press play. XOR all, pick a bit, split, XOR groups.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build();
+    let xorAll=0;
+    for(let i=0;i<a.length;i++){ xorAll^=a[i]; viz.render(a,{sub:idxSub(a.length),compare:[i]}); P.render([{name:'xorAll',value:xorAll}],W); st.innerHTML=`XOR everything → running = <span class="k">${xorAll}</span>`; tickSound(); await sleep(+sp.value*0.8); }
+    const bit=xorAll&-xorAll; const bitPos=Math.log2(bit);
+    P.render([{name:'x ^ y',value:xorAll,hl:[bitPos],state:'found'}],W); st.innerHTML=`xorAll = ${xorAll} = x ^ y. Lowest set bit = <span class="k">${bit}</span> (they differ here).`; await sleep(+sp.value*1.5);
+    let x=0,y=0; const gA=[],gB=[];
+    for(let i=0;i<a.length;i++){ if(a[i]&bit){ x^=a[i]; gA.push(i); } else { y^=a[i]; gB.push(i); }
+      viz.render(a,{sub:idxSub(a.length),groupA:gA.slice(),groupB:gB.slice(),compare:[i]}); stats.innerHTML=`<span class="pill blue">group A (bit set) XOR = ${x}</span><span class="pill pink">group B XOR = ${y}</span>`; st.innerHTML=`${a[i]} &amp; ${bit} ${(a[i]&bit)?'≠0 → group A':'=0 → group B'}`; tickSound(); await sleep(+sp.value); }
+    viz.render(a,{sub:idxSub(a.length),groupA:gA,groupB:gB}); stats.innerHTML=`<span class="pill green">answers: ${x} and ${y}</span>`; st.innerHTML=`✌️ The two unique elements are <span class="k">${x}</span> and <span class="k">${y}</span>!`; ANIM=false; celebrate($('#ftRow'));
+  }
+  $('#ftPlay').onclick=play; $('#ftReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Greedy Algorithms — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .vwrap{overflow-x:auto; display:flex; justify-content:center; margin:12px 0; padding:4px}
+  .gsvg{display:block}
+  .gsvg .axis{stroke:#3a4a75; stroke-width:1.5}
+  .gsvg .tick{fill:var(--muted); font-size:10px; text-anchor:middle}
+  .gsvg .bar{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2; transition:.3s}
+  .gsvg .bar.cur{fill:#3a3620; stroke:var(--mid)}
+  .gsvg .bar.sel{fill:#0d3b30; stroke:var(--found)}
+  .gsvg .bar.rej{fill:#2a1a26; stroke:#5a3a4a; opacity:.45}
+  .gsvg .bar.p0{fill:#16233f} .gsvg .bar.p1{fill:#241a3a} .gsvg .bar.p2{fill:#0d2b2a} .gsvg .bar.p3{fill:#2a1a26}
+  .gsvg .blbl{fill:var(--ink); font-size:12px; font-weight:800; dominant-baseline:central; font-family:'Consolas',monospace}
+  .gsvg .sweep{stroke:var(--accent2); stroke-width:2; stroke-dasharray:4 3}
+  .htree .hedge{stroke:#2c3d6e; stroke-width:3}
+  .htree .hedge.on{stroke:var(--found); stroke-width:4}
+  .htree .elbl{fill:var(--mid); font-size:12px; font-weight:800; text-anchor:middle; font-family:'Consolas',monospace}
+  .htree .hnode{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .htree .hnode.leaf{fill:#22345f; stroke:var(--accent)}
+  .htree .hnode.new{fill:#0d3b30; stroke:var(--found); stroke-width:4}
+  .htree .hnode.on{fill:#3a3620; stroke:var(--mid)}
+  .htree .nlbl{fill:var(--ink); font-size:12px; font-weight:800; text-anchor:middle; dominant-baseline:central; font-family:'Consolas',monospace}
+
+  .heappanel{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0; min-height:38px}
+  .hchip{background:#1d2a52; border:2px solid #2c3d6e; border-radius:9px; padding:5px 11px; font-weight:800; font-family:'Consolas',monospace; font-size:14px; transition:.3s}
+  .hchip.top{border-color:var(--found); background:#0d3b30; color:var(--found)}
+  .hchip.cmp{border-color:var(--mid); background:#3a3620}
+  .outrow{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:6px 0; min-height:34px}
+  .ochip{background:#22345f; border:2px solid var(--accent); border-radius:9px; padding:5px 11px; font-weight:800; font-family:'Consolas',monospace; font-size:13.5px; color:var(--accent)}
+  .slots{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0}
+  .slot{position:relative; width:56px;height:46px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-weight:800;font-family:'Consolas',monospace;background:#12182f;border:2px dashed #2c3d6e;color:var(--muted);transition:.3s}
+  .slot .st{position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--muted); font-weight:700}
+  .slot.fill{border-style:solid; border-color:var(--found); background:#0d3b30; color:var(--found)}
+  .slot.cur{border-color:var(--mid); background:#3a3620; color:var(--ink)}
+  .capbar{width:min(560px,92%); height:34px; margin:10px auto; border:2px solid var(--line); border-radius:10px; background:#12182f; display:flex; overflow:hidden}
+  .capseg{height:100%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; font-family:'Consolas',monospace; color:#08122b; transition:width .4s}
+  .codes{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0}
+  .codechip{background:#0a1330; border:1px solid var(--line); border-radius:9px; padding:5px 11px; font-family:'Consolas',monospace; font-size:13px; font-weight:700}
+  .codechip b{color:var(--accent)} .codechip .cd{color:var(--found)}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Greedy Algorithms — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Make the locally best choice and watch it win — activity selection, platforms, job scheduling, knapsack &amp; Huffman coding, all animated. Built so greedy sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#wh">🪙 What is Greedy</a>
+  <a href="#a1">📅 Activity Selection I</a>
+  <a href="#a2">⚖️ Activity Selection II</a>
+  <a href="#a3">✅ Activity Selection III</a>
+  <a href="#p1">🚉 Min Platforms I</a>
+  <a href="#p2">🚦 Min Platforms II</a>
+  <a href="#j1">💼 Job Sequencing I</a>
+  <a href="#j2">🔗 Job Sequencing II</a>
+  <a href="#fk">🎒 Fractional Knapsack</a>
+  <a href="#km">📈 K Max in Stream</a>
+  <a href="#h1">🌳 Huffman I</a>
+  <a href="#h2">🔤 Huffman II</a>
+</nav>
+
+<main>
+
+  <!-- 1 WHAT IS GREEDY -->
+  <section id="wh">
+    <h2>🪙 What is a Greedy Algorithm? <span class="badge">local → global</span></h2>
+    <p class="lead">A greedy algorithm builds a solution step by step, always taking the choice that looks best <b>right now</b> — never reconsidering. When the problem has the right structure, these local wins add up to the global optimum.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Grab the biggest coin:</span> to make 63¢ with coins {25,10,5,1}, keep taking the largest coin that fits → 25,25,10,1,1,1 = <b>6 coins</b>. It's optimal here because the coin system is "canonical". Greedy needs the <b>greedy-choice property</b> + <b>optimal substructure</b>; otherwise (e.g. coins {1,3,4} for 6) it can fail.</div>
+      <div class="steps-flow"><span class="chip">pick locally best</span><span class="arrow">→</span><span class="chip">never undo</span><span class="arrow">→</span><span class="chip">works if greedy-choice property holds</span></div>
+      <div class="oneliner">🔒 Keep forever: "Greedy = best choice now, no backtracking — correct only when local optima compose into the global one."</div>
+    </div>
+    <div class="note">Make change for <b>63¢</b> with coins {25, 10, 5, 1}.</div>
+    <div class="outrow" id="whOut"></div>
+    <div class="status" id="whStatus">Press play to greedily make change for 63¢.</div>
+    <div class="stats" id="whStats"></div>
+    <div class="controls"><button class="btn" id="whPlay">▶ Make change</button><button class="btn ghost" id="whReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="whSpeed" min="250" max="1800" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> greedy ≠ always correct. Always ask "does the greedy choice provably lead to an optimal solution?" (exchange argument).</div></div>
+  </section>
+
+  <!-- 2 ACTIVITY SELECTION I -->
+  <section id="a1">
+    <h2>📅 Activity Selection I <span class="badge">earliest finish</span></h2>
+    <p class="lead">Given activities with start/finish times, pick the maximum number that don't overlap. Greedy rule: always take the activity that <b>finishes earliest</b>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Free up the room soonest:</span> sort by finish time. Pick the first; then repeatedly pick the next activity whose start ≥ the last chosen finish. Finishing early leaves the most room for future activities — provably optimal. Here → <b>A, D, H, K</b> (4 activities).</div>
+      <div class="steps-flow"><span class="chip">sort by finish time</span><span class="arrow">→</span><span class="chip">take first</span><span class="arrow">→</span><span class="chip">next start ≥ last finish? take it</span></div>
+      <div class="oneliner">🔒 Keep forever: "Activity selection = sort by finish time, greedily take each compatible activity."</div>
+    </div>
+    <div class="vwrap" id="a1Viz"></div>
+    <div class="status" id="a1Status">Press play to select the most non-overlapping activities.</div>
+    <div class="stats" id="a1Stats"></div>
+    <div class="controls"><button class="btn" id="a1Play">▶ Select activities</button><button class="btn ghost" id="a1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="a1Speed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> it's the <b>finish</b> time that matters, not start time or duration — that's the whole trick.</div></div>
+  </section>
+
+  <!-- 3 ACTIVITY SELECTION II -->
+  <section id="a2">
+    <h2>⚖️ Activity Selection II — Why Finish Time? <span class="badge">counterexamples</span></h2>
+    <p class="lead">Other "obvious" greedy rules — earliest start, or shortest duration — <b>fail</b>. Watch a case where shortest-duration greedy loses to earliest-finish.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Shortest can block two:</span> with X(0–5), Y(4–6), Z(5–10), the <b>shortest</b> activity Y(2h) grabbed first overlaps both X and Z → only 1 activity. But earliest-<b>finish</b> takes X(0–5) then Z(5–10) → <b>2</b> activities. One tiny greedy choice changes everything.</div>
+      <div class="steps-flow"><span class="chip">shortest-duration → picks Y only (1)</span><span class="arrow">vs</span><span class="chip">earliest-finish → X, Z (2)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Only the earliest-finish rule is provably optimal; earliest-start &amp; shortest-duration can be beaten."</div>
+    </div>
+    <div class="vwrap" id="a2Viz"></div>
+    <div class="status" id="a2Status">Press play to compare shortest-duration vs earliest-finish.</div>
+    <div class="stats" id="a2Stats"></div>
+    <div class="controls"><button class="btn" id="a2Play">▶ Compare strategies</button><button class="btn ghost" id="a2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="a2Speed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> to prove greedy correct, use an <b>exchange argument</b>: swapping the optimal's first pick for the greedy pick never hurts.</div></div>
+  </section>
+
+  <!-- 4 ACTIVITY SELECTION III -->
+  <section id="a3">
+    <h2>✅ Activity Selection III — N Meetings in a Room <span class="badge">implementation</span></h2>
+    <p class="lead">The classic interview form: given meeting start/end times, how many meetings can one room host? Same greedy, with the actual selection returned.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Track "last end":</span> sort meetings by end time, keep a variable <code>lastEnd = −∞</code>. For each meeting, if its start &gt; lastEnd, hold it and update lastEnd. Count how many you held. Here 6 meetings → <b>4</b> fit.</div>
+      <div class="steps-flow"><span class="chip">sort by end</span><span class="arrow">→</span><span class="chip">if start &gt; lastEnd: take &amp; update</span><span class="arrow">→</span><span class="chip">count = answer</span></div>
+      <div class="oneliner">🔒 Keep forever: "N-meetings = activity selection with a single <code>lastEnd</code> pointer scanning finish-sorted meetings."</div>
+    </div>
+    <div class="vwrap" id="a3Viz"></div>
+    <div class="status" id="a3Status">Press play to count the max meetings one room can host.</div>
+    <div class="stats" id="a3Stats"></div>
+    <div class="controls"><button class="btn" id="a3Play">▶ Count meetings</button><button class="btn ghost" id="a3Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="a3Speed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> if two meetings share an endpoint (one ends exactly when the next starts), decide up front whether that counts as overlapping.</div></div>
+  </section>
+
+  <!-- 5 MIN PLATFORMS I -->
+  <section id="p1">
+    <h2>🚉 Minimum Platforms I <span class="badge">two-pointer sweep</span></h2>
+    <p class="lead">Given train arrival &amp; departure times, find the fewest platforms so no train waits. Sort both arrays and sweep with two pointers, tracking concurrent trains.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Count overlaps:</span> sort arrivals and departures separately. Walk them in time order — an arrival before the next departure needs a new platform (count++); a departure frees one (count−−). The peak count is the answer. Here → <b>3</b> platforms.</div>
+      <div class="steps-flow"><span class="chip">sort arr[] &amp; dep[]</span><span class="arrow">→</span><span class="chip">arrival before departure? +1</span><span class="arrow">·</span><span class="chip">else −1</span><span class="arrow">→</span><span class="chip">track max</span></div>
+      <div class="oneliner">🔒 Keep forever: "Min platforms = max number of trains present at once = peak of the arrival/departure sweep."</div>
+    </div>
+    <div class="vwrap" id="p1Viz"></div>
+    <div class="status" id="p1Status">Press play to sweep arrivals &amp; departures.</div>
+    <div class="stats" id="p1Stats"></div>
+    <div class="controls"><button class="btn" id="p1Play">▶ Sweep platforms</button><button class="btn ghost" id="p1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p1Speed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> on a tie (arrival == departure), process the <b>departure</b> only if the platform can truly be reused in time — otherwise count the arrival first.</div></div>
+  </section>
+
+  <!-- 6 MIN PLATFORMS II -->
+  <section id="p2">
+    <h2>🚦 Minimum Platforms II <span class="badge">event / prefix sweep</span></h2>
+    <p class="lead">A second view: turn every arrival into <code>+1</code> and every departure into <code>−1</code>, sort all events by time, and take a running prefix sum. The maximum prefix is the answer.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Timeline of ±1:</span> merge arrivals and departures into one chronological event list. Sweeping left to right, add +1 at each arrival and −1 at each departure; the running total is "trains currently in". Its peak is the platforms needed → <b>3</b>. Same answer, event-driven framing.</div>
+      <div class="steps-flow"><span class="chip">events: +1 arrival, −1 departure</span><span class="arrow">→</span><span class="chip">sort by time</span><span class="arrow">→</span><span class="chip">running sum, track max</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sweep line: +1/−1 events sorted by time; the peak running sum = max overlap."</div>
+    </div>
+    <div class="vwrap" id="p2Viz"></div>
+    <div class="outrow" id="p2Events"></div>
+    <div class="status" id="p2Status">Press play for the +1/−1 sweep-line count.</div>
+    <div class="stats" id="p2Stats"></div>
+    <div class="controls"><button class="btn" id="p2Play">▶ Sweep events</button><button class="btn ghost" id="p2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="p2Speed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the sweep-line +1/−1 trick generalizes to "max intervals overlapping", meeting rooms II, and CPU utilization.</div></div>
+  </section>
+
+  <!-- 7 JOB SEQUENCING I -->
+  <section id="j1">
+    <h2>💼 Job Sequencing I <span class="badge">deadline + profit</span></h2>
+    <p class="lead">Each job takes 1 unit of time, has a deadline and a profit. Do at most one job per slot to maximize profit. Greedy: highest-profit jobs first, latest free slot.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Big money, late slot:</span> sort jobs by profit descending. For each, place it in the <b>latest free slot ≤ its deadline</b> (leaving earlier slots open for tighter-deadline jobs). Skip if no slot fits. Here → jobs <b>A, C, E</b> for profit <b>142</b>.</div>
+      <div class="steps-flow"><span class="chip">sort by profit ↓</span><span class="arrow">→</span><span class="chip">latest free slot ≤ deadline</span><span class="arrow">→</span><span class="chip">sum profits</span></div>
+      <div class="oneliner">🔒 Keep forever: "Job sequencing = profit-sorted jobs into the latest free slot before their deadline."</div>
+    </div>
+    <div class="heappanel" id="j1Jobs"></div>
+    <div class="lbl" style="text-align:center;color:var(--accent);font-weight:800;font-size:12px">time slots</div>
+    <div class="slots" id="j1Slots"></div>
+    <div class="status" id="j1Status">Press play to schedule jobs by profit into slots.</div>
+    <div class="stats" id="j1Stats"></div>
+    <div class="controls"><button class="btn" id="j1Play">▶ Schedule jobs</button><button class="btn ghost" id="j1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="j1Speed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> placing at the <b>latest</b> possible slot (not earliest) is what keeps room for other jobs — a subtle but crucial detail.</div></div>
+  </section>
+
+  <!-- 8 JOB SEQUENCING II -->
+  <section id="j2">
+    <h2>🔗 Job Sequencing II — DSU Speedup <span class="badge">union-find slots</span></h2>
+    <p class="lead">Finding the latest free slot naively is O(deadline). Union-Find makes it near O(1): each slot points to the next available slot to its left.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Jump to the free slot:</span> a DSU parent array where <code>find(d)</code> returns the latest free slot ≤ d. After using a slot, union it to slot−1 so future queries skip straight past it. Profit-sorted jobs + DSU → same <b>142</b>, but each placement is almost constant time.</div>
+      <div class="steps-flow"><span class="chip">find(deadline) = latest free slot</span><span class="arrow">→</span><span class="chip">use it, union to slot−1</span><span class="arrow">→</span><span class="chip">near O(1) each</span></div>
+      <div class="oneliner">🔒 Keep forever: "DSU job sequencing: find(deadline) gives the free slot; union it to slot−1 after use."</div>
+    </div>
+    <div class="heappanel" id="j2Jobs"></div>
+    <div class="lbl" style="text-align:center;color:var(--accent);font-weight:800;font-size:12px">slots (parent = next free ←)</div>
+    <div class="slots" id="j2Slots"></div>
+    <div class="status" id="j2Status">Press play to place jobs using find/union on slots.</div>
+    <div class="stats" id="j2Stats"></div>
+    <div class="controls"><button class="btn" id="j2Play">▶ Schedule (DSU)</button><button class="btn ghost" id="j2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="j2Speed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> slot 0 is the "no free slot" sentinel — if find returns 0, the job can't be scheduled.</div></div>
+  </section>
+
+  <!-- 9 FRACTIONAL KNAPSACK -->
+  <section id="fk">
+    <h2>🎒 Fractional Knapsack <span class="badge">value/weight ratio</span></h2>
+    <p class="lead">Fill a capacity-limited bag to maximize value, where items can be split. Greedy: take items by highest <b>value-per-weight</b>, splitting the last one to fill exactly.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Best bang per kg:</span> sort items by value/weight ratio descending. Take whole items while they fit; when the next won't fully fit, take the <b>fraction</b> that does. Because splitting is allowed, this greedy is optimal (unlike 0/1 knapsack). Capacity 50 → value <b>240</b>.</div>
+      <div class="steps-flow"><span class="chip">sort by value/weight ↓</span><span class="arrow">→</span><span class="chip">take whole while it fits</span><span class="arrow">→</span><span class="chip">take fraction of the last</span></div>
+      <div class="oneliner">🔒 Keep forever: "Fractional knapsack = greedy by value/weight ratio, splitting the final item. (0/1 needs DP!)"</div>
+    </div>
+    <div class="heappanel" id="fkItems"></div>
+    <div class="lbl" style="text-align:center;color:var(--accent);font-weight:800;font-size:12px">knapsack (capacity 50)</div>
+    <div class="capbar" id="fkBar"></div>
+    <div class="status" id="fkStatus">Press play to fill the knapsack greedily.</div>
+    <div class="stats" id="fkStats"></div>
+    <div class="controls"><button class="btn" id="fkPlay">▶ Fill knapsack</button><button class="btn ghost" id="fkReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="fkSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> greedy-by-ratio works <b>only because fractions are allowed</b>. The 0/1 knapsack (whole items) needs dynamic programming.</div></div>
+  </section>
+
+  <!-- 10 K MAX IN STREAM -->
+  <section id="km">
+    <h2>📈 Kth Largest in a Running Stream <span class="badge">size-k min-heap</span></h2>
+    <p class="lead">As numbers stream in, keep the k largest in a <b>min-heap of size k</b>. Its root is always the kth largest so far — reportable in O(1) after each insert.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Guard the k biggest:</span> a min-heap of size k holds the current top-k; the <b>smallest of them</b> (the root) is the kth largest. Push each new value; if the heap exceeds k, pop the min. Greedily discarding the smallest keeps exactly the k largest. Stream with k=3 → final kth largest = <b>8</b>.</div>
+      <div class="steps-flow"><span class="chip">push value</span><span class="arrow">→</span><span class="chip">size &gt; k? pop min</span><span class="arrow">→</span><span class="chip">root = kth largest</span></div>
+      <div class="oneliner">🔒 Keep forever: "Kth largest in a stream = size-k min-heap; the root is the answer at every step."</div>
+    </div>
+    <div class="lbl" style="text-align:center;color:var(--accent);font-weight:800;font-size:12px">stream</div><div class="outrow" id="kmStream"></div>
+    <div class="lbl" style="text-align:center;color:var(--accent);font-weight:800;font-size:12px">min-heap (size ≤ 3, root = kth largest)</div><div class="heappanel" id="kmPanel"></div>
+    <div class="status" id="kmStatus">Press play to track the 3rd largest as numbers arrive.</div>
+    <div class="stats" id="kmStats"></div>
+    <div class="controls"><button class="btn" id="kmPlay">▶ Stream (k=3)</button><button class="btn ghost" id="kmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="kmSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "kth largest" → <b>min</b>-heap of size k; "kth smallest" → <b>max</b>-heap of size k. Keep the opposite extreme at the root.</div></div>
+  </section>
+
+  <!-- 11 HUFFMAN I -->
+  <section id="h1">
+    <h2>🌳 Huffman Encoding I — Build the Tree <span class="badge">min-heap merge</span></h2>
+    <p class="lead">Optimal prefix codes: repeatedly merge the two <b>least frequent</b> nodes into a parent (their combined frequency). A min-heap surfaces the two smallest each time.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Rare letters, deep leaves:</span> start with a leaf per character keyed by frequency. Pop the two smallest, join them under a new node (freq = sum), push it back. Repeat until one tree remains. Rare letters end up deep (long codes), frequent ones shallow (short codes). Freqs a5 b9 c12 d13 e16 f45 → root freq <b>100</b>.</div>
+      <div class="steps-flow"><span class="chip">leaf per char (min-heap)</span><span class="arrow">→</span><span class="chip">merge two smallest</span><span class="arrow">→</span><span class="chip">push parent, repeat</span></div>
+      <div class="oneliner">🔒 Keep forever: "Huffman = greedily merge the two lowest-frequency nodes until one tree remains."</div>
+    </div>
+    <div class="lbl" style="text-align:center;color:var(--accent);font-weight:800;font-size:12px">min-heap of nodes (by frequency)</div><div class="heappanel" id="h1Panel"></div>
+    <div class="vwrap" id="h1Tree"></div>
+    <div class="status" id="h1Status">Press play to build the Huffman tree.</div>
+    <div class="stats" id="h1Stats"></div>
+    <div class="controls"><button class="btn" id="h1Play">▶ Build tree</button><button class="btn ghost" id="h1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="h1Speed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Huffman is greedy <b>and</b> provably optimal — merging the two rarest first is guaranteed to minimize total code length.</div></div>
+  </section>
+
+  <!-- 12 HUFFMAN II -->
+  <section id="h2">
+    <h2>🔤 Huffman Encoding II — Assign Codes <span class="badge">traverse: 0 / 1</span></h2>
+    <p class="lead">Walk the finished tree: going left appends <code>0</code>, right appends <code>1</code>. Each leaf's path is its codeword — no code is a prefix of another.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Path = code:</span> DFS from the root; every leaf you reach gets the 0/1 string of the path taken. Frequent letters (shallow) get short codes, rare ones long. Total bits = Σ(freq × code length). For our tree → <b>224 bits</b> (vs 288 for fixed 3-bit codes).</div>
+      <div class="steps-flow"><span class="chip">DFS the tree</span><span class="arrow">→</span><span class="chip">left=0, right=1</span><span class="arrow">→</span><span class="chip">leaf path = codeword</span></div>
+      <div class="oneliner">🔒 Keep forever: "Huffman codes = root-to-leaf 0/1 paths → a prefix-free code minimizing total bits."</div>
+    </div>
+    <div class="vwrap" id="h2Tree"></div>
+    <div class="lbl" style="text-align:center;color:var(--accent);font-weight:800;font-size:12px">codes</div><div class="codes" id="h2Codes"></div>
+    <div class="status" id="h2Status">Press play to read each leaf's codeword off the tree.</div>
+    <div class="stats" id="h2Stats"></div>
+    <div class="controls"><button class="btn" id="h2Play">▶ Assign codes</button><button class="btn ghost" id="h2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="h2Speed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the <b>prefix-free</b> property (no code prefixes another) is what makes Huffman-encoded streams uniquely decodable.</div></div>
+
+    <div class="note key">🏆 <b>Greedy mastered!</b> Take the best local choice — sort by the right key and commit. Activity selection &amp; meetings (earliest finish) · minimum platforms (overlap sweep) · job sequencing (profit + latest slot, DSU-sped) · fractional knapsack (value/weight ratio) · kth-largest stream (size-k heap) · and Huffman coding (merge the two rarest). Always verify the greedy-choice property holds! 🎯</div>
+  </section>
+
+</main>
+
+<footer>Greedy Algorithms — Animated Guide • Replay any animation, turn on 🎵 sound • Local best → global best (when it works) 🪙</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- helpers ---- */
+function makeHeap(cmp){ const a=[]; const up=i=>{ while(i>0){ const p=(i-1)>>1; if(cmp(a[i],a[p])<0){ [a[i],a[p]]=[a[p],a[i]]; i=p; } else break; } }; const down=i=>{ const n=a.length; while(true){ let s=i,l=2*i+1,r=2*i+2; if(l<n&&cmp(a[l],a[s])<0)s=l; if(r<n&&cmp(a[r],a[s])<0)s=r; if(s===i)break; [a[i],a[s]]=[a[s],a[i]]; i=s; } };
+  return { a, push(x){ a.push(x); up(a.length-1); }, pop(){ const t=a[0], last=a.pop(); if(a.length){ a[0]=last; down(0); } return t; }, peek(){ return a[0]; }, size(){ return a.length; } }; }
+function outRow(cont, arr, fmt){ cont.innerHTML=arr.map(v=>`<span class="ochip">${fmt?fmt(v):v}</span>`).join(''); }
+function heapPanel(cont, arr, opt={}){ cont.innerHTML= arr.length? arr.map((v,i)=>`<span class="hchip ${(opt.cls&&opt.cls[i])||''} ${opt.noTop?'':(i===0?'top':'')}">${opt.fmt?opt.fmt(v):v}</span>`).join('') : '<span class="hchip">empty</span>'; }
+
+/* ---- gantt renderer (activities / platforms) ---- */
+function gantt(cont, items, opt={}){ // items: {label, s, f, cls}
+  const tmin=opt.tmin!==undefined?opt.tmin:Math.min(...items.map(i=>i.s));
+  const tmax=opt.tmax!==undefined?opt.tmax:Math.max(...items.map(i=>i.f));
+  const W=opt.W||600, rowH=28, padL=44, padT=22, H=padT+items.length*rowH+24;
+  const sx=t=>padL+(t-tmin)/(tmax-tmin)*(W-padL-16);
+  let g='';
+  // axis
+  g+=`<line class="axis" x1="${padL}" y1="${H-20}" x2="${W-6}" y2="${H-20}"/>`;
+  for(let t=Math.ceil(tmin);t<=tmax;t+=opt.step||Math.max(1,Math.round((tmax-tmin)/8))){ g+=`<line class="axis" x1="${sx(t)}" y1="${H-24}" x2="${sx(t)}" y2="${H-16}"/><text class="tick" x="${sx(t)}" y="${H-6}">${t}</text>`; }
+  items.forEach((it,i)=>{ const y=padT+i*rowH; const x1=sx(it.s),x2=sx(it.f); g+=`<rect class="bar ${it.cls||''}" x="${x1}" y="${y}" width="${Math.max(x2-x1,3)}" height="${rowH-8}" rx="6"/><text class="blbl" x="${x1+6}" y="${y+(rowH-8)/2}">${it.label}</text>`; });
+  if(opt.sweep!==undefined){ g+=`<line class="sweep" x1="${sx(opt.sweep)}" y1="${padT-6}" x2="${sx(opt.sweep)}" y2="${H-20}"/>`; }
+  cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gsvg">${g}</svg>`;
+}
+
+/* ---- huffman tree renderer ---- */
+function huffLayout(root){ let leaf=0; (function lay(n,d){ n._d=d; if(!n.l&&!n.r){ n._x=leaf++; } else { lay(n.l,d+1); lay(n.r,d+1); n._x=(n.l._x+n.r._x)/2; } })(root,0); return leaf; }
+function huffSVG(cont, root, opt={}){ if(!root){cont.innerHTML='';return;} const leaves=huffLayout(root); const maxD=(function md(n){ let m=n._d; if(n.l)m=Math.max(m,md(n.l)); if(n.r)m=Math.max(m,md(n.r)); return m; })(root);
+  const W=Math.max(320,60+leaves*70), lh=64, H=34+maxD*lh+34; const px=n=>30+(leaves<=1?0.5:n._x/(leaves-1))*(W-60), py=n=>32+n._d*lh; let e='',ns='';
+  (function draw(n){ if(n.l){ e+=`<line class="hedge ${opt.on&&opt.on.has(n.l._id)?'on':''}" x1="${px(n)}" y1="${py(n)}" x2="${px(n.l)}" y2="${py(n.l)}"/>`; e+=`<text class="elbl" x="${(px(n)+px(n.l))/2-6}" y="${(py(n)+py(n.l))/2}">0</text>`; draw(n.l); } if(n.r){ e+=`<line class="hedge ${opt.on&&opt.on.has(n.r._id)?'on':''}" x1="${px(n)}" y1="${py(n)}" x2="${px(n.r)}" y2="${py(n.r)}"/>`; e+=`<text class="elbl" x="${(px(n)+px(n.r))/2+6}" y="${(py(n)+py(n.r))/2}">1</text>`; draw(n.r); } })(root);
+  (function draw(n){ const leaf=!n.l&&!n.r; const cls=(opt.cls&&opt.cls[n._id])||(leaf?'leaf':''); ns+=`<circle class="hnode ${cls}" cx="${px(n)}" cy="${py(n)}" r="17"/>`; ns+=`<text class="nlbl" x="${px(n)}" y="${py(n)}">${leaf?n.ch+':'+n.f:n.f}</text>`; if(n.l)draw(n.l); if(n.r)draw(n.r); })(root);
+  cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gsvg htree">${e}${ns}</svg>`;
+}
+
+/* ================= 1. what is greedy (coin change) ================= */
+(function(){
+  const COINS=[25,10,5,1]; const AMT=63; const st=$('#whStatus'),sp=$('#whSpeed'),stats=$('#whStats');
+  function build(){ $('#whOut').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to greedily make change for 63¢.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let rem=AMT; const picked=[];
+    while(rem>0){ const c=COINS.find(x=>x<=rem); picked.push(c); rem-=c; outRow($('#whOut'),picked,v=>v+'¢'); tickSound(); st.innerHTML=`Take largest coin ≤ ${rem+c}¢ → <span class="k">${c}¢</span>; remaining ${rem}¢.`; stats.innerHTML=`<span class="pill blue">coins used: ${picked.length}</span>`; await sleep(+sp.value); }
+    st.innerHTML=`🪙 63¢ = ${picked.join(' + ')} → <span class="k">${picked.length} coins</span> (greedy is optimal for these coins)!`; ANIM=false; celebrate($('#whOut'));
+  }
+  $('#whPlay').onclick=play; $('#whReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. activity selection I ================= */
+(function(){
+  const ACTS=[{id:'A',s:1,f:4},{id:'B',s:3,f:5},{id:'C',s:0,f:6},{id:'D',s:5,f:7},{id:'E',s:3,f:9},{id:'F',s:5,f:9},{id:'G',s:6,f:10},{id:'H',s:8,f:11},{id:'I',s:8,f:12},{id:'J',s:2,f:14},{id:'K',s:12,f:16}];
+  const st=$('#a1Status'),sp=$('#a1Speed'),stats=$('#a1Stats'),cont=$('#a1Viz');
+  function draw(cls){ gantt(cont, ACTS.map((a,i)=>({label:`${a.id}(${a.s},${a.f})`,s:a.s,f:a.f,cls:cls&&cls[i]||''})),{tmin:0,tmax:16,step:2}); }
+  function build(){ draw(); stats.innerHTML=''; st.textContent='Press play to select the most non-overlapping activities.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const cls={}; let lastF=-1; const sel=[];
+    for(let i=0;i<ACTS.length;i++){ cls[i]='cur'; draw(cls); tickSound(); st.innerHTML=`Consider ${ACTS[i].id} (${ACTS[i].s},${ACTS[i].f}); last finish = ${lastF<0?'−∞':lastF}.`; await sleep(+sp.value);
+      if(ACTS[i].s>=lastF){ cls[i]='sel'; sel.push(ACTS[i].id); lastF=ACTS[i].f; blip(660,0.09,'sine',0.1); st.innerHTML=`start ${ACTS[i].s} ≥ ${lastF===ACTS[i].f?'last finish':''} → <span style="color:var(--found)">select ${ACTS[i].id}</span>.`; }
+      else { cls[i]='rej'; st.innerHTML=`start ${ACTS[i].s} &lt; last finish ${lastF} → overlaps, skip.`; }
+      draw(cls); stats.innerHTML=`<span class="pill green">selected: ${sel.join(', ')}</span>`; await sleep(+sp.value*0.8); }
+    st.innerHTML=`📅 Max non-overlapping activities: <span class="k">${sel.join(', ')}</span> = ${sel.length}!`; ANIM=false; celebrate(cont);
+  }
+  $('#a1Play').onclick=play; $('#a1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. activity selection II (counterexample) ================= */
+(function(){
+  const ACTS=[{id:'X',s:0,f:5},{id:'Y',s:4,f:6},{id:'Z',s:5,f:10}];
+  const st=$('#a2Status'),sp=$('#a2Speed'),stats=$('#a2Stats'),cont=$('#a2Viz');
+  function draw(cls){ gantt(cont, ACTS.map((a,i)=>({label:`${a.id}(${a.s},${a.f})`,s:a.s,f:a.f,cls:cls&&cls[i]||''})),{tmin:0,tmax:10,step:1}); }
+  function build(){ draw(); stats.innerHTML=''; st.textContent='Press play to compare shortest-duration vs earliest-finish.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true;
+    // shortest-duration strategy
+    st.innerHTML=`<b>Strategy 1: shortest duration first.</b> Durations: X=5, Y=2, Z=5.`; draw({}); await sleep(+sp.value);
+    let cls={1:'cur'}; draw(cls); await sleep(+sp.value); cls={1:'sel'}; draw(cls); blip(500,0.09,'sine',0.09); st.innerHTML=`Pick shortest Y(4,6). Now X(0,5) overlaps Y, Z(5,10) overlaps Y → both blocked.`; await sleep(+sp.value*1.3);
+    cls={1:'sel',0:'rej',2:'rej'}; draw(cls); stats.innerHTML=`<span class="pill pink">shortest-duration → 1 activity</span>`; st.innerHTML=`Shortest-duration greedy selects only <span class="k">Y</span> = 1 activity. ✗`; await sleep(+sp.value*1.4);
+    // earliest finish
+    st.innerHTML=`<b>Strategy 2: earliest finish first.</b>`; draw({}); await sleep(+sp.value);
+    let lastF=-1; const sel=[]; const c2={}; const order=[0,1,2]; // already finish-sorted: X(5),Y(6),Z(10)
+    for(const i of order){ c2[i]='cur'; draw(c2); await sleep(+sp.value); if(ACTS[i].s>=lastF){ c2[i]='sel'; sel.push(ACTS[i].id); lastF=ACTS[i].f; blip(660,0.09,'sine',0.1); } else c2[i]='rej'; draw(c2); await sleep(+sp.value*0.8); }
+    stats.innerHTML=`<span class="pill pink">shortest-duration → 1</span><span class="pill green">earliest-finish → ${sel.length}</span>`; st.innerHTML=`⚖️ Earliest-finish selects <span class="k">${sel.join(', ')}</span> = ${sel.length} — beats shortest-duration (1)!`; ANIM=false; celebrate(cont);
+  }
+  $('#a2Play').onclick=play; $('#a2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. activity selection III (N meetings) ================= */
+(function(){
+  const RAW=[{id:'M1',s:1,f:2},{id:'M2',s:3,f:4},{id:'M3',s:0,f:6},{id:'M4',s:5,f:7},{id:'M5',s:8,f:9},{id:'M6',s:5,f:9}];
+  const M=[...RAW].sort((a,b)=>a.f-b.f);
+  const st=$('#a3Status'),sp=$('#a3Speed'),stats=$('#a3Stats'),cont=$('#a3Viz');
+  function draw(cls){ gantt(cont, M.map((a,i)=>({label:`${a.id}(${a.s},${a.f})`,s:a.s,f:a.f,cls:cls&&cls[i]||''})),{tmin:0,tmax:9,step:1}); }
+  function build(){ draw(); stats.innerHTML=''; st.textContent='Press play to count the max meetings one room can host.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const cls={}; let lastEnd=-1; const sel=[];
+    st.innerHTML=`Meetings sorted by end time. lastEnd = −∞.`; await sleep(+sp.value);
+    for(let i=0;i<M.length;i++){ cls[i]='cur'; draw(cls); tickSound(); st.innerHTML=`${M[i].id}: start ${M[i].s} vs lastEnd ${lastEnd<0?'−∞':lastEnd}.`; await sleep(+sp.value);
+      if(M[i].s>lastEnd){ cls[i]='sel'; sel.push(M[i].id); lastEnd=M[i].f; blip(660,0.09,'sine',0.1); st.innerHTML=`start &gt; lastEnd → hold <span style="color:var(--found)">${M[i].id}</span>; lastEnd=${lastEnd}.`; } else { cls[i]='rej'; st.innerHTML=`start ≤ lastEnd → conflicts, skip.`; }
+      draw(cls); stats.innerHTML=`<span class="pill green">held: ${sel.join(', ')} (${sel.length})</span>`; await sleep(+sp.value*0.8); }
+    st.innerHTML=`✅ One room hosts <span class="k">${sel.length}</span> meetings: ${sel.join(', ')}!`; ANIM=false; celebrate(cont);
+  }
+  $('#a3Play').onclick=play; $('#a3Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. min platforms I (two pointer) ================= */
+(function(){
+  const arr=[900,940,950,1100,1500,1800], dep=[910,1200,1120,1130,1900,2000];
+  const st=$('#p1Status'),sp=$('#p1Speed'),stats=$('#p1Stats'),cont=$('#p1Viz');
+  const trains=arr.map((a,i)=>({label:'T'+(i+1),s:a,f:dep[i]}));
+  function draw(cls,sweep){ gantt(cont, trains.map((t,i)=>({...t,cls:cls&&cls[i]||''})),{tmin:900,tmax:2000,step:150,sweep}); }
+  function build(){ draw(); stats.innerHTML=''; st.textContent='Press play to sweep arrivals & departures.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const A=[...arr].sort((a,b)=>a-b), D=[...dep].sort((a,b)=>a-b); let i=0,j=0,cur=0,mx=0; const cls={};
+    function idxByArr(t){ return trains.findIndex((tr,k)=>tr.s===t && cls[k]!=='sel'); }
+    while(i<A.length){ if(A[i]<=D[j]){ cur++; mx=Math.max(mx,cur); const k=idxByArr(A[i]); if(k>=0)cls[k]='sel'; draw(cls,A[i]); blip(560,0.08,'sine',0.09); st.innerHTML=`Arrival ${A[i]} → platform in use. Concurrent = <span class="k">${cur}</span>, peak = ${mx}.`; i++; }
+      else { cur--; draw(cls,D[j]); tickSound(); st.innerHTML=`Departure ${D[j]} → platform freed. Concurrent = ${cur}.`; j++; }
+      stats.innerHTML=`<span class="pill blue">current = ${cur}</span><span class="pill green">max = ${mx}</span>`; await sleep(+sp.value); }
+    draw(cls); st.innerHTML=`🚉 Minimum platforms needed = <span class="k">${mx}</span> (peak simultaneous trains)!`; ANIM=false; celebrate(cont);
+  }
+  $('#p1Play').onclick=play; $('#p1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. min platforms II (event sweep) ================= */
+(function(){
+  const arr=[900,940,950,1100,1500,1800], dep=[910,1200,1120,1130,1900,2000];
+  const st=$('#p2Status'),sp=$('#p2Speed'),stats=$('#p2Stats'),cont=$('#p2Viz');
+  const trains=arr.map((a,i)=>({label:'T'+(i+1),s:a,f:dep[i]}));
+  function draw(sweep){ gantt(cont, trains,{tmin:900,tmax:2000,step:150,sweep}); }
+  function build(){ draw(); $('#p2Events').innerHTML=''; stats.innerHTML=''; st.textContent='Press play for the +1/−1 sweep-line count.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const ev=[]; arr.forEach(a=>ev.push([a,1])); dep.forEach(d=>ev.push([d,-1])); ev.sort((x,y)=> x[0]-y[0] || x[1]-y[1]);
+    let cur=0,mx=0; const shown=[];
+    for(const [t,d] of ev){ cur+=d; mx=Math.max(mx,cur); shown.push(`${t}:${d>0?'+1':'−1'}→${cur}`); outRow($('#p2Events'),shown); draw(t); (d>0?blip(560,0.08,'sine',0.09):tickSound()); st.innerHTML=`Event at ${t}: ${d>0?'arrival +1':'departure −1'} → running = <span class="k">${cur}</span>, peak = ${mx}.`; stats.innerHTML=`<span class="pill blue">running = ${cur}</span><span class="pill green">max = ${mx}</span>`; await sleep(+sp.value); }
+    draw(); st.innerHTML=`🚦 Peak running sum = <span class="k">${mx}</span> → 3 platforms (same as the two-pointer sweep)!`; ANIM=false; celebrate($('#p2Events'));
+  }
+  $('#p2Play').onclick=play; $('#p2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. job sequencing I ================= */
+(function(){
+  const JOBS=[{id:'A',d:2,p:100},{id:'B',d:1,p:19},{id:'C',d:2,p:27},{id:'D',d:1,p:25},{id:'E',d:3,p:15}];
+  const st=$('#j1Status'),sp=$('#j1Speed'),stats=$('#j1Stats');
+  const maxD=Math.max(...JOBS.map(j=>j.d));
+  const sorted=[...JOBS].sort((a,b)=>b.p-a.p);
+  function jobs(cls){ $('#j1Jobs').innerHTML=sorted.map((j,i)=>`<span class="hchip ${cls&&cls[i]||''}" ${cls&&cls[i]==='top'?'':''}>${j.id}·d${j.d}·₹${j.p}</span>`).join(''); }
+  function slots(arr,cur){ $('#j1Slots').innerHTML=arr.map((v,i)=>`<div class="slot ${v?'fill':''} ${cur===i+1?'cur':''}"><span class="st">t${i+1}</span>${v||'∅'}</div>`).join(''); }
+  function build(){ jobs(); slots(Array(maxD).fill(null)); stats.innerHTML=''; st.textContent='Press play to schedule jobs by profit into slots.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const slot=Array(maxD).fill(null); let profit=0,count=0; const jcls={};
+    for(let i=0;i<sorted.length;i++){ const j=sorted[i]; jcls[i]='cmp'; jobs(jcls); st.innerHTML=`Job ${j.id} (deadline ${j.d}, profit ₹${j.p}): find latest free slot ≤ ${j.d}…`; await sleep(+sp.value);
+      let placed=false; for(let t=Math.min(j.d,maxD);t>=1;t--){ slots(slot,t); await sleep(+sp.value*0.55); if(!slot[t-1]){ slot[t-1]=j.id; profit+=j.p; count++; placed=true; jcls[i]='top'; slots(slot); blip(660,0.09,'sine',0.1); st.innerHTML=`Place ${j.id} in slot t${t}. Profit += ₹${j.p} → ₹${profit}.`; break; } }
+      if(!placed){ jcls[i]='out'; st.innerHTML=`No free slot ≤ ${j.d} → skip ${j.id}.`; blip(320,0.1,'sawtooth',0.07); }
+      jobs(jcls); slots(slot); stats.innerHTML=`<span class="pill green">profit = ₹${profit}</span><span class="pill blue">jobs = ${count}</span>`; await sleep(+sp.value*0.7); }
+    st.innerHTML=`💼 Max profit = <span class="k">₹${profit}</span> with ${count} jobs (${slot.filter(Boolean).join(', ')})!`; ANIM=false; celebrate($('#j1Slots'));
+  }
+  $('#j1Play').onclick=play; $('#j1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. job sequencing II (DSU) ================= */
+(function(){
+  const JOBS=[{id:'A',d:2,p:100},{id:'B',d:1,p:19},{id:'C',d:2,p:27},{id:'D',d:1,p:25},{id:'E',d:3,p:15}];
+  const st=$('#j2Status'),sp=$('#j2Speed'),stats=$('#j2Stats');
+  const maxD=Math.max(...JOBS.map(j=>j.d));
+  const sorted=[...JOBS].sort((a,b)=>b.p-a.p);
+  function jobs(cls){ $('#j2Jobs').innerHTML=sorted.map((j,i)=>`<span class="hchip ${cls&&cls[i]||''}">${j.id}·d${j.d}·₹${j.p}</span>`).join(''); }
+  function slots(slot,parent,cur){ $('#j2Slots').innerHTML=slot.map((v,i)=>`<div class="slot ${v?'fill':''} ${cur===i+1?'cur':''}"><span class="st">t${i+1}→${parent[i+1]}</span>${v||'∅'}</div>`).join(''); }
+  function build(){ jobs(); const parent=[]; for(let i=0;i<=maxD;i++)parent[i]=i; slots(Array(maxD).fill(null),parent); stats.innerHTML=''; st.textContent='Press play to place jobs using find/union on slots.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const slot=Array(maxD).fill(null); const parent=[]; for(let i=0;i<=maxD;i++)parent[i]=i; const find=x=>{ while(parent[x]!==x)x=parent[x]; return x; }; let profit=0,count=0; const jcls={};
+    for(let i=0;i<sorted.length;i++){ const j=sorted[i]; jcls[i]='cmp'; jobs(jcls); const free=find(Math.min(j.d,maxD)); slots(slot,parent,free>0?free:undefined); st.innerHTML=`Job ${j.id}: find(${Math.min(j.d,maxD)}) = latest free slot <span class="k">${free>0?'t'+free:'none'}</span>.`; await sleep(+sp.value);
+      if(free>0){ slot[free-1]=j.id; parent[free]=free-1; profit+=j.p; count++; jcls[i]='top'; blip(660,0.09,'sine',0.1); slots(slot,parent); st.innerHTML=`Place ${j.id} at t${free}; union slot ${free} → ${free-1} (skip it next time). Profit ₹${profit}.`; }
+      else { jcls[i]='out'; blip(320,0.1,'sawtooth',0.07); st.innerHTML=`find returned 0 → no slot, skip ${j.id}.`; }
+      jobs(jcls); slots(slot,parent); stats.innerHTML=`<span class="pill green">profit = ₹${profit}</span><span class="pill blue">jobs = ${count}</span>`; await sleep(+sp.value*0.75); }
+    st.innerHTML=`🔗 Same max profit <span class="k">₹${profit}</span> via DSU — find/union skip busy slots in ~O(1)!`; ANIM=false; celebrate($('#j2Slots'));
+  }
+  $('#j2Play').onclick=play; $('#j2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. fractional knapsack ================= */
+(function(){
+  const ITEMS=[{id:'I1',v:60,w:10},{id:'I2',v:100,w:20},{id:'I3',v:120,w:30}]; const CAP=50;
+  const st=$('#fkStatus'),sp=$('#fkSpeed'),stats=$('#fkStats');
+  const sorted=[...ITEMS].map(it=>({...it,r:it.v/it.w})).sort((a,b)=>b.r-a.r);
+  const COLORS=['#4cc9f0','#06d6a0','#ffd166','#f72585'];
+  function items(cls){ $('#fkItems').innerHTML=sorted.map((it,i)=>`<span class="hchip ${cls&&cls[i]||''}">${it.id}·₹${it.v}/${it.w}kg·<b style="color:var(--mid)">${it.r.toFixed(1)}</b></span>`).join(''); }
+  function bar(segs){ $('#fkBar').innerHTML=segs.map(s=>`<div class="capseg" style="width:${s.w/CAP*100}%;background:${s.c}">${s.t}</div>`).join(''); }
+  function build(){ items(); bar([]); stats.innerHTML=''; st.textContent='Press play to fill the knapsack greedily.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let cap=CAP,val=0; const segs=[]; const cls={};
+    for(let i=0;i<sorted.length;i++){ const it=sorted[i]; cls[i]='cmp'; items(cls); st.innerHTML=`Item ${it.id}: ratio ${it.r.toFixed(1)}, weight ${it.w}kg; remaining capacity ${cap}kg.`; await sleep(+sp.value);
+      if(it.w<=cap){ cap-=it.w; val+=it.v; segs.push({w:it.w,c:COLORS[i%4],t:`${it.id} ₹${it.v}`}); cls[i]='top'; bar(segs); blip(640,0.09,'sine',0.1); st.innerHTML=`Take all of ${it.id} (+₹${it.v}). Value ₹${val}, capacity left ${cap}kg.`; }
+      else if(cap>0){ const frac=cap/it.w; const add=Math.round(it.v*frac); val+=add; segs.push({w:cap,c:COLORS[i%4],t:`${it.id} ${Math.round(frac*100)}% ₹${add}`}); cls[i]='top'; bar(segs); blip(700,0.1,'sine',0.1); st.innerHTML=`Only ${cap}kg left → take ${Math.round(frac*100)}% of ${it.id} (+₹${add}). Bag full.`; cap=0; }
+      else { cls[i]='out'; st.innerHTML=`Bag full → skip ${it.id}.`; }
+      items(cls); stats.innerHTML=`<span class="pill green">value = ₹${val}</span><span class="pill blue">used ${CAP-cap}/${CAP}kg</span>`; await sleep(+sp.value); if(cap===0)break; }
+    st.innerHTML=`🎒 Max value = <span class="k">₹${val}</span> (took I1, I2, and ⅔ of I3)!`; ANIM=false; celebrate($('#fkBar'));
+  }
+  $('#fkPlay').onclick=play; $('#fkReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. k max in stream ================= */
+(function(){
+  const STREAM=[4,5,8,2,3,5,10,9]; const K=3; const st=$('#kmStatus'),sp=$('#kmSpeed'),stats=$('#kmStats');
+  function build(){ $('#kmStream').innerHTML=''; heapPanel($('#kmPanel'),[]); stats.innerHTML=''; st.textContent='Press play to track the 3rd largest as numbers arrive.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>x-y); const seen=[];
+    for(const x of STREAM){ seen.push(x); h.push(x); if(h.size()>K)h.pop(); outRow($('#kmStream'),seen); heapPanel($('#kmPanel'),h.a); tickSound(); const kth=h.size()>=K?h.peek():null; st.innerHTML=`Add ${x}. Heap keeps top ${Math.min(h.size(),K)}; ${kth!==null?`3rd largest = <span class="k">${kth}</span>`:'need ≥3 values'}.`; stats.innerHTML=kth!==null?`<span class="pill green">kth largest = ${kth}</span>`:`<span class="pill blue">${h.size()}/${K} collected</span>`; await sleep(+sp.value); }
+    st.innerHTML=`📈 After the stream, the 3rd largest is <span class="k">${h.peek()}</span> — a size-3 min-heap tracks it live!`; ANIM=false; celebrate($('#kmPanel'));
+  }
+  $('#kmPlay').onclick=play; $('#kmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= huffman shared build ================= */
+let HUID=0;
+function buildHuffman(freqs){ HUID=0; const h=makeHeap((x,y)=>x.f-y.f || x._id-y._id); Object.entries(freqs).forEach(([ch,f])=>h.push({ch,f,_id:HUID++})); const steps=[];
+  while(h.size()>1){ const a=h.pop(), b=h.pop(); const node={f:a.f+b.f,l:a,r:b,_id:HUID++}; steps.push({a,b,node,heap:h.a.map(x=>({...x})).concat([{...node}])}); h.push(node); }
+  return {root:h.peek(), steps}; }
+function huffCodes(root){ const codes={}; (function go(n,code){ if(!n.l&&!n.r){ codes[n.ch]=code||'0'; return; } go(n.l,code+'0'); go(n.r,code+'1'); })(root,''); return codes; }
+const HFREQ={a:5,b:9,c:12,d:13,e:16,f:45};
+
+/* ================= 11. huffman I (build) ================= */
+(function(){
+  const st=$('#h1Status'),sp=$('#h1Speed'),stats=$('#h1Stats');
+  function panelFrom(nodes){ heapPanel($('#h1Panel'),nodes,{fmt:n=>(n.ch?n.ch+':':'•')+n.f, noTop:false}); }
+  function build(){ const init=Object.entries(HFREQ).map(([ch,f])=>({ch,f})).sort((a,b)=>a.f-b.f); panelFrom(init); $('#h1Tree').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to build the Huffman tree.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>x.f-y.f || x._id-y._id); let id=0; Object.entries(HFREQ).forEach(([ch,f])=>h.push({ch,f,_id:id++}));
+    panelFrom(h.a.slice().sort((a,b)=>a.f-b.f)); st.innerHTML=`Min-heap of ${h.size()} leaf nodes by frequency.`; await sleep(+sp.value);
+    let last=null;
+    while(h.size()>1){ const a=h.pop(), b=h.pop(); panelFrom(h.a.slice().sort((x,y)=>x.f-y.f)); tickSound(); st.innerHTML=`Pop two smallest: <span class="k">${a.ch?a.ch+':':'•'}${a.f}</span> &amp; <span class="k">${b.ch?b.ch+':':'•'}${b.f}</span>.`; await sleep(+sp.value);
+      const node={f:a.f+b.f,l:a,r:b,_id:id++}; h.push(node); last=node; const roots=h.a.slice().sort((x,y)=>x.f-y.f); panelFrom(roots); huffSVG($('#h1Tree'),node,{cls:{[node._id]:'new'}}); blip(560,0.1,'sine',0.1); st.innerHTML=`Merge → new node freq <span class="k">${node.f}</span>; push back to heap.`; stats.innerHTML=`<span class="pill blue">forest roots: ${h.size()}</span>`; await sleep(+sp.value); }
+    huffSVG($('#h1Tree'),last,{}); st.innerHTML=`🌳 Huffman tree built — root frequency = <span class="k">${last.f}</span> (= total of all chars)!`; ANIM=false; celebrate($('#h1Tree'));
+  }
+  $('#h1Play').onclick=play; $('#h1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. huffman II (codes) ================= */
+(function(){
+  const st=$('#h2Status'),sp=$('#h2Speed'),stats=$('#h2Stats');
+  const {root}=buildHuffman(HFREQ); const codes=huffCodes(root);
+  function build(){ huffSVG($('#h2Tree'),root,{}); $('#h2Codes').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to read each leaf\u2019s codeword off the tree.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const shown={}; let bits=0; const order=Object.keys(HFREQ).sort((a,b)=>(codes[a].length-codes[b].length)||a.localeCompare(b));
+    // gather leaves via DFS to animate path
+    const leaves=[]; (function go(n,code,path){ if(!n.l&&!n.r){ leaves.push({ch:n.ch,f:n.f,code,path:[...path,n._id]}); return; } go(n.l,code+'0',[...path,n._id]); go(n.r,code+'1',[...path,n._id]); })(root,'',[]);
+    for(const lf of leaves){ huffSVG($('#h2Tree'),root,{on:new Set(lf.path),cls:Object.fromEntries(lf.path.map(id=>[id,'on']))}); shown[lf.ch]=lf.code; bits+=lf.f*lf.code.length; $('#h2Codes').innerHTML=Object.entries(shown).map(([ch,cd])=>`<span class="codechip"><b>${ch}</b>:${HFREQ[ch]} → <span class="cd">${cd}</span></span>`).join(''); blip(600,0.09,'sine',0.1); st.innerHTML=`Leaf <span class="k">${lf.ch}</span>: path code <span class="k">${lf.code}</span> (${lf.code.length} bits × freq ${lf.f}).`; stats.innerHTML=`<span class="pill blue">total bits = ${bits}</span>`; await sleep(+sp.value); }
+    huffSVG($('#h2Tree'),root,{}); st.innerHTML=`🔤 Prefix codes assigned! Encoded size = <span class="k">${bits} bits</span> (vs 288 for fixed 3-bit codes)!`; ANIM=false; celebrate($('#h2Codes'));
+  }
+  $('#h2Play').onclick=play; $('#h2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

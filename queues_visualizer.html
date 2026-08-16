@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Queues &amp; Deques — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:720px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:7px; justify-content:center;
+      padding:12px; background:rgba(11,16,32,.8); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12px; font-weight:600; padding:6px 10px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .cellrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:24px 0 30px; min-height:64px}
+  .cell{position:relative; min-width:48px; height:50px; padding:0 8px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:16px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .35s cubic-bezier(.2,.8,.2,1)}
+  .cell .idx{position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--muted); font-weight:700}
+  .cell .ptr{position:absolute; bottom:-23px; left:50%; transform:translateX(-50%); font-size:11px; font-weight:800; white-space:nowrap; color:var(--accent); background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 6px}
+  .cell.in-range{border-color:var(--accent); background:#22345f}
+  .cell.lo{border-color:var(--lo); background:#182a5a; box-shadow:0 0 0 3px rgba(67,97,238,.4)}
+  .cell.hi{border-color:var(--hi); background:#3a1d2a; box-shadow:0 0 0 3px rgba(247,37,133,.4)}
+  .cell.mid{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 4px rgba(255,209,102,.45); transform:scale(1.1) translateY(-4px)}
+  .cell.found{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 4px rgba(6,214,160,.55)}
+  .cell.dead{opacity:.28; filter:grayscale(.5)}
+  .cell.empty{color:var(--muted); font-style:italic; background:#141d3a}
+
+  .qlabel{font-weight:800; color:var(--accent); font-size:14px; margin:6px 0 2px; text-align:center}
+  .qbox{display:flex; align-items:center; gap:6px; justify-content:center; flex-wrap:wrap; margin:8px 0}
+  .qtag{font-size:12px; font-weight:800; color:var(--muted)}
+
+  /* stack (vertical) */
+  .stackwrap{display:flex; gap:26px; justify-content:center; align-items:flex-end; flex-wrap:wrap; margin:18px 0}
+  .stackcol{display:flex; flex-direction:column; align-items:center}
+  .slabel{font-weight:800; color:var(--accent); margin-bottom:8px; font-size:14px}
+  .stack{display:flex; flex-direction:column-reverse; gap:6px; width:96px; min-height:200px; border:2px solid var(--line); border-top:none; border-radius:0 0 14px 14px; padding:8px; background:rgba(10,19,48,.5); justify-content:flex-start}
+  .sitem{height:38px; border-radius:8px; background:#22345f; border:2px solid var(--accent); color:var(--ink); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; animation:pop .3s ease}
+  .sitem.top{border-color:var(--mid); box-shadow:0 0 0 3px rgba(255,209,102,.45)}
+  .sempty{color:var(--muted); font-style:italic; align-self:center; margin:auto 0}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  /* tree */
+  .treewrap{display:flex; justify-content:center; margin:16px 0}
+  svg.tree{max-width:100%; height:auto}
+  .tnode circle{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.4s}
+  .tnode.active circle{fill:#3a3620; stroke:var(--mid); stroke-width:4}
+  .tnode.visited circle{fill:#0d3b30; stroke:var(--found)}
+  .tnode text{fill:var(--ink); font-weight:700; font-size:16px; text-anchor:middle; dominant-baseline:central}
+  .tedge{stroke:#2c3d6e; stroke-width:2.5}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Queues &amp; Deques — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch items flow front-to-back, wrap circularly, and monotonic deques crush sliding windows. Built so every queue pattern sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#whatqueue">🚶 What is a Queue</a>
+  <a href="#circular">🔄 Circular Queue</a>
+  <a href="#inbuilt">🧰 Inbuilt Queue</a>
+  <a href="#qwithstack">📥 Queue via Stacks</a>
+  <a href="#qwithstack2">📤 Queue via Stacks II</a>
+  <a href="#stackwithq">📚 Stack via Queues</a>
+  <a href="#reverseq">🔁 Reverse a Queue</a>
+  <a href="#levelorder">🌳 Level Order (BFS)</a>
+  <a href="#binforms">1️⃣ Binary Forms</a>
+  <a href="#deque">↔️ Deque</a>
+  <a href="#maxwindow">📈 Max in Window</a>
+  <a href="#maxwindow2">⚡ Max in Window II</a>
+  <a href="#firstneg">➖ First Negative</a>
+</nav>
+
+<main>
+
+  <!-- WHAT IS QUEUE -->
+  <section id="whatqueue">
+    <h2>🚶 What is a Queue? <span class="badge">FIFO</span></h2>
+    <p class="lead">A queue is a First-In-First-Out line — add at the <b>rear</b>, remove from the <b>front</b>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A line at the ticket counter:</span> newcomers join at the back (<b>enqueue</b>) and the person at the front is served first (<b>dequeue</b>). No cutting — order of arrival is order of service.</div>
+      <div class="steps-flow"><span class="chip">enqueue → add at rear</span><span class="arrow">·</span><span class="chip">dequeue → remove from front</span><span class="arrow">·</span><span class="chip">peek → read front</span></div>
+      <div class="oneliner">🔒 Keep forever: "Front leaves first, rear joins last — First In, First Out."</div>
+    </div>
+    <div class="note">Operations: enqueue 3, 7, 5, dequeue, enqueue 9, dequeue.</div>
+    <div class="qlabel">Queue (front → rear)</div>
+    <div class="cellrow" id="wqRow"></div>
+    <div class="status" id="wqStatus">Press play to watch enqueue at rear, dequeue at front.</div>
+    <div class="controls"><button class="btn" id="wqPlay">▶ Run Operations</button><button class="btn ghost" id="wqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="wqSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> enqueue, dequeue, peek — all O(1). Queues drive BFS, scheduling, buffering, and the sliding-window tricks below.</div></div>
+    <pre><code>q.enqueue(x);          <span class="cm">// add at rear</span>
+<span class="kw">int</span> f = q.peek();       <span class="cm">// read front</span>
+q.dequeue();           <span class="cm">// remove front</span></code></pre>
+  </section>
+
+  <!-- CIRCULAR QUEUE -->
+  <section id="circular">
+    <h2>🔄 Circular Queue <span class="badge">Wrap-around</span></h2>
+    <p class="lead">A fixed array reused in a ring — front &amp; rear wrap with modulo so freed slots are recycled.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Seats around a round table:</span> when rear reaches the last slot, it wraps back to slot 0 (if free). No shifting, no wasted space — the array is a loop and both pointers chase each other with <code>(i+1) % capacity</code>.</div>
+      <div class="steps-flow"><span class="chip">rear = (rear+1) % cap</span><span class="arrow">·</span><span class="chip">front = (front+1) % cap</span><span class="arrow">·</span><span class="chip">full when count == cap</span></div>
+      <div class="oneliner">🔒 Keep forever: "Modulo turns a flat array into a ring — indices wrap, space is reused."</div>
+    </div>
+    <div class="note">Capacity 5: enqueue 10,20,30, dequeue, enqueue 40,50,60 — watch 60 wrap to slot 0.</div>
+    <div class="qlabel">Ring buffer (fixed slots)</div>
+    <div class="cellrow" id="cqRow"></div>
+    <div class="status" id="cqStatus">Press play. rear wraps around to a freed slot.</div>
+    <div class="controls"><button class="btn" id="cqPlay">▶ Run Circular</button><button class="btn ghost" id="cqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cqSpeed" min="300" max="2400" value="1250" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> distinguish full vs empty with a <code>count</code> (or leave one slot gap). Both indices advance modulo capacity.</div></div>
+    <pre><code>enqueue(x){ rear=(rear+<span class="num">1</span>)%cap; a[rear]=x; count++; }
+dequeue(){ front=(front+<span class="num">1</span>)%cap; count--; }</code></pre>
+  </section>
+
+  <!-- INBUILT QUEUE -->
+  <section id="inbuilt">
+    <h2>🧰 Inbuilt Queue <span class="badge">Library API</span></h2>
+    <p class="lead">Most languages ship a ready Queue — you just call <code>offer</code>, <code>poll</code>, and <code>peek</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Don't rebuild the wheel:</span> a library queue (Java <code>ArrayDeque</code>/<code>LinkedList</code>, C++ <code>std::queue</code>, Python <code>deque</code>) handles resizing and pointers for you. Learn the verbs: add to back, remove from front, look at front.</div>
+      <div class="oneliner">🔒 Keep forever: "offer = enqueue, poll = dequeue, peek = front. Use the built-in unless you need custom internals."</div>
+    </div>
+    <div class="note">API demo: offer 1, offer 2, offer 3, poll, peek.</div>
+    <div class="qlabel">Queue (front → rear)</div>
+    <div class="cellrow" id="ibRow"></div>
+    <div class="status" id="ibStatus">Press play to call offer / poll / peek.</div>
+    <div class="stats" id="ibStats"></div>
+    <div class="controls"><button class="btn" id="ibPlay">▶ Run API</button><button class="btn ghost" id="ibReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ibSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> <code>ArrayDeque</code> is the fast general-purpose choice; <code>PriorityQueue</code> is a heap (not FIFO). <code>poll</code>/<code>peek</code> return null when empty (no exception).</div></div>
+    <pre><code>Queue&lt;Integer&gt; q = <span class="kw">new</span> ArrayDeque&lt;&gt;();
+q.offer(<span class="num">1</span>); q.offer(<span class="num">2</span>);   <span class="cm">// enqueue</span>
+<span class="kw">int</span> x = q.poll();          <span class="cm">// dequeue front</span>
+<span class="kw">int</span> f = q.peek();          <span class="cm">// read front</span></code></pre>
+  </section>
+
+  <!-- QUEUE VIA STACKS -->
+  <section id="qwithstack">
+    <h2>📥 Design a Queue using Stacks <span class="badge">Costly dequeue</span></h2>
+    <p class="lead">Two stacks fake a queue: push into an <b>in</b> stack; to dequeue, flip everything into an <b>out</b> stack.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pour between two glasses:</span> new items pile into the "in" stack. When you need the front, pour "in" into "out" — the reversal puts the oldest item on top of "out". Keep popping "out" until it's empty, then pour again.</div>
+      <div class="steps-flow"><span class="chip">enqueue → push in</span><span class="arrow">·</span><span class="chip">dequeue: out empty? move all in→out</span><span class="arrow">·</span><span class="chip">pop out</span></div>
+      <div class="oneliner">🔒 Keep forever: "Reversing a stack once makes its top the queue's front — amortized O(1)."</div>
+    </div>
+    <div class="note">enqueue 1,2,3 → dequeue → enqueue 4 → dequeue.</div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">in</div><div class="stack" id="q1In"></div></div><div class="stackcol"><div class="slabel">out</div><div class="stack" id="q1Out"></div></div></div>
+    <div class="status" id="q1Status">Press play. Dequeue flips in→out when out is empty.</div>
+    <div class="stats" id="q1Stats"></div>
+    <div class="controls"><button class="btn" id="q1Play">▶ Run</button><button class="btn ghost" id="q1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="q1Speed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> each element is moved at most once from in→out → amortized O(1) per op, even though a single dequeue can be O(n).</div></div>
+    <pre><code>enqueue(x){ in.push(x); }
+dequeue(){ <span class="kw">if</span> (out.isEmpty()) <span class="kw">while</span>(!in.isEmpty()) out.push(in.pop());
+           <span class="kw">return</span> out.pop(); }</code></pre>
+  </section>
+
+  <!-- QUEUE VIA STACKS 2 -->
+  <section id="qwithstack2">
+    <h2>📤 Design a Queue using Stacks II <span class="badge">Costly enqueue</span></h2>
+    <p class="lead">The mirror approach: do the work on <b>enqueue</b> so the front always sits on top — dequeue is instant.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Always keep the eldest on top:</span> to add a new item, temporarily pour the main stack into a helper, drop the newcomer at the bottom, then pour back. Now the oldest element is always on top, so dequeue is a single pop.</div>
+      <div class="steps-flow"><span class="chip">enqueue: move main→helper, push x, move back</span><span class="arrow">·</span><span class="chip">dequeue: pop main (front on top)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Pay on enqueue to keep the front on top — dequeue/peek become O(1)."</div>
+    </div>
+    <div class="note">enqueue 1, 2, 3 (front stays on top), then dequeue.</div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">main (front on top)</div><div class="stack" id="q2Main"></div></div><div class="stackcol"><div class="slabel">helper</div><div class="stack" id="q2Help"></div></div></div>
+    <div class="status" id="q2Status">Press play. Enqueue keeps the oldest element on top.</div>
+    <div class="controls"><button class="btn" id="q2Play">▶ Run</button><button class="btn ghost" id="q2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="q2Speed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> choose the costly-enqueue vs costly-dequeue design by which operation you call more often.</div></div>
+    <pre><code>enqueue(x){ <span class="kw">while</span>(!main.isEmpty()) help.push(main.pop());
+            main.push(x);
+            <span class="kw">while</span>(!help.isEmpty()) main.push(help.pop()); }
+dequeue(){ <span class="kw">return</span> main.pop(); }   <span class="cm">// front is on top</span></code></pre>
+  </section>
+
+  <!-- STACK VIA QUEUES -->
+  <section id="stackwithq">
+    <h2>📚 Design a Stack using Queues <span class="badge">Rotate trick</span></h2>
+    <p class="lead">One queue behaves like a stack if, after each push, you rotate the newest item to the front.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Send everyone around the loop:</span> enqueue the new item, then dequeue-and-re-enqueue every older item so the newcomer ends up at the <b>front</b>. Now a normal dequeue removes the most-recent item — that's LIFO from a FIFO queue.</div>
+      <div class="steps-flow"><span class="chip">push x → enqueue x</span><span class="arrow">→</span><span class="chip">rotate (size−1) times</span><span class="arrow">→</span><span class="chip">pop = dequeue front</span></div>
+      <div class="oneliner">🔒 Keep forever: "After pushing, rotate the queue so the newest sits at the front → pop is LIFO."</div>
+    </div>
+    <div class="note">push 1, 2, 3 (rotating each time), then pop → 3.</div>
+    <div class="qlabel">Queue (front → rear)</div>
+    <div class="cellrow" id="sqRow"></div>
+    <div class="status" id="sqStatus">Press play. Rotation puts the newest at the front.</div>
+    <div class="controls"><button class="btn" id="sqPlay">▶ Run</button><button class="btn ghost" id="sqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="sqSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> push is O(n) (the rotation); pop/top are O(1). One queue suffices — no second queue needed.</div></div>
+    <pre><code>push(x){ q.offer(x); <span class="kw">for</span>(<span class="kw">int</span> i=<span class="num">0</span>;i&lt;q.size()-<span class="num">1</span>;i++) q.offer(q.poll()); }
+pop(){ <span class="kw">return</span> q.poll(); }   <span class="cm">// newest is at front</span></code></pre>
+  </section>
+
+  <!-- REVERSE A QUEUE -->
+  <section id="reverseq">
+    <h2>🔁 Reverse a Queue <span class="badge">Stack helper</span></h2>
+    <p class="lead">Dequeue everything into a stack, then pop it all back — the queue comes out reversed.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A U-turn through a stack:</span> a queue keeps order, a stack flips it. Pour the queue into a stack (front items sink to the bottom), then pour back — the last-in items now lead. Order reversed.</div>
+      <div class="steps-flow"><span class="chip">dequeue all → push to stack</span><span class="arrow">→</span><span class="chip">pop all → enqueue back</span></div>
+      <div class="oneliner">🔒 Keep forever: "Queue → stack → queue flips FIFO order into reverse."</div>
+    </div>
+    <div class="note">Queue [1, 2, 3, 4] → reversed [4, 3, 2, 1].</div>
+    <div class="qlabel">Queue</div>
+    <div class="cellrow" id="rqRow"></div>
+    <div class="stackwrap"><div class="stackcol"><div class="slabel">Stack helper</div><div class="stack" id="rqStack"></div></div></div>
+    <div class="status" id="rqStatus">Press play to reverse the queue via a stack.</div>
+    <div class="controls"><button class="btn" id="rqPlay">▶ Reverse</button><button class="btn ghost" id="rqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rqSpeed" min="300" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n) time, O(n) space. Recursion can do it too — dequeue, recurse, then enqueue on the way back.</div></div>
+    <pre><code><span class="kw">while</span>(!q.isEmpty()) st.push(q.poll());  <span class="cm">// flip into stack</span>
+<span class="kw">while</span>(!st.isEmpty()) q.offer(st.pop());  <span class="cm">// flip back</span></code></pre>
+  </section>
+
+  <!-- LEVEL ORDER -->
+  <section id="levelorder">
+    <h2>🌳 Level Order Traversal (BFS) <span class="badge">Queue-driven</span></h2>
+    <p class="lead">Visit a tree level by level using a queue — the classic breadth-first search.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Ripples in a pond:</span> start with the root in the queue. Repeatedly dequeue a node, visit it, and enqueue its children. The FIFO order guarantees you finish each level before the next — like ripples spreading outward.</div>
+      <div class="steps-flow"><span class="chip">enqueue root</span><span class="arrow">→</span><span class="chip">dequeue &amp; visit</span><span class="arrow">→</span><span class="chip">enqueue its children</span></div>
+      <div class="oneliner">🔒 Keep forever: "A queue processes a tree level by level — that's BFS."</div>
+    </div>
+    <div class="note">Tree traversal order → 1, 2, 3, 4, 5, 6.</div>
+    <div class="treewrap"><svg class="tree" id="loSvg" viewBox="0 0 520 260" width="520" height="260"></svg></div>
+    <div class="qlabel">Queue</div>
+    <div class="cellrow" id="loQueue"></div>
+    <div class="status" id="loStatus">Press play to walk the tree breadth-first.</div>
+    <div class="stats" id="loStats"></div>
+    <div class="controls"><button class="btn" id="loPlay">▶ BFS Traverse</button><button class="btn ghost" id="loReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="loSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> track queue size at each step to separate levels. BFS also finds shortest paths in unweighted graphs.</div></div>
+    <pre><code>q.offer(root);
+<span class="kw">while</span>(!q.isEmpty()){
+  Node n = q.poll(); visit(n);
+  <span class="kw">if</span>(n.left!=null) q.offer(n.left);
+  <span class="kw">if</span>(n.right!=null) q.offer(n.right);
+}</code></pre>
+  </section>
+
+  <!-- BINARY FORMS -->
+  <section id="binforms">
+    <h2>1️⃣ Binary Forms of 1..N <span class="badge">Queue generator</span></h2>
+    <p class="lead">Generate the binary numbers 1, 10, 11, 100… using a queue — each number breeds its two children.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A breeding line:</span> seed the queue with "1". Dequeue a string, output it, then enqueue it with a "0" and a "1" appended. The FIFO order emits binary numbers in increasing value — a tiny BFS over a binary-string tree.</div>
+      <div class="steps-flow"><span class="chip">queue = ["1"]</span><span class="arrow">→</span><span class="chip">poll s → output s</span><span class="arrow">→</span><span class="chip">enqueue s+"0", s+"1"</span></div>
+      <div class="oneliner">🔒 Keep forever: "Each binary string spawns s+0 and s+1 — a queue emits them in order."</div>
+    </div>
+    <div class="note">Generate the first 5 binary numbers: 1, 10, 11, 100, 101.</div>
+    <div class="qlabel">Queue</div>
+    <div class="cellrow" id="bfQueue"></div>
+    <div class="qlabel">Output</div>
+    <div class="cellrow" id="bfOut"></div>
+    <div class="status" id="bfStatus">Press play to generate binary numbers.</div>
+    <div class="controls"><button class="btn" id="bfPlay">▶ Generate</button><button class="btn ghost" id="bfReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bfSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> this BFS pattern generates any ordered family (binary strings, combinations) level by level.</div></div>
+    <pre><code>q.offer(<span class="str">"1"</span>);
+<span class="kw">for</span>(<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++){
+  String s = q.poll(); print(s);
+  q.offer(s+<span class="str">"0"</span>); q.offer(s+<span class="str">"1"</span>);
+}</code></pre>
+  </section>
+
+  <!-- DEQUE -->
+  <section id="deque">
+    <h2>↔️ Doubly Ended Queue (Deque) <span class="badge">Both ends</span></h2>
+    <p class="lead">A deque lets you add and remove from <b>both</b> the front and the back — the most flexible linear structure.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A double-door hallway:</span> people can enter or leave from either end. That flexibility makes a deque act as a stack, a queue, or the engine behind sliding-window maximums (next!).</div>
+      <div class="steps-flow"><span class="chip">pushFront / pushBack</span><span class="arrow">·</span><span class="chip">popFront / popBack</span><span class="arrow">·</span><span class="chip">O(1) at both ends</span></div>
+      <div class="oneliner">🔒 Keep forever: "A deque = add/remove at either end — stack + queue in one."</div>
+    </div>
+    <div class="note">pushBack 1, pushBack 2, pushFront 0, popBack, pushFront -1.</div>
+    <div class="qlabel">Deque (front ↔ back)</div>
+    <div class="cellrow" id="dqRow"></div>
+    <div class="status" id="dqStatus">Press play to operate on both ends.</div>
+    <div class="controls"><button class="btn" id="dqPlay">▶ Run Deque</button><button class="btn ghost" id="dqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dqSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> Java <code>ArrayDeque</code> gives O(1) at both ends and is the go-to for stacks, queues, and monotonic windows.</div></div>
+    <pre><code>dq.addFirst(x); dq.addLast(y);   <span class="cm">// push either end</span>
+dq.pollFirst(); dq.pollLast();   <span class="cm">// pop either end</span></code></pre>
+  </section>
+
+  <!-- MAX IN WINDOW -->
+  <section id="maxwindow">
+    <h2>📈 Maximum in Sliding Window <span class="badge">Monotonic deque</span></h2>
+    <p class="lead">Report the max of every window of size k in O(n) using a decreasing deque of indices.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Bouncers keep only contenders:</span> keep a deque of indices whose values are decreasing. Before adding a new element, evict smaller ones from the back (they can never be the max while it's around). Drop the front if it slid out of the window. The front is always the window's maximum.</div>
+      <div class="steps-flow"><span class="chip">pop back while &lt; current</span><span class="arrow">·</span><span class="chip">push current index</span><span class="arrow">·</span><span class="chip">pop front if out of window</span><span class="arrow">·</span><span class="chip">front = max</span></div>
+      <div class="oneliner">🔒 Keep forever: "Keep a decreasing deque; its front is the window max — each index enters/leaves once."</div>
+    </div>
+    <div class="note">Array <code>[1,3,-1,-3,5,3,6,7]</code>, k=3 → maxima [3,3,5,5,6,7].</div>
+    <div class="cellrow" id="mwRow"></div>
+    <div class="qlabel">Deque (indices, values shown)</div>
+    <div class="cellrow" id="mwDeque"></div>
+    <div class="qlabel">Window maxima</div>
+    <div class="cellrow" id="mwRes"></div>
+    <div class="status" id="mwStatus">Press play. The deque front is always the window max.</div>
+    <div class="controls"><button class="btn" id="mwPlay">▶ Slide Window</button><button class="btn ghost" id="mwReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mwSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> store <b>indices</b> (not values) so you can detect when the max slides out of the window.</div></div>
+    <pre><code><span class="kw">for</span>(<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++){
+  <span class="kw">while</span>(!dq.isEmpty() &amp;&amp; a[dq.peekLast()] &lt;= a[i]) dq.pollLast();
+  dq.offerLast(i);
+  <span class="kw">if</span>(dq.peekFirst() == i-k) dq.pollFirst();     <span class="cm">// out of window</span>
+  <span class="kw">if</span>(i &gt;= k-<span class="num">1</span>) res.add(a[dq.peekFirst()]);       <span class="cm">// front = max</span>
+}</code></pre>
+  </section>
+
+  <!-- MAX IN WINDOW 2 -->
+  <section id="maxwindow2">
+    <h2>⚡ Maximum in Sliding Window II <span class="badge">Block prefix/suffix</span></h2>
+    <p class="lead">A different O(n) method: split into blocks of k, precompute block prefix-max and suffix-max arrays.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Meet in the middle of two blocks:</span> any window of size k spans at most two adjacent blocks. Precompute <code>left[i]</code> = max from the block start up to i, and <code>right[i]</code> = max from i to the block end. Then window max = <code>max(right[l], left[r])</code> — one lookup, no deque.</div>
+      <div class="steps-flow"><span class="chip">left = prefix max per block</span><span class="arrow">·</span><span class="chip">right = suffix max per block</span><span class="arrow">→</span><span class="chip">window = max(right[l], left[r])</span></div>
+      <div class="oneliner">🔒 Keep forever: "A window straddles two blocks — combine one block's suffix-max with the next's prefix-max."</div>
+    </div>
+    <div class="note">Same array, k=3 → build left[] &amp; right[], then answer each window.</div>
+    <div class="cellrow" id="m2Row"></div>
+    <div class="qlabel">left[] (prefix-max in block)</div>
+    <div class="cellrow" id="m2Left"></div>
+    <div class="qlabel">right[] (suffix-max in block)</div>
+    <div class="cellrow" id="m2Right"></div>
+    <div class="qlabel">Window maxima</div>
+    <div class="cellrow" id="m2Res"></div>
+    <div class="status" id="m2Status">Press play. Build the block arrays, then combine.</div>
+    <div class="controls"><button class="btn" id="m2Play">▶ Block Method</button><button class="btn ghost" id="m2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="m2Speed" min="250" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> no deque needed — just two O(n) passes for left/right and O(1) per window. Same answer, different tool.</div></div>
+    <pre><code><span class="cm">// left: reset at block start; right: reset at block end</span>
+window(l, r) = max(right[l], left[r]);   <span class="cm">// r = l+k-1</span></code></pre>
+  </section>
+
+  <!-- FIRST NEGATIVE -->
+  <section id="firstneg">
+    <h2>➖ First Negative Integer in Every Window <span class="badge">Index queue</span></h2>
+    <p class="lead">Track a queue of negative-number indices — its front is the first negative in the current window.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A waiting list of negatives:</span> keep a queue of indices where the value is negative. As the window slides, drop front indices that fell out of range. Whatever's left at the front is the first negative; if the queue is empty, the window has none.</div>
+      <div class="steps-flow"><span class="chip">negative? enqueue its index</span><span class="arrow">·</span><span class="chip">front out of window? dequeue</span><span class="arrow">·</span><span class="chip">answer = a[front] or 0</span></div>
+      <div class="oneliner">🔒 Keep forever: "Queue the negatives' indices; the front is the first negative still in the window."</div>
+    </div>
+    <div class="note">Array <code>[12,-1,-7,8,-15,30,16,28]</code>, k=3 → [-1,-1,-7,-15,-15,0].</div>
+    <div class="cellrow" id="fnRow"></div>
+    <div class="qlabel">Queue (indices of negatives)</div>
+    <div class="cellrow" id="fnQueue"></div>
+    <div class="qlabel">First negative per window</div>
+    <div class="cellrow" id="fnRes"></div>
+    <div class="status" id="fnStatus">Press play. The queue front is the first negative.</div>
+    <div class="controls"><button class="btn" id="fnPlay">▶ Slide Window</button><button class="btn ghost" id="fnReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="fnSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a plain FIFO queue suffices here (no monotonic property) — just evict indices that leave the window.</div></div>
+    <pre><code><span class="kw">for</span>(<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++){
+  <span class="kw">if</span>(a[i] &lt; <span class="num">0</span>) q.offer(i);
+  <span class="kw">if</span>(!q.isEmpty() &amp;&amp; q.peek() &lt;= i-k) q.poll();  <span class="cm">// out of window</span>
+  <span class="kw">if</span>(i &gt;= k-<span class="num">1</span>) res.add(q.isEmpty() ? <span class="num">0</span> : a[q.peek()]);
+}</code></pre>
+
+    <div class="note key">🏆 <b>Queues mastered!</b> FIFO front/rear · circular wrap-around · queue↔stack conversions · BFS level order · binary-string generation · deques flexing both ends · and monotonic deques crushing sliding-window maxima. Picture the line moving and no queue problem can surprise you. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Queues &amp; Deques — Animated Guide • Replay any animation, turn on 🎵 sound • Learn by watching the line move 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.1 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function inSound(){ blip(520,0.05,'triangle',0.06); }
+function outSound(){ blip(320,0.05,'sine',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- Viz helpers ---- */
+function cellViz(container){
+  let cells=[];
+  function ensure(n){ if(cells.length!==n){ container.innerHTML=''; cells=[]; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='cell'; container.appendChild(c); cells.push(c);} } }
+  function render(arr,o={}){ ensure(arr.length); if(arr.length===0){ container.innerHTML='<div class="cell empty">(empty)</div>'; cells=[]; return; } arr.forEach((v,i)=>{ const c=cells[i]; c.className='cell'; c.innerHTML = `${o.sub&&o.sub[i]!=null?`<span class="idx">${o.sub[i]}</span>`:''}${v}${o.ptr&&o.ptr[i]!=null?`<span class="ptr">${o.ptr[i]}</span>`:''}`; if(o.compare&&o.compare.includes(i))c.classList.add('mid'); if(o.groupA&&o.groupA.includes(i))c.classList.add('lo'); if(o.groupB&&o.groupB.includes(i))c.classList.add('hi'); if(o.done&&o.done.has(i))c.classList.add('found'); if(o.dead&&o.dead.has(i))c.classList.add('dead'); if(o.range&&i>=o.range[0]&&i<=o.range[1])c.classList.add('in-range'); if(o.emptyIdx&&o.emptyIdx.includes(i))c.classList.add('empty'); }); }
+  return { render };
+}
+function stackViz(container){ return { render(items, o={}){ container.innerHTML=''; if(!items.length){ const e=document.createElement('div'); e.className='sempty'; e.textContent='(empty)'; container.appendChild(e); return; } items.forEach((v,i)=>{ const d=document.createElement('div'); d.className='sitem'+(i===items.length-1&&!o.noTop?' top':''); d.textContent=v; container.appendChild(d); }); } }; }
+function idxSub(n){ return Array.from({length:n},(_,i)=>i); }
+
+/* ================= 1. What is queue ================= */
+(function(){
+  const viz=cellViz($('#wqRow')); const st=$('#wqStatus'); const sp=$('#wqSpeed');
+  const ops=[['enq',3],['enq',7],['enq',5],['deq',null],['enq',9],['deq',null]];
+  function ptrs(q){ const p={}; if(q.length){ p[0]='front'; p[q.length-1]=(q.length===1?'front/rear':'rear'); } return p; }
+  function build(){ viz.render([]); st.textContent='Press play to watch enqueue at rear, dequeue at front.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const q=[];
+    for(const [op,x] of ops){ if(op==='enq'){ q.push(x); viz.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML=`enqueue(${x}) → joins the rear.`; inSound(); } else { const f=q.shift(); viz.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML=`dequeue() → <span class="k">${f}</span> leaves from the front.`; outSound(); } await sleep(+sp.value); }
+    viz.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML='🚶 Front leaves first — First In, First Out!'; ANIM=false; celebrate($('#wqRow'));
+  }
+  $('#wqPlay').onclick=play; $('#wqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Circular queue ================= */
+(function(){
+  const cap=5; const viz=cellViz($('#cqRow')); const st=$('#cqStatus'); const sp=$('#cqSpeed');
+  function render(arr,front,rear,count){ const p={}; if(count>0){ p[front]='front'; p[rear]=(front===rear?'front/rear':'rear'); } viz.render(arr,{sub:idxSub(cap),ptr:p,emptyIdx:arr.map((v,i)=>v==='·'?i:-1).filter(i=>i>=0)}); }
+  function build(){ render(Array(cap).fill('·'),-1,-1,0); st.textContent='Press play. rear wraps around to a freed slot.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const a=Array(cap).fill('·'); let front=0,rear=-1,count=0;
+    const ops=[['e',10],['e',20],['e',30],['d'],['e',40],['e',50],['e',60]];
+    for(const op of ops){ if(op[0]==='e'){ rear=(rear+1)%cap; a[rear]=op[1]; if(count===0)front=rear; count++; render(a,front,rear,count); st.innerHTML=`enqueue(${op[1]}) → rear = (rear+1)%${cap} = <span class="k">${rear}</span>${rear===0&&count>1?' (wrapped!)':''}.`; inSound(); }
+      else { const removed=a[front]; a[front]='·'; front=(front+1)%cap; count--; render(a,front,rear,count); st.innerHTML=`dequeue() → ${removed} leaves; front = <span class="k">${front}</span>.`; outSound(); } await sleep(+sp.value); }
+    render(a,front,rear,count); st.innerHTML='🔄 60 wrapped into slot 0 — the array is a ring!'; ANIM=false; celebrate($('#cqRow'));
+  }
+  $('#cqPlay').onclick=play; $('#cqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Inbuilt queue ================= */
+(function(){
+  const viz=cellViz($('#ibRow')); const st=$('#ibStatus'); const sp=$('#ibSpeed'); const stats=$('#ibStats');
+  function ptrs(q){ const p={}; if(q.length){ p[0]='front'; p[q.length-1]=(q.length===1?'front/rear':'rear'); } return p; }
+  function build(){ viz.render([]); stats.innerHTML=''; st.textContent='Press play to call offer / poll / peek.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const q=[];
+    const ops=[['offer',1],['offer',2],['offer',3],['poll',null],['peek',null]];
+    for(const [op,x] of ops){ if(op==='offer'){ q.push(x); viz.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML=`q.offer(${x}) → enqueue.`; inSound(); }
+      else if(op==='poll'){ const f=q.shift(); viz.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML=`q.poll() → returns <span class="k">${f}</span> (front removed).`; outSound(); }
+      else { viz.render(q.slice(),{ptr:ptrs(q),compare:[0]}); st.innerHTML=`q.peek() → reads <span class="k">${q[0]}</span> (front, not removed).`; }
+      stats.innerHTML=`<span class="pill blue">size: ${q.length}</span>`; await sleep(+sp.value); }
+    st.innerHTML='🧰 offer / poll / peek — the library handles the rest!'; ANIM=false; celebrate($('#ibRow'));
+  }
+  $('#ibPlay').onclick=play; $('#ibReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Queue via stacks (costly dequeue) ================= */
+(function(){
+  const IN=stackViz($('#q1In')); const OUT=stackViz($('#q1Out')); const st=$('#q1Status'); const sp=$('#q1Speed'); const stats=$('#q1Stats');
+  function build(){ IN.render([]); OUT.render([]); stats.innerHTML=''; st.textContent='Press play. Dequeue flips in→out when out is empty.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const inS=[], outS=[];
+    const enq=x=>{ inS.push(x); };
+    async function deq(){ if(outS.length===0){ st.innerHTML='out empty → pour in→out (reversing order).'; await sleep(+sp.value); while(inS.length){ const t=inS.pop(); outS.push(t); IN.render(inS.slice()); OUT.render(outS.slice()); inSound(); await sleep(+sp.value*0.7); } } const f=outS.pop(); OUT.render(outS.slice()); return f; }
+    for(const x of [1,2,3]){ enq(x); IN.render(inS.slice()); st.innerHTML=`enqueue(${x}) → push onto in.`; inSound(); await sleep(+sp.value); }
+    let f=await deq(); stats.innerHTML=`<span class="pill green">dequeued: ${f}</span>`; st.innerHTML=`dequeue() → <span class="k">${f}</span> (the front)!`; outSound(); await sleep(+sp.value);
+    enq(4); IN.render(inS.slice()); st.innerHTML='enqueue(4) → push onto in.'; inSound(); await sleep(+sp.value);
+    f=await deq(); stats.innerHTML=`<span class="pill green">dequeued: ${f}</span>`; st.innerHTML=`dequeue() → <span class="k">${f}</span> (out still had items, no re-pour).`; outSound(); await sleep(+sp.value);
+    st.innerHTML='📥 Amortized O(1): each item pours in→out at most once!'; ANIM=false; celebrate($('#q1Out'));
+  }
+  $('#q1Play').onclick=play; $('#q1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. Queue via stacks II (costly enqueue) ================= */
+(function(){
+  const MAIN=stackViz($('#q2Main')); const HELP=stackViz($('#q2Help')); const st=$('#q2Status'); const sp=$('#q2Speed');
+  function build(){ MAIN.render([]); HELP.render([]); st.textContent='Press play. Enqueue keeps the oldest element on top.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const main=[], help=[];
+    async function enq(x){ st.innerHTML=`enqueue(${x}): pour main→helper.`; await sleep(+sp.value*0.7); while(main.length){ help.push(main.pop()); MAIN.render(main.slice()); HELP.render(help.slice()); await sleep(+sp.value*0.5); } main.push(x); MAIN.render(main.slice()); st.innerHTML=`push ${x} at the bottom of main.`; inSound(); await sleep(+sp.value*0.7); while(help.length){ main.push(help.pop()); MAIN.render(main.slice()); HELP.render(help.slice()); await sleep(+sp.value*0.5); } }
+    for(const x of [1,2,3]){ await enq(x); }
+    st.innerHTML='main top is the oldest (1) → dequeue is one pop.'; await sleep(+sp.value);
+    const f=main.pop(); MAIN.render(main.slice()); st.innerHTML=`dequeue() → <span class="k">${f}</span> in O(1)!`; outSound(); await sleep(+sp.value);
+    st.innerHTML='📤 Costly enqueue keeps the front on top → instant dequeue!'; ANIM=false; celebrate($('#q2Main'));
+  }
+  $('#q2Play').onclick=play; $('#q2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. Stack via queues ================= */
+(function(){
+  const viz=cellViz($('#sqRow')); const st=$('#sqStatus'); const sp=$('#sqSpeed');
+  function ptrs(q){ const p={}; if(q.length){ p[0]='front'; p[q.length-1]=(q.length===1?'front/rear':'rear'); } return p; }
+  function build(){ viz.render([]); st.textContent='Press play. Rotation puts the newest at the front.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const q=[];
+    async function push(x){ q.push(x); viz.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML=`enqueue ${x}, then rotate ${q.length-1}×…`; inSound(); await sleep(+sp.value); for(let i=0;i<q.length-1;i++){ q.push(q.shift()); viz.render(q.slice(),{ptr:ptrs(q)}); await sleep(+sp.value*0.6); } viz.render(q.slice(),{ptr:ptrs(q),compare:[0]}); st.innerHTML=`${x} rotated to the front (top of the stack).`; await sleep(+sp.value*0.7); }
+    for(const x of [1,2,3]){ await push(x); }
+    const t=q.shift(); viz.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML=`pop() → <span class="k">${t}</span> (the newest — LIFO!).`; outSound(); await sleep(+sp.value);
+    st.innerHTML='📚 A rotated queue behaves exactly like a stack!'; ANIM=false; celebrate($('#sqRow'));
+  }
+  $('#sqPlay').onclick=play; $('#sqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Reverse a queue ================= */
+(function(){
+  const viz=cellViz($('#rqRow')); const S=stackViz($('#rqStack')); const st=$('#rqStatus'); const sp=$('#rqSpeed');
+  function ptrs(q){ const p={}; if(q.length){ p[0]='front'; p[q.length-1]=(q.length===1?'front/rear':'rear'); } return p; }
+  function build(){ viz.render([1,2,3,4],{ptr:ptrs([1,2,3,4])}); S.render([]); st.textContent='Press play to reverse the queue via a stack.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const q=[1,2,3,4]; const stk=[];
+    while(q.length){ const f=q.shift(); stk.push(f); viz.render(q.slice(),{ptr:ptrs(q)}); S.render(stk.slice()); st.innerHTML=`dequeue ${f} → push to stack.`; outSound(); await sleep(+sp.value); }
+    while(stk.length){ const t=stk.pop(); q.push(t); viz.render(q.slice(),{ptr:ptrs(q)}); S.render(stk.slice()); st.innerHTML=`pop ${t} → enqueue back.`; inSound(); await sleep(+sp.value); }
+    viz.render(q.slice(),{ptr:ptrs(q),done:new Set(idxSub(q.length))}); st.innerHTML='🔁 Queue reversed → [4, 3, 2, 1]!'; ANIM=false; celebrate($('#rqRow'));
+  }
+  $('#rqPlay').onclick=play; $('#rqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. Level order (BFS) ================= */
+(function(){
+  const nodes={1:{x:260,y:36,l:2,r:3},2:{x:140,y:120,l:4,r:5},3:{x:380,y:120,l:null,r:6},4:{x:80,y:206,l:null,r:null},5:{x:200,y:206,l:null,r:null},6:{x:440,y:206,l:null,r:null}};
+  const svg=$('#loSvg'); const NS='http://www.w3.org/2000/svg'; const viz=cellViz($('#loQueue')); const st=$('#loStatus'); const sp=$('#loSpeed'); const stats=$('#loStats');
+  function draw(){ svg.innerHTML=''; Object.entries(nodes).forEach(([v,n])=>{ [n.l,n.r].forEach(c=>{ if(c){ const ch=nodes[c]; const ln=document.createElementNS(NS,'line'); ln.setAttribute('x1',n.x);ln.setAttribute('y1',n.y);ln.setAttribute('x2',ch.x);ln.setAttribute('y2',ch.y); ln.setAttribute('class','tedge'); svg.appendChild(ln);} }); });
+    Object.entries(nodes).forEach(([v,n])=>{ const g=document.createElementNS(NS,'g'); g.setAttribute('class','tnode'); g.dataset.v=v; const c=document.createElementNS(NS,'circle'); c.setAttribute('cx',n.x);c.setAttribute('cy',n.y);c.setAttribute('r',22); const t=document.createElementNS(NS,'text'); t.setAttribute('x',n.x);t.setAttribute('y',n.y);t.textContent=v; g.appendChild(c);g.appendChild(t); svg.appendChild(g); }); }
+  function gN(v){ return svg.querySelector(`.tnode[data-v="${v}"]`); }
+  function ptrs(q){ const p={}; if(q.length){ p[0]='front'; if(q.length>1)p[q.length-1]='rear'; } return p; }
+  function build(){ draw(); viz.render([]); stats.innerHTML=''; st.textContent='Press play to walk the tree breadth-first.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const q=[1]; const order=[];
+    viz.render(q.slice(),{ptr:ptrs(q)}); gN(1).classList.add('active'); await sleep(+sp.value);
+    while(q.length){ const v=q.shift(); const n=nodes[v]; gN(v).classList.remove('active'); gN(v).classList.add('visited'); order.push(v);
+      viz.render(q.slice(),{ptr:ptrs(q)}); stats.innerHTML=`<span class="pill green">visited: ${order.join(', ')}</span>`; st.innerHTML=`dequeue &amp; visit <span class="k">${v}</span>.`; outSound(); await sleep(+sp.value);
+      [n.l,n.r].forEach(c=>{ if(c){ q.push(c); gN(c).classList.add('active'); } }); if(n.l||n.r){ viz.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML=`enqueue children of ${v}.`; inSound(); await sleep(+sp.value*0.8); }
+    }
+    st.innerHTML=`🌳 Level order = <span class="k">${order.join(', ')}</span>!`; ANIM=false; celebrate(svg);
+  }
+  $('#loPlay').onclick=play; $('#loReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. Binary forms ================= */
+(function(){
+  const N=5; const vq=cellViz($('#bfQueue')); const vo=cellViz($('#bfOut')); const st=$('#bfStatus'); const sp=$('#bfSpeed');
+  function ptrs(q){ const p={}; if(q.length){ p[0]='front'; if(q.length>1)p[q.length-1]='rear'; } return p; }
+  function build(){ vq.render(['1'],{ptr:ptrs(['1'])}); vo.render([]); st.textContent='Press play to generate binary numbers.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const q=['1']; const out=[];
+    vq.render(q.slice(),{ptr:ptrs(q)}); vo.render([]); await sleep(+sp.value);
+    for(let i=0;i<N;i++){ const s=q.shift(); out.push(s); vq.render(q.slice(),{ptr:ptrs(q)}); vo.render(out.slice(),{done:new Set([out.length-1])}); st.innerHTML=`poll "<span class="k">${s}</span>" → output (decimal ${parseInt(s,2)}).`; outSound(); await sleep(+sp.value);
+      q.push(s+'0'); q.push(s+'1'); vq.render(q.slice(),{ptr:ptrs(q)}); st.innerHTML=`enqueue "${s}0" and "${s}1".`; inSound(); await sleep(+sp.value*0.8); }
+    vo.render(out.slice(),{done:new Set(idxSub(out.length))}); st.innerHTML=`1️⃣ First ${N} binary numbers: ${out.join(', ')}`; ANIM=false; celebrate($('#bfOut'));
+  }
+  $('#bfPlay').onclick=play; $('#bfReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. Deque ================= */
+(function(){
+  const viz=cellViz($('#dqRow')); const st=$('#dqStatus'); const sp=$('#dqSpeed');
+  function ptrs(q){ const p={}; if(q.length){ p[0]='front'; p[q.length-1]=(q.length===1?'front/back':'back'); } return p; }
+  function build(){ viz.render([]); st.textContent='Press play to operate on both ends.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dq=[];
+    const ops=[['pushBack',1],['pushBack',2],['pushFront',0],['popBack',null],['pushFront',-1]];
+    for(const [op,x] of ops){ if(op==='pushBack'){ dq.push(x); st.innerHTML=`pushBack(${x}) → added at the back.`; inSound(); }
+      else if(op==='pushFront'){ dq.unshift(x); st.innerHTML=`pushFront(${x}) → added at the front.`; inSound(); }
+      else if(op==='popBack'){ const v=dq.pop(); st.innerHTML=`popBack() → <span class="k">${v}</span> removed from the back.`; outSound(); }
+      else { const v=dq.shift(); st.innerHTML=`popFront() → <span class="k">${v}</span> removed from the front.`; outSound(); }
+      viz.render(dq.slice(),{ptr:ptrs(dq)}); await sleep(+sp.value); }
+    viz.render(dq.slice(),{ptr:ptrs(dq),done:new Set(idxSub(dq.length))}); st.innerHTML='↔️ Both ends are O(1) — stack &amp; queue combined!'; ANIM=false; celebrate($('#dqRow'));
+  }
+  $('#dqPlay').onclick=play; $('#dqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. Max in sliding window (deque) ================= */
+(function(){
+  const a=[1,3,-1,-3,5,3,6,7], k=3; const viz=cellViz($('#mwRow')); const dv=cellViz($('#mwDeque')); const rv=cellViz($('#mwRes')); const st=$('#mwStatus'); const sp=$('#mwSpeed');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); dv.render([]); rv.render([]); st.textContent='Press play. The deque front is always the window max.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const dq=[]; const res=[];
+    for(let i=0;i<a.length;i++){ viz.render(a,{sub:idxSub(a.length),compare:[i],range:[Math.max(0,i-k+1),i]}); st.innerHTML=`Consider a[${i}] = <span class="k">${a[i]}</span>.`; await sleep(+sp.value);
+      while(dq.length && a[dq[dq.length-1]] <= a[i]){ const r=dq.pop(); dv.render(dq.map(x=>a[x])); st.innerHTML=`a[${i}]=${a[i]} ≥ back ${a[r]} → evict ${a[r]}.`; outSound(); await sleep(+sp.value*0.7); }
+      dq.push(i); dv.render(dq.map(x=>a[x]),{ptr:dq.length?{0:'front(max)'}:{}}); st.innerHTML=`push index ${i}.`; inSound(); await sleep(+sp.value*0.6);
+      if(dq[0]===i-k){ dq.shift(); dv.render(dq.map(x=>a[x]),{ptr:{0:'front(max)'}}); st.innerHTML=`front slid out of window → drop it.`; await sleep(+sp.value*0.7); }
+      if(i>=k-1){ res.push(a[dq[0]]); rv.render(res.slice(),{done:new Set([res.length-1])}); st.innerHTML=`Window [${i-k+1}..${i}] max = <span class="k">${a[dq[0]]}</span> (deque front).`; await sleep(+sp.value); }
+    }
+    rv.render(res.slice(),{done:new Set(idxSub(res.length))}); st.innerHTML=`📈 Window maxima = [${res.join(', ')}]!`; ANIM=false; celebrate($('#mwRes'));
+  }
+  $('#mwPlay').onclick=play; $('#mwReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. Max in window II (blocks) ================= */
+(function(){
+  const a=[1,3,-1,-3,5,3,6,7], k=3, n=a.length; const viz=cellViz($('#m2Row')); const lv=cellViz($('#m2Left')); const rvz=cellViz($('#m2Right')); const rez=cellViz($('#m2Res')); const st=$('#m2Status'); const sp=$('#m2Speed');
+  function build(){ viz.render(a,{sub:idxSub(n)}); lv.render(a.map(()=>'·'),{sub:idxSub(n)}); rvz.render(a.map(()=>'·'),{sub:idxSub(n)}); rez.render([]); st.textContent='Press play. Build the block arrays, then combine.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const left=[], right=[];
+    for(let i=0;i<n;i++){ left[i]=(i%k===0)?a[i]:Math.max(left[i-1],a[i]); lv.render(left.map((v,idx)=>idx<=i?v:'·'),{sub:idxSub(n),compare:[i]}); viz.render(a,{sub:idxSub(n),compare:[i]}); st.innerHTML=`left[${i}] = ${i%k===0?`block start = ${a[i]}`:`max(left[${i-1}], ${a[i]}) = ${left[i]}`}`; inSound(); await sleep(+sp.value*0.85); }
+    for(let i=n-1;i>=0;i--){ right[i]=(i%k===k-1||i===n-1)?a[i]:Math.max(right[i+1],a[i]); rvz.render(right.map((v,idx)=>idx>=i?(v==null?'·':v):'·'),{sub:idxSub(n),compare:[i]}); viz.render(a,{sub:idxSub(n),compare:[i]}); st.innerHTML=`right[${i}] = ${(i%k===k-1||i===n-1)?`block end = ${a[i]}`:`max(right[${i+1}], ${a[i]}) = ${right[i]}`}`; inSound(); await sleep(+sp.value*0.85); }
+    lv.render(left.slice(),{sub:idxSub(n)}); rvz.render(right.slice(),{sub:idxSub(n)}); st.innerHTML='Arrays ready. Combine: window max = max(right[l], left[r]).'; await sleep(+sp.value);
+    const res=[];
+    for(let l=0;l+k<=n;l++){ const r=l+k-1; const m=Math.max(right[l],left[r]); res.push(m); viz.render(a,{sub:idxSub(n),range:[l,r]}); rez.render(res.slice(),{done:new Set([res.length-1])}); st.innerHTML=`window [${l}..${r}]: max(right[${l}]=${right[l]}, left[${r}]=${left[r]}) = <span class="k">${m}</span>.`; await sleep(+sp.value); }
+    rez.render(res.slice(),{done:new Set(idxSub(res.length))}); st.innerHTML=`⚡ Window maxima = [${res.join(', ')}] — no deque needed!`; ANIM=false; celebrate($('#m2Res'));
+  }
+  $('#m2Play').onclick=play; $('#m2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. First negative in window ================= */
+(function(){
+  const a=[12,-1,-7,8,-15,30,16,28], k=3, n=a.length; const viz=cellViz($('#fnRow')); const qv=cellViz($('#fnQueue')); const rv=cellViz($('#fnRes')); const st=$('#fnStatus'); const sp=$('#fnSpeed');
+  function build(){ viz.render(a,{sub:idxSub(n)}); qv.render([]); rv.render([]); st.textContent='Press play. The queue front is the first negative.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const q=[]; const res=[];
+    for(let i=0;i<n;i++){ viz.render(a,{sub:idxSub(n),compare:[i],range:[Math.max(0,i-k+1),i]}); st.innerHTML=`a[${i}] = <span class="k">${a[i]}</span>${a[i]<0?' (negative → enqueue index)':''}.`; await sleep(+sp.value);
+      if(a[i]<0){ q.push(i); qv.render(q.map(x=>a[x]),{ptr:{0:'front'}}); inSound(); await sleep(+sp.value*0.6); }
+      if(q.length && q[0] <= i-k){ q.shift(); qv.render(q.map(x=>a[x]),{ptr:q.length?{0:'front'}:{}}); st.innerHTML=`front index slid out of window → dequeue.`; outSound(); await sleep(+sp.value*0.7); }
+      if(i>=k-1){ const ans=q.length? a[q[0]] : 0; res.push(ans); rv.render(res.slice(),{done:new Set([res.length-1])}); st.innerHTML=`Window [${i-k+1}..${i}] → first negative = <span class="k">${ans===0?'none (0)':ans}</span>.`; await sleep(+sp.value); }
+    }
+    rv.render(res.slice(),{done:new Set(idxSub(res.length))}); st.innerHTML=`➖ First negatives = [${res.join(', ')}]!`; ANIM=false; celebrate($('#fnRes'));
+  }
+  $('#fnPlay').onclick=play; $('#fnReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

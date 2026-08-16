@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dynamic Programming — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .vwrap{overflow-x:auto; display:flex; justify-content:center; margin:12px 0; padding:4px}
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12px; margin:8px 0 4px}
+  .dparr{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin:6px 0}
+  .dc{position:relative; min-width:44px; height:44px; padding:0 6px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:15px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s; font-family:'Consolas',monospace}
+  .dc .ix{position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--muted); font-weight:700}
+  .dc.cur{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  .dc.dep{border-color:var(--accent); background:#22345f}
+  .dc.done{border-color:var(--found); background:#0d3b30}
+  .dc.ans{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .dc.empty{color:var(--muted)}
+  table.dptbl{border-collapse:separate; border-spacing:4px; margin:6px auto; font-family:'Consolas',monospace}
+  table.dptbl td{width:40px; height:36px; text-align:center; font-weight:800; font-size:13.5px; border-radius:7px; background:#1d2a52; border:2px solid #2c3d6e; transition:.3s}
+  table.dptbl td.hd{background:transparent; border:none; color:var(--accent); font-size:12px; width:auto; padding:0 6px}
+  table.dptbl td.corner{background:transparent; border:none}
+  table.dptbl td.cur{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  table.dptbl td.dep{border-color:var(--accent); background:#22345f}
+  table.dptbl td.done{border-color:var(--found); background:#0d3b30}
+  table.dptbl td.ans{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.45)}
+  table.dptbl td.empty{color:#4a5a85}
+  .tsvg .tedge{stroke:#2c3d6e; stroke-width:2.5}
+  .tsvg .tnode{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .tsvg .tnode.rep{fill:#3a1d2a; stroke:var(--accent2); stroke-width:3.5}
+  .tsvg .tnode.memo{fill:#0d3b30; stroke:var(--found); stroke-width:3.5}
+  .tsvg .tnode.cur{fill:#3a3620; stroke:var(--mid); stroke-width:3.5}
+  .tsvg .tlbl{fill:var(--ink); font-weight:800; font-size:12px; text-anchor:middle; dominant-baseline:central; font-family:'Consolas',monospace}
+  .board{display:inline-grid; gap:3px; margin:8px auto}
+  .bcell{width:30px;height:30px;border-radius:6px;background:#1d2a52;border:2px solid #2c3d6e;transition:.3s}
+  .bcell.fill{background:#0d3b30;border-color:var(--found)}
+  .strchars{display:flex; gap:6px; justify-content:center; margin:6px 0}
+  .schar{width:40px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-weight:800;font-size:17px;background:#1d2a52;border:2px solid #2c3d6e;font-family:'Consolas',monospace;transition:.3s}
+  .schar.cur{border-color:var(--mid);background:#3a3620}
+  .schar.dep{border-color:var(--accent);background:#22345f}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Dynamic Programming — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch overlapping subproblems get solved once and reused — memoization, tabulation, and every classic DP table filling in front of you. Built so DP sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#wh">🧩 What is DP</a>
+  <a href="#tb">🔁 Top-down vs Bottom-up</a>
+  <a href="#st">🪜 Staircase</a>
+  <a href="#tl">🧱 Tile the Lane</a>
+  <a href="#n1">🏠 Non-Adjacent Sum I</a>
+  <a href="#n2">💡 Non-Adjacent Sum II</a>
+  <a href="#d1">🔡 Decodings I</a>
+  <a href="#d2">🔤 Decodings II</a>
+  <a href="#rc">🪚 Rod Cutting</a>
+  <a href="#c1">🪙 Coin — Min Coins</a>
+  <a href="#c2">🔢 Coin — Count Ways</a>
+  <a href="#cb">📊 Coin Ways (Bottom-up)</a>
+  <a href="#cs">🎯 Coin Ways (1D)</a>
+  <a href="#k1">🎒 0/1 Knapsack</a>
+  <a href="#k2">📦 0/1 Knapsack (1D)</a>
+  <a href="#lis">📈 LIS</a>
+  <a href="#bit">⛰️ Bitonic Subseq.</a>
+  <a href="#en1">✉️ Envelopes I</a>
+  <a href="#en2">📩 Envelopes II</a>
+  <a href="#lc1">🧬 LCS I</a>
+  <a href="#lcp">🖨️ Print LCS</a>
+  <a href="#lc2">🧵 LCS II</a>
+  <a href="#lp3">🪞 LPS (via LCS)</a>
+  <a href="#lp4">🌀 LPS (interval)</a>
+  <a href="#lsb">🧿 Palindromic Substr.</a>
+  <a href="#ed1">✏️ Edit Distance I</a>
+  <a href="#ed2">📝 Edit Distance II</a>
+  <a href="#pm1">🃏 Wildcard Match</a>
+  <a href="#pm2">🔣 Regex Match</a>
+  <a href="#cn1">🔟 Count Subseq. I</a>
+  <a href="#cn2">#️⃣ Count Subseq. II</a>
+  <a href="#mc1">✖️ Matrix Chain I</a>
+  <a href="#mc2">🧮 Matrix Chain II</a>
+</nav>
+
+<main>
+
+  <!-- 1 WHAT IS DP -->
+  <section id="wh">
+    <h2>🧩 What is Dynamic Programming? <span class="badge">solve once, reuse</span></h2>
+    <p class="lead">DP solves problems that have <b>overlapping subproblems</b> and <b>optimal substructure</b> — by solving each subproblem <b>once</b> and caching the answer instead of recomputing it.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Fibonacci recomputes:</span> naive <code>fib(n)=fib(n−1)+fib(n−2)</code> re-solves the same calls exponentially — <code>fib(2)</code> appears again and again (pink nodes). Cache each result (<b>memoize</b>) and every subproblem is computed just once → exponential becomes linear.</div>
+      <div class="steps-flow"><span class="chip">overlapping subproblems</span><span class="arrow">+</span><span class="chip">optimal substructure</span><span class="arrow">→</span><span class="chip">solve once, cache, reuse</span></div>
+      <div class="oneliner">🔒 Keep forever: "DP = recursion + a cache. Spot repeated subproblems, store their answers, never recompute."</div>
+    </div>
+    <div class="lbl">naive recursion tree for fib(4) — pink = recomputed subproblems</div>
+    <div class="vwrap" id="whTree"></div>
+    <div class="status" id="whStatus">Press play to reveal the repeated subproblems.</div>
+    <div class="stats" id="whStats"></div>
+    <div class="controls"><button class="btn" id="whPlay">▶ Expose overlap</button><button class="btn ghost" id="whReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="whSpeed" min="250" max="1800" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> if a recursion re-solves the same inputs, it's a DP candidate. No overlap → plain divide-and-conquer, not DP.</div></div>
+  </section>
+
+  <!-- 2 TOP-DOWN vs BOTTOM-UP -->
+  <section id="tb">
+    <h2>🔁 Top-down vs Bottom-up <span class="badge">memoization vs tabulation</span></h2>
+    <p class="lead">Two ways to implement DP. <b>Top-down</b>: recurse and cache (memoization). <b>Bottom-up</b>: iterate and fill a table from base cases (tabulation).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Same answers, opposite direction:</span> top-down starts at the goal and dives down, caching as it returns. Bottom-up starts at the base cases and builds forward until it reaches the goal. Both compute each state once. Here we tabulate Fibonacci left-to-right → <code>fib(6)=8</code>.</div>
+      <div class="steps-flow"><span class="chip">top-down: recurse + memo (lazy)</span><span class="arrow">vs</span><span class="chip">bottom-up: fill table (eager)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Top-down = recursion + cache; bottom-up = iterate a table from the base cases up."</div>
+    </div>
+    <div class="lbl">bottom-up table: dp[i] = dp[i−1] + dp[i−2]</div>
+    <div class="dparr" id="tbArr"></div>
+    <div class="status" id="tbStatus">Press play to fill the Fibonacci table bottom-up.</div>
+    <div class="stats" id="tbStats"></div>
+    <div class="controls"><button class="btn" id="tbPlay">▶ Tabulate fib(6)</button><button class="btn ghost" id="tbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tbSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> top-down is easier to write (just add a cache to recursion); bottom-up avoids recursion overhead &amp; enables space optimization.</div></div>
+    <pre><code><span class="cm">// top-down          // bottom-up</span>
+<span class="fn">fib</span>(n){ <span class="kw">if</span>(n&lt;<span class="num">2</span>)<span class="kw">return</span> n;   dp[<span class="num">0</span>]=<span class="num">0</span>; dp[<span class="num">1</span>]=<span class="num">1</span>;
+  <span class="kw">if</span>(memo[n])<span class="kw">return</span> memo[n];   <span class="kw">for</span>(i=<span class="num">2</span>..n) dp[i]=dp[i-<span class="num">1</span>]+dp[i-<span class="num">2</span>];
+  <span class="kw">return</span> memo[n]=fib(n-<span class="num">1</span>)+fib(n-<span class="num">2</span>); }</code></pre>
+  </section>
+
+  <!-- 3 STAIRCASE -->
+  <section id="st">
+    <h2>🪜 Staircase (Climbing Stairs) <span class="badge">ways to the top</span></h2>
+    <p class="lead">How many ways to climb <code>n</code> stairs taking 1 or 2 steps at a time? The last move is either a 1-step or a 2-step, so <code>dp[i] = dp[i−1] + dp[i−2]</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Split by the final step:</span> to reach stair <code>i</code>, you either came from <code>i−1</code> (a 1-step) or <code>i−2</code> (a 2-step). So the ways add up — it's Fibonacci again. Base: dp[0]=1 (one way: do nothing), dp[1]=1. For n=5 → <b>8</b> ways.</div>
+      <div class="steps-flow"><span class="chip">last step = 1 or 2</span><span class="arrow">→</span><span class="chip">dp[i]=dp[i−1]+dp[i−2]</span><span class="arrow">→</span><span class="chip">dp[n] = answer</span></div>
+      <div class="oneliner">🔒 Keep forever: "Climbing stairs = Fibonacci: ways to i = ways to (i−1) + ways to (i−2)."</div>
+    </div>
+    <div class="lbl">dp[i] = number of ways to reach stair i</div>
+    <div class="dparr" id="stArr"></div>
+    <div class="status" id="stStatus">Press play to count the ways to climb 5 stairs.</div>
+    <div class="stats" id="stStats"></div>
+    <div class="controls"><button class="btn" id="stPlay">▶ Climb (n=5)</button><button class="btn ghost" id="stReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="stSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> if steps can be 1, 2, or 3, just add one more term: dp[i]=dp[i−1]+dp[i−2]+dp[i−3].</div></div>
+  </section>
+
+  <!-- 4 TILE THE LANE -->
+  <section id="tl">
+    <h2>🧱 Tile the Lane (2×n Dominoes) <span class="badge">tiling count</span></h2>
+    <p class="lead">How many ways to fully tile a <code>2×n</code> lane with <code>2×1</code> dominoes? The last column is either one vertical tile, or two horizontals spanning the last two columns.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Look at the last column:</span> place a vertical domino (leaving a 2×(n−1) lane → dp[n−1] ways) or two horizontal dominoes (leaving 2×(n−2) → dp[n−2] ways). So <code>dp[n]=dp[n−1]+dp[n−2]</code> — Fibonacci once more. For n=5 → <b>8</b> ways.</div>
+      <div class="steps-flow"><span class="chip">last col: 1 vertical → dp[n−1]</span><span class="arrow">·</span><span class="chip">2 horizontals → dp[n−2]</span><span class="arrow">→</span><span class="chip">sum</span></div>
+      <div class="oneliner">🔒 Keep forever: "2×n domino tiling = Fibonacci: decide the last column is vertical or a horizontal pair."</div>
+    </div>
+    <div class="lbl">a 2×5 lane</div><div class="vwrap"><div class="board" id="tlBoard" style="grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(2,1fr)"></div></div>
+    <div class="lbl">dp[i] = ways to tile a 2×i lane</div><div class="dparr" id="tlArr"></div>
+    <div class="status" id="tlStatus">Press play to count tilings of a 2×5 lane.</div>
+    <div class="stats" id="tlStats"></div>
+    <div class="controls"><button class="btn" id="tlPlay">▶ Tile (n=5)</button><button class="btn ghost" id="tlReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tlSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> many counting DPs reduce to "what can the last piece be?" — enumerate the final choice, sum the sub-counts.</div></div>
+  </section>
+
+  <!-- 5 NON-ADJACENT SUM I -->
+  <section id="n1">
+    <h2>🏠 Maximum Non-Adjacent Sum I <span class="badge">house robber</span></h2>
+    <p class="lead">Pick numbers to maximize the sum, but never two adjacent ones. For each index: skip it (keep dp[i−1]) or take it (dp[i−2] + value).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Rob or skip each house:</span> <code>dp[i] = max(dp[i−1], dp[i−2] + a[i])</code>. Skipping keeps the best so far; taking adds the current value to the best from two back (so no adjacency). Array [3,2,5,10,7] → <b>15</b> (3 + 5 + 7).</div>
+      <div class="steps-flow"><span class="chip">skip i → dp[i−1]</span><span class="arrow">·</span><span class="chip">take i → dp[i−2]+a[i]</span><span class="arrow">→</span><span class="chip">dp[i] = max</span></div>
+      <div class="oneliner">🔒 Keep forever: "Max non-adjacent sum = max(skip = dp[i−1], take = dp[i−2] + a[i])."</div>
+    </div>
+    <div class="lbl">values</div><div class="dparr" id="n1Val"></div>
+    <div class="lbl">dp[i] = best non-adjacent sum up to i</div><div class="dparr" id="n1Arr"></div>
+    <div class="status" id="n1Status">Press play to maximize the non-adjacent sum.</div>
+    <div class="stats" id="n1Stats"></div>
+    <div class="controls"><button class="btn" id="n1Play">▶ Rob the houses</button><button class="btn ghost" id="n1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="n1Speed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a "no two adjacent" constraint almost always means a dp[i−1] vs dp[i−2]+value take/skip recurrence.</div></div>
+  </section>
+
+  <!-- 6 NON-ADJACENT SUM II -->
+  <section id="n2">
+    <h2>💡 Maximum Non-Adjacent Sum II <span class="badge">O(1) space</span></h2>
+    <p class="lead">The whole table isn't needed — only the previous two answers. Roll two variables forward and drop the array entirely.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two variables suffice:</span> keep <code>prev</code> (dp[i−1]) and <code>prev2</code> (dp[i−2]). Each step: <code>cur = max(prev, prev2 + a[i])</code>, then shift <code>prev2 = prev, prev = cur</code>. Same answer <b>15</b>, but O(1) memory instead of O(n).</div>
+      <div class="steps-flow"><span class="chip">cur = max(prev, prev2 + a[i])</span><span class="arrow">→</span><span class="chip">prev2 = prev; prev = cur</span></div>
+      <div class="oneliner">🔒 Keep forever: "If dp[i] uses only the last 1–2 states, replace the array with rolling variables → O(1) space."</div>
+    </div>
+    <div class="lbl">values</div><div class="dparr" id="n2Val"></div>
+    <div class="lbl">rolling variables</div><div class="dparr" id="n2Vars"></div>
+    <div class="status" id="n2Status">Press play to solve it with just two variables.</div>
+    <div class="stats" id="n2Stats"></div>
+    <div class="controls"><button class="btn" id="n2Play">▶ Roll variables</button><button class="btn ghost" id="n2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="n2Speed" min="300" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> space optimization never changes the answer — it only trims memory once you know the recurrence's "window".</div></div>
+  </section>
+
+  <!-- 7 DECODINGS I -->
+  <section id="d1">
+    <h2>🔡 Count of Decodings I <span class="badge">A=1 … Z=26</span></h2>
+    <p class="lead">A digit string maps to letters (1→A … 26→Z). How many ways to decode it? At each position, take one digit and/or a valid two-digit pair.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One digit or two:</span> <code>dp[i]</code> = ways to decode the first <code>i</code> chars. Add <code>dp[i−1]</code> if the single digit <code>s[i−1]</code> is 1–9; add <code>dp[i−2]</code> if the two-digit <code>s[i−2..i−1]</code> is 10–26. String "226" → <b>3</b> ("2 2 6", "22 6", "2 26").</div>
+      <div class="steps-flow"><span class="chip">single 1–9 → += dp[i−1]</span><span class="arrow">·</span><span class="chip">pair 10–26 → += dp[i−2]</span></div>
+      <div class="oneliner">🔒 Keep forever: "Decode ways: dp[i] = (single valid ? dp[i−1] : 0) + (pair 10–26 ? dp[i−2] : 0)."</div>
+    </div>
+    <div class="lbl">string</div><div class="strchars" id="d1Str"></div>
+    <div class="lbl">dp[i] = ways to decode first i chars</div><div class="dparr" id="d1Arr"></div>
+    <div class="status" id="d1Status">Press play to count decodings of "226".</div>
+    <div class="stats" id="d1Stats"></div>
+    <div class="controls"><button class="btn" id="d1Play">▶ Decode "226"</button><button class="btn ghost" id="d1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="d1Speed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a leading <code>0</code> decodes nothing, and pairs like <code>27</code> or <code>30</code> are invalid — guard both cases.</div></div>
+  </section>
+
+  <!-- 8 DECODINGS II -->
+  <section id="d2">
+    <h2>🔤 Count of Decodings II <span class="badge">O(1) space</span></h2>
+    <p class="lead">Just like non-adjacent sum, decodings only need the last two dp values — so roll two variables and skip the array.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two counters:</span> keep <code>prev</code> (dp[i−1]) and <code>prev2</code> (dp[i−2]). Each char: <code>cur = (single valid ? prev : 0) + (pair valid ? prev2 : 0)</code>, then shift. Same "226" → <b>3</b>, but O(1) memory.</div>
+      <div class="steps-flow"><span class="chip">cur = single·prev + pair·prev2</span><span class="arrow">→</span><span class="chip">prev2 = prev; prev = cur</span></div>
+      <div class="oneliner">🔒 Keep forever: "Decodings space-optimized = the same take-one / take-two rule over two rolling counters."</div>
+    </div>
+    <div class="lbl">string</div><div class="strchars" id="d2Str"></div>
+    <div class="lbl">rolling counters</div><div class="dparr" id="d2Vars"></div>
+    <div class="status" id="d2Status">Press play for the O(1)-space decode count.</div>
+    <div class="stats" id="d2Stats"></div>
+    <div class="controls"><button class="btn" id="d2Play">▶ Decode (1D)</button><button class="btn ghost" id="d2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="d2Speed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the space-optimized version must still handle the same edge cases (leading zeros, invalid pairs) — logic unchanged.</div></div>
+  </section>
+
+  <!-- 9 ROD CUTTING -->
+  <section id="rc">
+    <h2>🪚 Rod Cutting <span class="badge">unbounded choices</span></h2>
+    <p class="lead">A rod of length <code>n</code> and a price for each length. Cut it (or not) to maximize total price. Each length can be used any number of times.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Try every first cut:</span> <code>dp[len] = max over cut c of price[c] + dp[len − c]</code>. Because a length can repeat, after cutting a piece you're free to reuse any length again (unbounded). Length 8 with prices [1,5,8,9,10,17,17,20] → <b>22</b> (cut 2 + 6).</div>
+      <div class="steps-flow"><span class="chip">for each length</span><span class="arrow">→</span><span class="chip">try every first cut c</span><span class="arrow">→</span><span class="chip">price[c] + dp[len−c]</span></div>
+      <div class="oneliner">🔒 Keep forever: "Rod cutting = unbounded knapsack: dp[len] = max(price[c] + dp[len−c]) over all cuts c."</div>
+    </div>
+    <div class="lbl">prices by length (1..8)</div><div class="dparr" id="rcPrice"></div>
+    <div class="lbl">dp[len] = best price for a rod of length len</div><div class="dparr" id="rcArr"></div>
+    <div class="status" id="rcStatus">Press play to maximize value from a length-8 rod.</div>
+    <div class="stats" id="rcStats"></div>
+    <div class="controls"><button class="btn" id="rcPlay">▶ Cut the rod</button><button class="btn ghost" id="rcReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rcSpeed" min="250" max="2000" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> rod cutting is unbounded knapsack in disguise — pieces (lengths) can be reused, unlike 0/1 knapsack.</div></div>
+  </section>
+
+  <!-- 10 COIN MIN -->
+  <section id="c1">
+    <h2>🪙 Coin Exchange I — Minimum Coins <span class="badge">fewest coins</span></h2>
+    <p class="lead">Given coin denominations and a target amount, find the <b>fewest</b> coins that sum to it (coins reusable). <code>dp[a] = 1 + min over coins c of dp[a − c]</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Best amount minus a coin:</span> to make amount <code>a</code> with the fewest coins, try each coin <code>c</code>: use it (1 coin) plus the best way to make <code>a−c</code>. Take the minimum. Unreachable amounts stay ∞. Coins {1,2,5}, amount 11 → <b>3</b> (5+5+1).</div>
+      <div class="steps-flow"><span class="chip">for amount a = 1..N</span><span class="arrow">→</span><span class="chip">try each coin c</span><span class="arrow">→</span><span class="chip">dp[a]=min(dp[a], 1+dp[a−c])</span></div>
+      <div class="oneliner">🔒 Keep forever: "Min coins: dp[a] = 1 + min(dp[a − c]) over coins c; base dp[0]=0."</div>
+    </div>
+    <div class="lbl">dp[a] = fewest coins to make amount a (coins {1,2,5})</div><div class="dparr" id="c1Arr"></div>
+    <div class="status" id="c1Status">Press play to find the fewest coins for 11.</div>
+    <div class="stats" id="c1Stats"></div>
+    <div class="controls"><button class="btn" id="c1Play">▶ Min coins for 11</button><button class="btn ghost" id="c1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="c1Speed" min="250" max="2000" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> min-coins uses <b>min</b> and lets order not matter; if some amount stays ∞, it's unmakeable → return −1.</div></div>
+  </section>
+
+  <!-- 11 COIN WAYS -->
+  <section id="c2">
+    <h2>🔢 Coin Exchange II — Count Ways <span class="badge">combinations</span></h2>
+    <p class="lead">Count the number of distinct <b>combinations</b> of coins that make the amount (order doesn't matter). A 2D table over (coins considered × amount).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Include or exclude each coin:</span> <code>dp[i][a]</code> = ways to make <code>a</code> using the first <code>i</code> coin types. Either skip coin <code>i</code> (<code>dp[i−1][a]</code>) or use it at least once (<code>dp[i][a − coin]</code>). Processing coins in an outer loop avoids counting permutations. Coins {1,2,5}, amount 5 → <b>4</b>.</div>
+      <div class="steps-flow"><span class="chip">skip coin → dp[i−1][a]</span><span class="arrow">+</span><span class="chip">use coin → dp[i][a−coin]</span></div>
+      <div class="oneliner">🔒 Keep forever: "Count ways = skip-or-use per coin: dp[i][a] = dp[i−1][a] + dp[i][a−coin]."</div>
+    </div>
+    <div class="lbl">dp[i][a] : rows = coins {1,2,5} (incl. base), cols = amount 0..5</div>
+    <div class="vwrap" id="c2Grid"></div>
+    <div class="status" id="c2Status">Press play to count ways to make 5.</div>
+    <div class="stats" id="c2Stats"></div>
+    <div class="controls"><button class="btn" id="c2Play">▶ Count ways (2D)</button><button class="btn ghost" id="c2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="c2Speed" min="250" max="2000" value="600" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> coins in the <b>outer</b> loop counts combinations; amount outer / coins inner would count ordered permutations instead.</div></div>
+  </section>
+
+  <!-- 12 COIN WAYS BOTTOM-UP -->
+  <section id="cb">
+    <h2>📊 Coin Ways — Bottom-up Tabulation <span class="badge">fill the table</span></h2>
+    <p class="lead">The same 2D recurrence, filled iteratively row by row from the base case <code>dp[·][0] = 1</code> (one way to make 0: take nothing).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Build from empty:</span> initialize the "amount 0" column to 1. For each coin (row) and each amount (column), add the ways without this coin (cell above) to the ways using it (cell <code>coin</code> steps left in the same row). The bottom-right cell is the answer → <b>4</b>.</div>
+      <div class="steps-flow"><span class="chip">dp[·][0] = 1</span><span class="arrow">→</span><span class="chip">row by row, left to right</span><span class="arrow">→</span><span class="chip">dp[last][amount]</span></div>
+      <div class="oneliner">🔒 Keep forever: "Bottom-up coin ways: seed the zero column with 1, then fill up + left-by-coin."</div>
+    </div>
+    <div class="lbl">tabulated dp[i][a]</div>
+    <div class="vwrap" id="cbGrid"></div>
+    <div class="status" id="cbStatus">Press play to fill the table bottom-up.</div>
+    <div class="stats" id="cbStats"></div>
+    <div class="controls"><button class="btn" id="cbPlay">▶ Tabulate</button><button class="btn ghost" id="cbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cbSpeed" min="200" max="1800" value="500" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the "use coin" term reads from the <b>same row</b> (dp[i][a−coin]) — that's what allows a coin to be reused.</div></div>
+  </section>
+
+  <!-- 13 COIN WAYS 1D -->
+  <section id="cs">
+    <h2>🎯 Coin Ways — Space Optimised (1D) <span class="badge">one array</span></h2>
+    <p class="lead">Each row only depends on the row above and cells to its left — so a single 1D array, updated per coin, suffices.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Collapse the rows:</span> keep one array <code>dp[0..amount]</code> with <code>dp[0]=1</code>. For each coin, sweep amounts <b>left to right</b> doing <code>dp[a] += dp[a − coin]</code>. Left-to-right reuses the coin (unbounded); the final <code>dp[amount]</code> is the count → <b>4</b>.</div>
+      <div class="steps-flow"><span class="chip">dp[0]=1</span><span class="arrow">→</span><span class="chip">for each coin: dp[a] += dp[a−coin]</span><span class="arrow">→</span><span class="chip">dp[amount]</span></div>
+      <div class="oneliner">🔒 Keep forever: "1D coin ways: for each coin, sweep amounts left→right adding dp[a−coin]."</div>
+    </div>
+    <div class="lbl">dp[a] (updated once per coin)</div><div class="dparr" id="csArr"></div>
+    <div class="status" id="csStatus">Press play for the 1D coin-ways sweep.</div>
+    <div class="stats" id="csStats"></div>
+    <div class="controls"><button class="btn" id="csPlay">▶ 1D sweep</button><button class="btn ghost" id="csReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="csSpeed" min="250" max="2000" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> <b>left→right</b> = unbounded (coin reusable); <b>right→left</b> = 0/1 (each item once). The sweep direction is everything!</div></div>
+    <pre><code>dp[<span class="num">0</span>]=<span class="num">1</span>;
+<span class="kw">for</span>(coin : coins)
+  <span class="kw">for</span>(a=coin; a&lt;=amount; a++)   <span class="cm">// left → right (reusable)</span>
+    dp[a] += dp[a-coin];</code></pre>
+  </section>
+
+  <!-- 14 KNAPSACK 2D -->
+  <section id="k1">
+    <h2>🎒 0/1 Knapsack <span class="badge">take or leave</span></h2>
+    <p class="lead">Each item can be taken <b>at most once</b>. Maximize value within a weight capacity. <code>dp[i][w]</code> = best value using the first <code>i</code> items within capacity <code>w</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Include or exclude item i:</span> skip it (<code>dp[i−1][w]</code>) or take it if it fits (<code>value[i] + dp[i−1][w − weight[i]]</code>) and keep the max. Because we read the <b>previous row</b>, each item is used at most once. Items w[1,3,4,5]/v[1,4,5,7], cap 7 → <b>9</b>.</div>
+      <div class="steps-flow"><span class="chip">skip → dp[i−1][w]</span><span class="arrow">·</span><span class="chip">take → v[i]+dp[i−1][w−wt[i]]</span><span class="arrow">→</span><span class="chip">max</span></div>
+      <div class="oneliner">🔒 Keep forever: "0/1 knapsack: dp[i][w] = max(skip dp[i−1][w], take v[i]+dp[i−1][w−wt[i]])."</div>
+    </div>
+    <div class="lbl">dp[i][w] : rows = items, cols = capacity 0..7</div>
+    <div class="vwrap" id="k1Grid"></div>
+    <div class="status" id="k1Status">Press play to fill the knapsack table.</div>
+    <div class="stats" id="k1Stats"></div>
+    <div class="controls"><button class="btn" id="k1Play">▶ Fill table</button><button class="btn ghost" id="k1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="k1Speed" min="200" max="1800" value="480" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> 0/1 reads the <b>previous</b> row (item used once); unbounded knapsack reads the <b>current</b> row (item reusable).</div></div>
+  </section>
+
+  <!-- 15 KNAPSACK 1D -->
+  <section id="k2">
+    <h2>📦 0/1 Knapsack — Space Optimised (1D) <span class="badge">reverse sweep</span></h2>
+    <p class="lead">Collapse to a single array, but sweep capacities <b>right to left</b> so each item is used only once.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Reverse to stay 0/1:</span> keep one array <code>dp[0..cap]</code>. For each item, update <code>dp[w] = max(dp[w], value + dp[w − weight])</code> going <b>right→left</b> — this guarantees <code>dp[w−weight]</code> still refers to the previous item's value (not this item reused). Same answer <b>9</b>, O(cap) space.</div>
+      <div class="steps-flow"><span class="chip">for each item</span><span class="arrow">→</span><span class="chip">w = cap … weight (reverse)</span><span class="arrow">→</span><span class="chip">dp[w]=max(dp[w], v+dp[w−wt])</span></div>
+      <div class="oneliner">🔒 Keep forever: "1D 0/1 knapsack sweeps capacity right→left; that reversal is what keeps each item single-use."</div>
+    </div>
+    <div class="lbl">dp[w] (updated per item, right → left)</div><div class="dparr" id="k2Arr"></div>
+    <div class="status" id="k2Status">Press play for the reverse-sweep 1D knapsack.</div>
+    <div class="stats" id="k2Stats"></div>
+    <div class="controls"><button class="btn" id="k2Play">▶ 1D knapsack</button><button class="btn ghost" id="k2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="k2Speed" min="250" max="2000" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the sweep direction encodes the item policy: right→left = each item once (0/1); left→right = reusable (unbounded).</div></div>
+  </section>
+
+  <!-- 16 LIS -->
+  <section id="lis">
+    <h2>📈 Longest Increasing Subsequence <span class="badge">O(n²) DP</span></h2>
+    <p class="lead">Find the length of the longest strictly increasing subsequence. <code>dp[i]</code> = LIS ending at <code>i</code> = 1 + max(dp[j]) over all <code>j&lt;i</code> with <code>a[j]&lt;a[i]</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Best chain ending here:</span> for each index, look back at every smaller earlier element and extend its best chain. The overall answer is the maximum dp value. Array [10,9,2,5,3,7,101,18] → <b>4</b> (e.g. 2,3,7,101).</div>
+      <div class="steps-flow"><span class="chip">dp[i]=1</span><span class="arrow">→</span><span class="chip">for j&lt;i, a[j]&lt;a[i]: dp[i]=max(dp[i],dp[j]+1)</span><span class="arrow">→</span><span class="chip">answer = max dp</span></div>
+      <div class="oneliner">🔒 Keep forever: "LIS[i] = 1 + best LIS among earlier smaller elements; answer = max over all i."</div>
+    </div>
+    <div class="lbl">values</div><div class="dparr" id="lisVal"></div>
+    <div class="lbl">dp[i] = LIS ending at i</div><div class="dparr" id="lisArr"></div>
+    <div class="status" id="lisStatus">Press play to compute the LIS length.</div>
+    <div class="stats" id="lisStats"></div>
+    <div class="controls"><button class="btn" id="lisPlay">▶ Find LIS</button><button class="btn ghost" id="lisReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lisSpeed" min="250" max="2000" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> LIS also has an O(n log n) patience-sorting form using binary search over a "tails" array — same length, faster.</div></div>
+  </section>
+
+  <!-- 17 BITONIC -->
+  <section id="bit">
+    <h2>⛰️ Longest Bitonic Subsequence <span class="badge">up then down</span></h2>
+    <p class="lead">A bitonic subsequence first increases then decreases. Combine an LIS from the left with an LDS from the right at each peak.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Peak at each index:</span> compute <code>inc[i]</code> = LIS ending at i (left→right) and <code>dec[i]</code> = longest decreasing starting at i (right→left). The best bitonic length through peak <code>i</code> is <code>inc[i] + dec[i] − 1</code>. Array [1,11,2,10,4,5,2,1] → <b>6</b>.</div>
+      <div class="steps-flow"><span class="chip">inc[i] via LIS →</span><span class="arrow">·</span><span class="chip">dec[i] via LDS ←</span><span class="arrow">→</span><span class="chip">max(inc[i]+dec[i]−1)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Bitonic = LIS from the left + LDS from the right, joined at the peak (minus the double-counted peak)."</div>
+    </div>
+    <div class="lbl">values</div><div class="dparr" id="bitVal"></div>
+    <div class="lbl">inc[i] (LIS→)</div><div class="dparr" id="bitInc"></div>
+    <div class="lbl">dec[i] (LDS←)</div><div class="dparr" id="bitDec"></div>
+    <div class="status" id="bitStatus">Press play to find the longest bitonic subsequence.</div>
+    <div class="stats" id="bitStats"></div>
+    <div class="controls"><button class="btn" id="bitPlay">▶ Find bitonic</button><button class="btn ghost" id="bitReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bitSpeed" min="250" max="2000" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a strictly increasing or strictly decreasing sequence is a degenerate bitonic — the formula still works.</div></div>
+  </section>
+
+  <!-- 18 ENVELOPES I -->
+  <section id="en1">
+    <h2>✉️ Russian Doll Envelopes I <span class="badge">sort + LIS</span></h2>
+    <p class="lead">Nest envelopes (w,h) so each strictly fits inside the next. Sort by width, then it becomes an LIS on heights.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Fix one dimension by sorting:</span> sort envelopes by width ascending (and height <b>descending</b> on ties, so equal widths can't nest). Now find the LIS of the heights — that's the deepest nesting. Envelopes [[5,4],[6,4],[6,7],[2,3]] → <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">sort by w↑, h↓ on ties</span><span class="arrow">→</span><span class="chip">LIS on heights</span><span class="arrow">→</span><span class="chip">= max nesting</span></div>
+      <div class="oneliner">🔒 Keep forever: "Envelopes = sort by width (height desc on ties) → LIS on heights."</div>
+    </div>
+    <div class="lbl">sorted by width↑ (height↓ on ties)</div><div class="dparr" id="en1Env"></div>
+    <div class="lbl">dp = LIS on heights</div><div class="dparr" id="en1Arr"></div>
+    <div class="status" id="en1Status">Press play to nest the envelopes.</div>
+    <div class="stats" id="en1Stats"></div>
+    <div class="controls"><button class="btn" id="en1Play">▶ Nest envelopes</button><button class="btn ghost" id="en1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="en1Speed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the height-<b>descending</b> tie-break is essential — otherwise two equal-width envelopes would wrongly "nest".</div></div>
+  </section>
+
+  <!-- 19 ENVELOPES II -->
+  <section id="en2">
+    <h2>📩 Russian Doll Envelopes II <span class="badge">O(n log n) LIS</span></h2>
+    <p class="lead">Speed up the height-LIS with binary search over a "tails" array — the same nesting count, in O(n log n).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Patience piles:</span> keep <code>tails[k]</code> = smallest possible tail of an increasing subsequence of length <code>k+1</code>. For each height, binary-search the first tail ≥ it and replace it (or append). The tails length is the LIS. Heights [3,4,7,4] → tails grows to length <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">for each height h</span><span class="arrow">→</span><span class="chip">replace first tail ≥ h (or append)</span><span class="arrow">→</span><span class="chip">len(tails) = answer</span></div>
+      <div class="oneliner">🔒 Keep forever: "O(n log n) LIS = maintain 'tails'; binary-search-replace each element; length = LIS."</div>
+    </div>
+    <div class="lbl">heights (sorted order)</div><div class="dparr" id="en2Heights"></div>
+    <div class="lbl">tails[] (piles)</div><div class="dparr" id="en2Tails"></div>
+    <div class="status" id="en2Status">Press play for the binary-search LIS.</div>
+    <div class="stats" id="en2Stats"></div>
+    <div class="controls"><button class="btn" id="en2Play">▶ Tails LIS</button><button class="btn ghost" id="en2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="en2Speed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> <code>tails</code> is <b>not</b> an actual subsequence — only its <b>length</b> is meaningful (it tracks best-possible tails).</div></div>
+  </section>
+
+  <!-- 20 LCS I -->
+  <section id="lc1">
+    <h2>🧬 Longest Common Subsequence I <span class="badge">2D DP</span></h2>
+    <p class="lead">The longest subsequence present in both strings. If the current chars match, extend the diagonal; else take the best of dropping one char from either string.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Match or drop:</span> <code>dp[i][j]</code> = LCS of prefixes s1[0..i), s2[0..j). If <code>s1[i−1]==s2[j−1]</code> → <code>1 + dp[i−1][j−1]</code>; else <code>max(dp[i−1][j], dp[i][j−1])</code>. "abcde" &amp; "ace" → <b>3</b> ("ace").</div>
+      <div class="steps-flow"><span class="chip">match → 1 + diagonal</span><span class="arrow">·</span><span class="chip">no match → max(up, left)</span></div>
+      <div class="oneliner">🔒 Keep forever: "LCS: chars match → 1 + dp[i−1][j−1]; else max(dp[i−1][j], dp[i][j−1])."</div>
+    </div>
+    <div class="lbl">dp[i][j] — rows = "·abcde", cols = "·ace"</div>
+    <div class="vwrap" id="lc1Grid"></div>
+    <div class="status" id="lc1Status">Press play to compute the LCS length.</div>
+    <div class="stats" id="lc1Stats"></div>
+    <div class="controls"><button class="btn" id="lc1Play">▶ Compute LCS</button><button class="btn ghost" id="lc1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lc1Speed" min="250" max="2000" value="600" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> subsequence ≠ substring — LCS characters keep order but needn't be contiguous.</div></div>
+  </section>
+
+  <!-- 21 PRINT LCS -->
+  <section id="lcp">
+    <h2>🖨️ Printing the LCS <span class="badge">backtrack the table</span></h2>
+    <p class="lead">The table gives the length; walk it backwards from the bottom-right to recover the actual subsequence.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Retrace the choices:</span> start at <code>dp[n][m]</code>. If the chars match, that char is in the LCS — move diagonally up-left. Otherwise move toward the larger of up / left. Collect matched chars (reversed) → "ace".</div>
+      <div class="steps-flow"><span class="chip">start bottom-right</span><span class="arrow">→</span><span class="chip">match? take char, go ↖</span><span class="arrow">·</span><span class="chip">else go to larger of ↑ / ←</span></div>
+      <div class="oneliner">🔒 Keep forever: "Reconstruct by backtracking: diagonal on a match, otherwise follow the bigger neighbor."</div>
+    </div>
+    <div class="lbl">backtrack path (green = matched chars)</div>
+    <div class="vwrap" id="lcpGrid"></div>
+    <div class="lbl">recovered subsequence</div><div class="strchars" id="lcpOut"></div>
+    <div class="status" id="lcpStatus">Press play to backtrack and print the LCS.</div>
+    <div class="stats" id="lcpStats"></div>
+    <div class="controls"><button class="btn" id="lcpPlay">▶ Print LCS</button><button class="btn ghost" id="lcpReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lcpSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> you need the full 2D table (not the space-optimized version) to backtrack the actual sequence.</div></div>
+  </section>
+
+  <!-- 22 LCS II -->
+  <section id="lc2">
+    <h2>🧵 Longest Common Subsequence II <span class="badge">2-row space</span></h2>
+    <p class="lead">Each row depends only on the row above — so two rolling rows (or one, carefully) give the length in O(min(n,m)) space.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Keep two rows:</span> maintain <code>prev</code> and <code>curr</code> rows. Compute <code>curr</code> from <code>prev</code> using the same match/drop rule, then swap. The final <code>curr</code>'s last cell is the LCS length — <b>3</b> — using O(m) memory instead of O(n·m).</div>
+      <div class="steps-flow"><span class="chip">prev, curr rows</span><span class="arrow">→</span><span class="chip">fill curr from prev</span><span class="arrow">→</span><span class="chip">swap; repeat</span></div>
+      <div class="oneliner">🔒 Keep forever: "LCS space-optimized: only the previous row matters → roll two 1D rows."</div>
+    </div>
+    <div class="lbl">prev row</div><div class="dparr" id="lc2Prev"></div>
+    <div class="lbl">curr row (being filled)</div><div class="dparr" id="lc2Curr"></div>
+    <div class="status" id="lc2Status">Press play for the two-row LCS.</div>
+    <div class="stats" id="lc2Stats"></div>
+    <div class="controls"><button class="btn" id="lc2Play">▶ 2-row LCS</button><button class="btn ghost" id="lc2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lc2Speed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> space optimization trades away the ability to reconstruct — keep the full table if you must print the sequence.</div></div>
+  </section>
+
+  <!-- 23 LPS via LCS -->
+  <section id="lp3">
+    <h2>🪞 Longest Palindromic Subsequence — via LCS <span class="badge">reverse trick</span></h2>
+    <p class="lead">The LPS of a string equals the LCS of the string with its own reverse — a palindrome reads the same forwards and backwards.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Match a string to its mirror:</span> characters that line up in both <code>s</code> and <code>reverse(s)</code> form a palindromic subsequence. So <code>LPS(s) = LCS(s, reverse(s))</code>. For "bbbab", reverse "babbb", their LCS = <b>4</b> ("bbbb").</div>
+      <div class="steps-flow"><span class="chip">t = reverse(s)</span><span class="arrow">→</span><span class="chip">LCS(s, t)</span><span class="arrow">→</span><span class="chip">= LPS(s)</span></div>
+      <div class="oneliner">🔒 Keep forever: "LPS(s) = LCS(s, reverse(s)) — reuse the LCS table, no new algorithm."</div>
+    </div>
+    <div class="lbl">dp[i][j] = LCS("bbbab", "babbb")</div>
+    <div class="vwrap" id="lp3Grid"></div>
+    <div class="status" id="lp3Status">Press play to get LPS via the reverse-LCS trick.</div>
+    <div class="stats" id="lp3Stats"></div>
+    <div class="controls"><button class="btn" id="lp3Play">▶ LPS = LCS(s, rev)</button><button class="btn ghost" id="lp3Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lp3Speed" min="250" max="2000" value="600" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> this reuse works because a palindrome is exactly a sequence equal to its reverse.</div></div>
+  </section>
+
+  <!-- 24 LPS interval -->
+  <section id="lp4">
+    <h2>🌀 Longest Palindromic Subsequence — Interval DP <span class="badge">gap DP</span></h2>
+    <p class="lead">A direct approach: <code>dp[i][j]</code> = LPS of substring <code>s[i..j]</code>. If the ends match, add 2 to the inside; else take the best of dropping an end. Fill by increasing length.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Grow from the ends inward:</span> if <code>s[i]==s[j]</code> → <code>2 + dp[i+1][j−1]</code>; else <code>max(dp[i+1][j], dp[i][j−1])</code>. Single chars are palindromes of length 1. Fill diagonally by substring length. "bbbab" → <b>4</b>.</div>
+      <div class="steps-flow"><span class="chip">ends match → 2 + inside</span><span class="arrow">·</span><span class="chip">else max(drop left, drop right)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Interval LPS: dp[i][j] = ends match ? 2+dp[i+1][j−1] : max(dp[i+1][j], dp[i][j−1])."</div>
+    </div>
+    <div class="lbl">dp[i][j] over substrings of "bbbab" (filled by length)</div>
+    <div class="vwrap" id="lp4Grid"></div>
+    <div class="status" id="lp4Status">Press play for the interval-DP LPS.</div>
+    <div class="stats" id="lp4Stats"></div>
+    <div class="controls"><button class="btn" id="lp4Play">▶ Interval LPS</button><button class="btn ghost" id="lp4Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lp4Speed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> interval DPs are filled by <b>length</b> (the gap j−i), not simple row order — inner states must be ready first.</div></div>
+  </section>
+
+  <!-- 25 palindromic substring -->
+  <section id="lsb">
+    <h2>🧿 Longest Palindromic Substring <span class="badge">contiguous</span></h2>
+    <p class="lead">Now the palindrome must be <b>contiguous</b>. <code>pal[i][j]</code> is true if <code>s[i..j]</code> is a palindrome: ends equal AND the inside is a palindrome.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Ends equal + inside palindrome:</span> <code>pal[i][j] = (s[i]==s[j]) &amp;&amp; (j−i&lt;2 || pal[i+1][j−1])</code>. Track the longest true span. "babad" → <b>"bab"</b> (length 3). Fill by increasing length so the inner span is known first.</div>
+      <div class="steps-flow"><span class="chip">len 1: all true</span><span class="arrow">→</span><span class="chip">len 2: s[i]==s[i+1]</span><span class="arrow">→</span><span class="chip">len ≥3: ends + inside</span></div>
+      <div class="oneliner">🔒 Keep forever: "Substring palindrome: ends match AND inner substring is already a palindrome."</div>
+    </div>
+    <div class="lbl">string</div><div class="strchars" id="lsbStr"></div>
+    <div class="lbl">pal[i][j] (✓ = palindrome)</div>
+    <div class="vwrap" id="lsbGrid"></div>
+    <div class="status" id="lsbStatus">Press play to find the longest palindromic substring.</div>
+    <div class="stats" id="lsbStats"></div>
+    <div class="controls"><button class="btn" id="lsbPlay">▶ Find substring</button><button class="btn ghost" id="lsbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lsbSpeed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the O(1)-space "expand around center" method is often simpler — but the DP table makes the recurrence crystal clear.</div></div>
+  </section>
+
+  <!-- 26 EDIT DISTANCE I -->
+  <section id="ed1">
+    <h2>✏️ Edit Distance I <span class="badge">Levenshtein</span></h2>
+    <p class="lead">Fewest single-character edits (insert, delete, replace) to turn one string into another. Classic 2D DP over prefixes.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Match or pay 1 edit:</span> if <code>s[i−1]==t[j−1]</code> → <code>dp[i−1][j−1]</code> (free). Else <code>1 + min(</code>replace <code>dp[i−1][j−1]</code>, delete <code>dp[i−1][j]</code>, insert <code>dp[i][j−1]</code>). "horse" → "ros" = <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">match → diagonal</span><span class="arrow">·</span><span class="chip">else 1 + min(replace, delete, insert)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Edit distance: match free (diagonal); otherwise 1 + min of the three neighbors."</div>
+    </div>
+    <div class="lbl">dp[i][j] — rows = "·horse", cols = "·ros"</div>
+    <div class="vwrap" id="ed1Grid"></div>
+    <div class="status" id="ed1Status">Press play to compute the edit distance.</div>
+    <div class="stats" id="ed1Stats"></div>
+    <div class="controls"><button class="btn" id="ed1Play">▶ Edit distance</button><button class="btn ghost" id="ed1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ed1Speed" min="250" max="2000" value="600" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the first row/column are the base cases: turning a prefix into "" costs exactly its length (all deletes/inserts).</div></div>
+  </section>
+
+  <!-- 27 EDIT DISTANCE II -->
+  <section id="ed2">
+    <h2>📝 Edit Distance II <span class="badge">2-row space</span></h2>
+    <p class="lead">Edit distance needs only the previous row and the current one — so two 1D rows deliver the answer in O(min(n,m)) space.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Roll two rows:</span> <code>prev</code> holds row <code>i−1</code>, <code>curr</code> row <code>i</code>. Each cell uses <code>prev[j−1]</code> (diagonal), <code>prev[j]</code> (up), <code>curr[j−1]</code> (left). Fill, swap, repeat. Same answer <b>3</b>, O(m) memory.</div>
+      <div class="steps-flow"><span class="chip">prev, curr rows</span><span class="arrow">→</span><span class="chip">curr[j] from prev + curr[j−1]</span><span class="arrow">→</span><span class="chip">swap</span></div>
+      <div class="oneliner">🔒 Keep forever: "Edit distance space-optimized: two rolling rows carry diagonal, up &amp; left."</div>
+    </div>
+    <div class="lbl">prev row</div><div class="dparr" id="ed2Prev"></div>
+    <div class="lbl">curr row (being filled)</div><div class="dparr" id="ed2Curr"></div>
+    <div class="status" id="ed2Status">Press play for the two-row edit distance.</div>
+    <div class="stats" id="ed2Stats"></div>
+    <div class="controls"><button class="btn" id="ed2Play">▶ 2-row edit</button><button class="btn ghost" id="ed2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ed2Speed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> keep a temporary for the diagonal before you overwrite it — it's the trickiest cell to track when rolling rows.</div></div>
+  </section>
+
+  <!-- 28 WILDCARD -->
+  <section id="pm1">
+    <h2>🃏 Pattern Matching I — Wildcards <span class="badge">? and *</span></h2>
+    <p class="lead">Match text against a pattern where <code>?</code> matches any single char and <code>*</code> matches any sequence (including empty). 2D boolean DP.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Star = skip or absorb:</span> <code>dp[i][j]</code> = does text[0..i) match pattern[0..j). On <code>*</code>: <code>dp[i][j−1]</code> (star matches empty) OR <code>dp[i−1][j]</code> (star absorbs one more char). On a literal or <code>?</code>: <code>dp[i−1][j−1]</code> if chars are compatible. "adceb" vs "*a*b" → <b>match ✓</b>.</div>
+      <div class="steps-flow"><span class="chip">* → dp[i][j−1] or dp[i−1][j]</span><span class="arrow">·</span><span class="chip">? or equal → dp[i−1][j−1]</span></div>
+      <div class="oneliner">🔒 Keep forever: "Wildcard *: match empty (left) or absorb a char (up); ? matches any single char."</div>
+    </div>
+    <div class="lbl">dp[i][j] — rows = "·adceb", cols = "·*a*b" (✓/✗)</div>
+    <div class="vwrap" id="pm1Grid"></div>
+    <div class="status" id="pm1Status">Press play to match "adceb" against "*a*b".</div>
+    <div class="stats" id="pm1Stats"></div>
+    <div class="controls"><button class="btn" id="pm1Play">▶ Wildcard match</button><button class="btn ghost" id="pm1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pm1Speed" min="250" max="2000" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the base row handles leading <code>*</code>s matching the empty text — set <code>dp[0][j]</code> true while the pattern is all stars.</div></div>
+  </section>
+
+  <!-- 29 REGEX -->
+  <section id="pm2">
+    <h2>🔣 Pattern Matching II — Regex <span class="badge">. and *</span></h2>
+    <p class="lead">Here <code>.</code> matches any single char and <code>*</code> means "zero or more of the <b>preceding</b> element". Subtler than wildcards.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Star binds to the char before it:</span> for <code>x*</code>, either use zero copies (<code>dp[i][j−2]</code>) or, if the preceding pattern char matches text[i−1], consume one (<code>dp[i−1][j]</code>). Otherwise chars must match directly (<code>dp[i−1][j−1]</code>). "aab" vs "c*a*b" → <b>match ✓</b>.</div>
+      <div class="steps-flow"><span class="chip">x* → skip (dp[i][j−2])</span><span class="arrow">·</span><span class="chip">or match &amp; consume (dp[i−1][j])</span></div>
+      <div class="oneliner">🔒 Keep forever: "Regex *: zero copies (jump back 2) or, if it matches, consume one char (go up)."</div>
+    </div>
+    <div class="lbl">dp[i][j] — rows = "·aab", cols = "·c*a*b" (✓/✗)</div>
+    <div class="vwrap" id="pm2Grid"></div>
+    <div class="status" id="pm2Status">Press play to match "aab" against "c*a*b".</div>
+    <div class="stats" id="pm2Stats"></div>
+    <div class="controls"><button class="btn" id="pm2Play">▶ Regex match</button><button class="btn ghost" id="pm2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pm2Speed" min="250" max="2000" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> in regex, <code>*</code> pairs with the char <b>before</b> it (so it's a 2-cell jump), unlike wildcard <code>*</code> which stands alone.</div></div>
+  </section>
+
+  <!-- 30 COUNT SUBSEQ I -->
+  <section id="cn1">
+    <h2>🔟 Counting Subsequences I <span class="badge">distinct subseq.</span></h2>
+    <p class="lead">Count how many times string <code>t</code> appears as a subsequence of string <code>s</code>. 2D DP over prefixes.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Use it or skip it:</span> <code>dp[i][j]</code> = ways t[0..j) appears in s[0..i). Always inherit <code>dp[i−1][j]</code> (skip s[i−1]); if <code>s[i−1]==t[j−1]</code>, also add <code>dp[i−1][j−1]</code> (match this char). "rabbbit" containing "rabbit" → <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">skip s[i−1] → dp[i−1][j]</span><span class="arrow">+</span><span class="chip">if match → dp[i−1][j−1]</span></div>
+      <div class="oneliner">🔒 Keep forever: "Distinct subsequences: dp[i][j] = dp[i−1][j] + (match ? dp[i−1][j−1] : 0)."</div>
+    </div>
+    <div class="lbl">dp[i][j] — rows = "·rabbbit", cols = "·rabbit"</div>
+    <div class="vwrap" id="cn1Grid"></div>
+    <div class="status" id="cn1Status">Press play to count occurrences of "rabbit".</div>
+    <div class="stats" id="cn1Stats"></div>
+    <div class="controls"><button class="btn" id="cn1Play">▶ Count subseq.</button><button class="btn ghost" id="cn1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cn1Speed" min="200" max="1800" value="450" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the empty target <code>t=""</code> has exactly one subsequence match (take nothing) → the whole first column is 1.</div></div>
+  </section>
+
+  <!-- 31 COUNT SUBSEQ II -->
+  <section id="cn2">
+    <h2>#️⃣ Counting Subsequences II <span class="badge">1D space</span></h2>
+    <p class="lead">The same count with a single 1D array over <code>t</code>, updated <b>right→left</b> per character of <code>s</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One array, reverse sweep:</span> keep <code>dp[0..m]</code> with <code>dp[0]=1</code>. For each char of <code>s</code>, update <code>j</code> from high to low: if <code>s-char == t[j−1]</code>, <code>dp[j] += dp[j−1]</code>. Right→left prevents using the same <code>s</code> char twice within one step. Result <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">dp[0]=1</span><span class="arrow">→</span><span class="chip">for each s-char, j high→low</span><span class="arrow">→</span><span class="chip">match ? dp[j]+=dp[j−1]</span></div>
+      <div class="oneliner">🔒 Keep forever: "1D distinct subsequences: sweep t-indices right→left so each s-char is counted once."</div>
+    </div>
+    <div class="lbl">dp[j] over "·rabbit" (updated per char of s)</div><div class="dparr" id="cn2Arr"></div>
+    <div class="status" id="cn2Status">Press play for the 1D subsequence count.</div>
+    <div class="stats" id="cn2Stats"></div>
+    <div class="controls"><button class="btn" id="cn2Play">▶ 1D count</button><button class="btn ghost" id="cn2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cn2Speed" min="250" max="2000" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> right→left here plays the same role as in 0/1 knapsack — it stops one update from feeding the next within a step.</div></div>
+  </section>
+
+  <!-- 32 MCM I -->
+  <section id="mc1">
+    <h2>✖️ Matrix Chain Multiplication I <span class="badge">interval DP</span></h2>
+    <p class="lead">Given matrix dimensions, parenthesize the product to minimize scalar multiplications. <code>dp[i][j]</code> = min cost to multiply matrices <code>i..j</code>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Try every split point:</span> for chain <code>i..j</code>, pick a split <code>k</code>: cost = <code>dp[i][k] + dp[k+1][j] + p[i−1]·p[k]·p[j]</code> (the cost to combine the two halves). Take the min over all <code>k</code>. Dims [1,2,3,4] → <b>18</b>.</div>
+      <div class="steps-flow"><span class="chip">for each chain length</span><span class="arrow">→</span><span class="chip">try each split k</span><span class="arrow">→</span><span class="chip">dp[i][k]+dp[k+1][j]+cost</span></div>
+      <div class="oneliner">🔒 Keep forever: "MCM: dp[i][j] = min over k of dp[i][k] + dp[k+1][j] + p[i−1]·p[k]·p[j]."</div>
+    </div>
+    <div class="lbl">dims p = [1, 2, 3, 4] (3 matrices)</div>
+    <div class="lbl">dp[i][j] = min cost to multiply matrices i..j</div>
+    <div class="vwrap" id="mc1Grid"></div>
+    <div class="status" id="mc1Status">Press play to minimize multiplication cost.</div>
+    <div class="stats" id="mc1Stats"></div>
+    <div class="controls"><button class="btn" id="mc1Play">▶ Min cost</button><button class="btn ghost" id="mc1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mc1Speed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> MCM is a classic interval DP — fill by chain length, and the diagonal (single matrices) costs 0.</div></div>
+  </section>
+
+  <!-- 33 MCM II -->
+  <section id="mc2">
+    <h2>🧮 Matrix Chain Multiplication II <span class="badge">bigger chain</span></h2>
+    <p class="lead">The same interval DP on a longer chain, tracking the optimal split so we can read off the parenthesization.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Remember the best split:</span> alongside <code>dp[i][j]</code>, store the argmin <code>k</code> that achieved it. Recursively bracketing at those splits yields the optimal parenthesization. Dims [40,20,30,10,30] → min cost <b>26000</b>.</div>
+      <div class="steps-flow"><span class="chip">fill dp by length</span><span class="arrow">→</span><span class="chip">record best split k</span><span class="arrow">→</span><span class="chip">bracket recursively</span></div>
+      <div class="oneliner">🔒 Keep forever: "Track the argmin split to recover the parenthesization, not just the min cost."</div>
+    </div>
+    <div class="lbl">dims p = [40, 20, 30, 10, 30] (4 matrices)</div>
+    <div class="lbl">dp[i][j] = min cost to multiply matrices i..j</div>
+    <div class="vwrap" id="mc2Grid"></div>
+    <div class="status" id="mc2Status">Press play for the 4-matrix chain.</div>
+    <div class="stats" id="mc2Stats"></div>
+    <div class="controls"><button class="btn" id="mc2Play">▶ Min cost + split</button><button class="btn ghost" id="mc2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mc2Speed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the same interval-DP skeleton solves burst balloons, boolean parenthesization &amp; palindrome partitioning.</div></div>
+
+    <div class="note key">🏆 <b>Dynamic Programming mastered!</b> Overlapping subproblems &amp; optimal substructure · top-down vs bottom-up · Fibonacci-family · take/skip · unbounded &amp; 0/1 knapsack · <b>subsequence DP</b> (LIS, bitonic, envelopes) · <b>string DP</b> (LCS &amp; printing, palindromic subsequence/substring, edit distance, wildcard &amp; regex matching, counting subsequences) · and <b>interval DP</b> (matrix chain). Define the state, write the recurrence, pick the fill order. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Dynamic Programming — Animated Guide • Replay any animation, turn on 🎵 sound • Solve each subproblem once 🧩</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- renderers ---- */
+function dpArr(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>{ const cls=(opt.cls&&opt.cls[i])||''; const show=(v===null||v===undefined)?'·':(v===Infinity?'∞':v); return `<div class="dc ${cls} ${(v===null||v===undefined)?'empty':''}">${opt.idx?`<span class="ix">${opt.idx[i]!==undefined?opt.idx[i]:i}</span>`:''}${show}</div>`; }).join(''); }
+function dpGrid(cont, grid, opt={}){ const R=grid.length,C=grid[0].length; let h='<table class="dptbl">';
+  if(opt.colLabels){ h+='<tr><td class="corner"></td>'; for(let c=0;c<C;c++)h+=`<td class="hd">${opt.colLabels[c]}</td>`; h+='</tr>'; }
+  for(let r=0;r<R;r++){ h+='<tr>'; if(opt.rowLabels)h+=`<td class="hd">${opt.rowLabels[r]}</td>`; for(let c=0;c<C;c++){ const key=r+','+c; const cls=(opt.cls&&opt.cls[key])||''; const v=grid[r][c]; h+=`<td class="dc-td ${cls} ${(v===null||v===undefined)?'empty':''}">${(v===null||v===undefined)?'·':v}</td>`; } h+='</tr>'; }
+  h+='</table>'; cont.innerHTML=h;
+  cont.querySelectorAll('td.dc-td').forEach(td=>td.classList.add()); // no-op keep
+}
+// small tree renderer
+let TID=0;
+function tnode(label){ return {label, ch:[], _id:TID++}; }
+function treeSVG(cont, root, opt={}){ let leaf=0; (function lay(n,d){ n._d=d; if(!n.ch.length){ n._x=leaf++; } else { n.ch.forEach(c=>lay(c,d+1)); n._x=(n.ch[0]._x+n.ch[n.ch.length-1]._x)/2; } })(root,0);
+  const leaves=Math.max(leaf,1); const maxD=(function md(n){ let m=n._d; n.ch.forEach(c=>m=Math.max(m,md(c))); return m; })(root);
+  const W=Math.max(320,40+leaves*58), lh=60, H=30+maxD*lh+30; const px=n=>24+(leaves<=1?0.5:n._x/(leaves-1))*(W-48), py=n=>28+n._d*lh; let e='',ns='';
+  (function draw(n){ n.ch.forEach(c=>{ e+=`<line class="tedge" x1="${px(n)}" y1="${py(n)}" x2="${px(c)}" y2="${py(c)}"/>`; draw(c); }); })(root);
+  (function draw(n){ const cls=(opt.cls&&opt.cls[n._id])||''; ns+=`<circle class="tnode ${cls}" cx="${px(n)}" cy="${py(n)}" r="16"/><text class="tlbl" x="${px(n)}" y="${py(n)}">${n.label}</text>`; n.ch.forEach(draw); })(root);
+  cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gsvg tsvg">${e}${ns}</svg>`;
+}
+</script>
+<style>
+  table.dptbl td.dc-td{width:40px;height:36px;text-align:center;font-weight:800;font-size:13.5px;border-radius:7px;background:#1d2a52;border:2px solid #2c3d6e;transition:.3s}
+  table.dptbl td.dc-td.cur{border-color:var(--mid);background:#3a3620;box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  table.dptbl td.dc-td.dep{border-color:var(--accent);background:#22345f}
+  table.dptbl td.dc-td.done{border-color:var(--found);background:#0d3b30}
+  table.dptbl td.dc-td.ans{border-color:var(--found);background:#0d3b30;box-shadow:0 0 0 3px rgba(6,214,160,.45)}
+  table.dptbl td.dc-td.empty{color:#4a5a85}
+  .gsvg{display:block}
+</style>
+<script>
+/* ================= 1. what is DP (recursion tree) ================= */
+(function(){
+  const st=$('#whStatus'),sp=$('#whSpeed'),stats=$('#whStats'),cont=$('#whTree');
+  function makeFib(n){ const node=tnode('f('+n+')'); if(n>=2){ node.ch=[makeFib(n-1),makeFib(n-2)]; } node.n=n; return node; }
+  function build(){ TID=0; const root=makeFib(4); cont._root=root; treeSVG(cont,root); stats.innerHTML=''; st.textContent='Press play to reveal the repeated subproblems.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; const root=makeFib(4); const cls={}; const seen={}; let calls=0, dup=0;
+    // BFS/DFS order to reveal, mark repeats
+    const order=[]; (function dfs(n){ order.push(n); n.ch.forEach(dfs); })(root);
+    for(const nd of order){ calls++; cls[nd._id]='cur'; treeSVG(cont,root,{cls:{...cls}}); tickSound(); if(seen[nd.n]!==undefined){ dup++; cls[nd._id]='rep'; st.innerHTML=`<span class="k">${nd.label}</span> already computed before → <span style="color:#ff8fc7">recomputed!</span>`; } else { seen[nd.n]=true; cls[nd._id]='memo'; st.innerHTML=`Compute <span class="k">${nd.label}</span> for the first time.`; } treeSVG(cont,root,{cls:{...cls}}); stats.innerHTML=`<span class="pill blue">calls = ${calls}</span><span class="pill pink">recomputed = ${dup}</span>`; await sleep(+sp.value); }
+    st.innerHTML=`🧩 fib(4)=3 took ${calls} calls, ${dup} of them recomputed! Memoizing solves each of the 5 unique states once.`; ANIM=false; celebrate(cont);
+  }
+  $('#whPlay').onclick=play; $('#whReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. top-down vs bottom-up (fib tab) ================= */
+(function(){
+  const N=6; const st=$('#tbStatus'),sp=$('#tbSpeed'),stats=$('#tbStats');
+  function build(){ const dp=Array(N+1).fill(null); dp[0]=0; dp[1]=1; dpArr($('#tbArr'),dp,{idx:[...Array(N+1).keys()]}); stats.innerHTML=''; st.textContent='Press play to fill the Fibonacci table bottom-up.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(N+1).fill(null); dp[0]=0; dp[1]=1; dpArr($('#tbArr'),dp,{idx:[...Array(N+1).keys()],cls:{0:'done',1:'done'}}); st.innerHTML=`Base cases dp[0]=0, dp[1]=1.`; await sleep(+sp.value);
+    for(let i=2;i<=N;i++){ dpArr($('#tbArr'),dp,{idx:[...Array(N+1).keys()],cls:{[i]:'cur',[i-1]:'dep',[i-2]:'dep'}}); tickSound(); st.innerHTML=`dp[${i}] = dp[${i-1}] + dp[${i-2}] = ${dp[i-1]} + ${dp[i-2]}…`; await sleep(+sp.value); dp[i]=dp[i-1]+dp[i-2]; dpArr($('#tbArr'),dp,{idx:[...Array(N+1).keys()],cls:{[i]:'done'}}); stats.innerHTML=`<span class="pill blue">dp[${i}] = ${dp[i]}</span>`; await sleep(+sp.value*0.5); }
+    dpArr($('#tbArr'),dp,{idx:[...Array(N+1).keys()],cls:{[N]:'ans'}}); st.innerHTML=`🔁 Bottom-up filled left→right: fib(${N}) = <span class="k">${dp[N]}</span> (each state once)!`; ANIM=false; celebrate($('#tbArr'));
+  }
+  $('#tbPlay').onclick=play; $('#tbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. staircase ================= */
+(function(){
+  const N=5; const st=$('#stStatus'),sp=$('#stSpeed'),stats=$('#stStats');
+  function build(){ const dp=Array(N+1).fill(null); dp[0]=1; dp[1]=1; dpArr($('#stArr'),dp,{idx:[...Array(N+1).keys()]}); stats.innerHTML=''; st.textContent='Press play to count the ways to climb 5 stairs.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(N+1).fill(null); dp[0]=1; dp[1]=1; dpArr($('#stArr'),dp,{idx:[...Array(N+1).keys()],cls:{0:'done',1:'done'}}); st.innerHTML=`Base: dp[0]=1 (do nothing), dp[1]=1.`; await sleep(+sp.value);
+    for(let i=2;i<=N;i++){ dpArr($('#stArr'),dp,{idx:[...Array(N+1).keys()],cls:{[i]:'cur',[i-1]:'dep',[i-2]:'dep'}}); tickSound(); st.innerHTML=`dp[${i}] = dp[${i-1}] + dp[${i-2}] = ${dp[i-1]} + ${dp[i-2]}.`; await sleep(+sp.value); dp[i]=dp[i-1]+dp[i-2]; dpArr($('#stArr'),dp,{idx:[...Array(N+1).keys()],cls:{[i]:'done'}}); stats.innerHTML=`<span class="pill blue">dp[${i}] = ${dp[i]}</span>`; await sleep(+sp.value*0.5); }
+    dpArr($('#stArr'),dp,{idx:[...Array(N+1).keys()],cls:{[N]:'ans'}}); st.innerHTML=`🪜 Ways to climb ${N} stairs = <span class="k">${dp[N]}</span>!`; ANIM=false; celebrate($('#stArr'));
+  }
+  $('#stPlay').onclick=play; $('#stReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. tile the lane ================= */
+(function(){
+  const N=5; const st=$('#tlStatus'),sp=$('#tlSpeed'),stats=$('#tlStats');
+  function board(fillCols){ const cells=[]; for(let r=0;r<2;r++)for(let c=0;c<N;c++) cells.push(`<div class="bcell ${fillCols&&fillCols.has(c)?'fill':''}"></div>`); $('#tlBoard').innerHTML=cells.join(''); }
+  function build(){ board(new Set()); const dp=Array(N+1).fill(null); dp[0]=1; dp[1]=1; dpArr($('#tlArr'),dp,{idx:[...Array(N+1).keys()]}); stats.innerHTML=''; st.textContent='Press play to count tilings of a 2×5 lane.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; board(new Set()); const dp=Array(N+1).fill(null); dp[0]=1; dp[1]=1; dpArr($('#tlArr'),dp,{idx:[...Array(N+1).keys()],cls:{0:'done',1:'done'}}); st.innerHTML=`Base: dp[0]=1 (empty), dp[1]=1 (one vertical).`; await sleep(+sp.value);
+    for(let i=2;i<=N;i++){ board(new Set([...Array(i).keys()])); dpArr($('#tlArr'),dp,{idx:[...Array(N+1).keys()],cls:{[i]:'cur',[i-1]:'dep',[i-2]:'dep'}}); tickSound(); st.innerHTML=`2×${i}: vertical→dp[${i-1}]=${dp[i-1]}, horizontals→dp[${i-2}]=${dp[i-2]}.`; await sleep(+sp.value); dp[i]=dp[i-1]+dp[i-2]; dpArr($('#tlArr'),dp,{idx:[...Array(N+1).keys()],cls:{[i]:'done'}}); stats.innerHTML=`<span class="pill blue">dp[${i}] = ${dp[i]}</span>`; await sleep(+sp.value*0.5); }
+    dpArr($('#tlArr'),dp,{idx:[...Array(N+1).keys()],cls:{[N]:'ans'}}); st.innerHTML=`🧱 Ways to tile a 2×${N} lane = <span class="k">${dp[N]}</span>!`; ANIM=false; celebrate($('#tlArr'));
+  }
+  $('#tlPlay').onclick=play; $('#tlReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. non-adjacent sum I ================= */
+(function(){
+  const A=[3,2,5,10,7]; const st=$('#n1Status'),sp=$('#n1Speed'),stats=$('#n1Stats');
+  function build(){ dpArr($('#n1Val'),A,{idx:A.map((_,i)=>i)}); dpArr($('#n1Arr'),Array(A.length).fill(null),{idx:A.map((_,i)=>i)}); stats.innerHTML=''; st.textContent='Press play to maximize the non-adjacent sum.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(A.length).fill(null); dp[0]=A[0]; dpArr($('#n1Val'),A,{idx:A.map((_,i)=>i),cls:{0:'dep'}}); dpArr($('#n1Arr'),dp,{idx:A.map((_,i)=>i),cls:{0:'done'}}); st.innerHTML=`dp[0] = a[0] = ${A[0]}.`; await sleep(+sp.value);
+    for(let i=1;i<A.length;i++){ const take=(i>=2?dp[i-2]:0)+A[i]; const skip=dp[i-1]; dpArr($('#n1Val'),A,{idx:A.map((_,i)=>i),cls:{[i]:'cur'}}); dpArr($('#n1Arr'),dp,{idx:A.map((_,i)=>i),cls:{[i]:'cur',[i-1]:'dep',[i-2>=0?i-2:0]:i>=2?'dep':''}}); tickSound(); st.innerHTML=`dp[${i}] = max(skip ${skip}, take ${i>=2?dp[i-2]:0}+${A[i]}=${take}).`; await sleep(+sp.value); dp[i]=Math.max(skip,take); dpArr($('#n1Arr'),dp,{idx:A.map((_,i)=>i),cls:{[i]:'done'}}); stats.innerHTML=`<span class="pill blue">dp[${i}] = ${dp[i]}</span>`; await sleep(+sp.value*0.5); }
+    dpArr($('#n1Arr'),dp,{idx:A.map((_,i)=>i),cls:{[A.length-1]:'ans'}}); st.innerHTML=`🏠 Max non-adjacent sum = <span class="k">${dp[A.length-1]}</span> (3 + 5 + 7)!`; ANIM=false; celebrate($('#n1Arr'));
+  }
+  $('#n1Play').onclick=play; $('#n1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. non-adjacent sum II (O(1)) ================= */
+(function(){
+  const A=[3,2,5,10,7]; const st=$('#n2Status'),sp=$('#n2Speed'),stats=$('#n2Stats');
+  function vars(prev2,prev,cur){ dpArr($('#n2Vars'),[prev2,prev,cur],{idx:['prev2','prev','cur']}); }
+  function build(){ dpArr($('#n2Val'),A,{idx:A.map((_,i)=>i)}); vars(0,0,null); stats.innerHTML=''; st.textContent='Press play to solve it with just two variables.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let prev2=0,prev=0;
+    for(let i=0;i<A.length;i++){ const cur=Math.max(prev, prev2+A[i]); dpArr($('#n2Val'),A,{idx:A.map((_,i)=>i),cls:{[i]:'cur'}}); vars(prev2,prev,cur); tickSound(); st.innerHTML=`i=${i}: cur = max(prev ${prev}, prev2 ${prev2} + ${A[i]}) = <span class="k">${cur}</span>.`; await sleep(+sp.value); prev2=prev; prev=cur; vars(prev2,prev,cur); stats.innerHTML=`<span class="pill blue">prev = ${prev}</span>`; await sleep(+sp.value*0.5); }
+    dpArr($('#n2Vars'),[prev2,prev,prev],{idx:['prev2','prev','ans'],cls:{2:'ans'}}); st.innerHTML=`💡 Same answer <span class="k">${prev}</span> using O(1) space (two rolling variables)!`; ANIM=false; celebrate($('#n2Vars'));
+  }
+  $('#n2Play').onclick=play; $('#n2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. decodings I ================= */
+(function(){
+  const S="226"; const st=$('#d1Status'),sp=$('#d1Speed'),stats=$('#d1Stats');
+  function strc(cls){ $('#d1Str').innerHTML=[...S].map((ch,i)=>`<span class="schar ${cls&&cls[i]||''}">${ch}</span>`).join(''); }
+  function build(){ strc(); const dp=Array(S.length+1).fill(null); dp[0]=1; dpArr($('#d1Arr'),dp,{idx:[...Array(S.length+1).keys()]}); stats.innerHTML=''; st.textContent='Press play to count decodings of "226".'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(S.length+1).fill(null); dp[0]=1; strc(); dpArr($('#d1Arr'),dp,{idx:[...Array(S.length+1).keys()],cls:{0:'done'}}); st.innerHTML=`dp[0] = 1 (empty string: one way).`; await sleep(+sp.value);
+    for(let i=1;i<=S.length;i++){ let ways=0; const one=S[i-1]; const two=S.substring(i-2,i); let msg=[];
+      strc({[i-1]:'cur',[i-2>=0?i-2:0]:i>=2?'dep':''}); dpArr($('#d1Arr'),dp,{idx:[...Array(S.length+1).keys()],cls:{[i]:'cur',[i-1]:'dep',[i-2>=0?i-2:0]:i>=2?'dep':''}}); tickSound();
+      if(one!=='0'){ ways+=dp[i-1]; msg.push(`single '${one}'✓ +dp[${i-1}]=${dp[i-1]}`); } else msg.push(`single '0'✗`);
+      if(i>=2 && (two>='10'&&two<='26')){ ways+=dp[i-2]; msg.push(`pair '${two}'✓ +dp[${i-2}]=${dp[i-2]}`); } else if(i>=2) msg.push(`pair '${two}'✗`);
+      st.innerHTML=`dp[${i}]: ${msg.join(', ')} = <span class="k">${ways}</span>.`; await sleep(+sp.value); dp[i]=ways; dpArr($('#d1Arr'),dp,{idx:[...Array(S.length+1).keys()],cls:{[i]:'done'}}); stats.innerHTML=`<span class="pill blue">dp[${i}] = ${dp[i]}</span>`; await sleep(+sp.value*0.5); }
+    dpArr($('#d1Arr'),dp,{idx:[...Array(S.length+1).keys()],cls:{[S.length]:'ans'}}); st.innerHTML=`🔡 "226" has <span class="k">${dp[S.length]}</span> decodings!`; ANIM=false; celebrate($('#d1Arr'));
+  }
+  $('#d1Play').onclick=play; $('#d1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. decodings II (O(1)) ================= */
+(function(){
+  const S="226"; const st=$('#d2Status'),sp=$('#d2Speed'),stats=$('#d2Stats');
+  function strc(cls){ $('#d2Str').innerHTML=[...S].map((ch,i)=>`<span class="schar ${cls&&cls[i]||''}">${ch}</span>`).join(''); }
+  function vars(prev2,prev,cur){ dpArr($('#d2Vars'),[prev2,prev,cur],{idx:['prev2','prev','cur']}); }
+  function build(){ strc(); vars(0,1,null); stats.innerHTML=''; st.textContent='Press play for the O(1)-space decode count.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let prev2=0,prev=1;
+    for(let i=1;i<=S.length;i++){ let cur=0; const one=S[i-1], two=S.substring(i-2,i); if(one!=='0')cur+=prev; if(i>=2 && two>='10'&&two<='26')cur+=prev2; strc({[i-1]:'cur',[i-2>=0?i-2:0]:i>=2?'dep':''}); vars(prev2,prev,cur); tickSound(); st.innerHTML=`char ${i}: cur = ${one!=='0'?`prev ${prev}`:'0'} ${(i>=2&&two>='10'&&two<='26')?`+ prev2 ${prev2}`:''} = <span class="k">${cur}</span>.`; await sleep(+sp.value); prev2=prev; prev=cur; vars(prev2,prev,cur); stats.innerHTML=`<span class="pill blue">prev = ${prev}</span>`; await sleep(+sp.value*0.5); }
+    dpArr($('#d2Vars'),[prev2,prev,prev],{idx:['prev2','prev','ans'],cls:{2:'ans'}}); st.innerHTML=`🔤 Same count <span class="k">${prev}</span> with O(1) space!`; ANIM=false; celebrate($('#d2Vars'));
+  }
+  $('#d2Play').onclick=play; $('#d2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. rod cutting ================= */
+(function(){
+  const price=[0,1,5,8,9,10,17,17,20]; const N=8; const st=$('#rcStatus'),sp=$('#rcSpeed'),stats=$('#rcStats');
+  function build(){ dpArr($('#rcPrice'),price.slice(1),{idx:[1,2,3,4,5,6,7,8]}); const dp=Array(N+1).fill(null); dp[0]=0; dpArr($('#rcArr'),dp,{idx:[...Array(N+1).keys()]}); stats.innerHTML=''; st.textContent='Press play to maximize value from a length-8 rod.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(N+1).fill(null); dp[0]=0; dpArr($('#rcArr'),dp,{idx:[...Array(N+1).keys()],cls:{0:'done'}}); st.innerHTML=`dp[0]=0 (length 0 → no value).`; await sleep(+sp.value);
+    for(let len=1;len<=N;len++){ let best=0,bestCut=0; for(let c=1;c<=len;c++){ const val=price[c]+dp[len-c]; dpArr($('#rcArr'),dp,{idx:[...Array(N+1).keys()],cls:{[len]:'cur',[len-c]:'dep'}}); tickSound(); if(val>best){ best=val; bestCut=c; } st.innerHTML=`dp[${len}]: cut ${c} → price[${c}]+dp[${len-c}] = ${price[c]}+${dp[len-c]} = ${val} (best ${best}).`; await sleep(+sp.value*0.7); } dp[len]=best; dpArr($('#rcArr'),dp,{idx:[...Array(N+1).keys()],cls:{[len]:'done'}}); stats.innerHTML=`<span class="pill blue">dp[${len}] = ${dp[len]}</span>`; await sleep(+sp.value*0.5); }
+    dpArr($('#rcArr'),dp,{idx:[...Array(N+1).keys()],cls:{[N]:'ans'}}); st.innerHTML=`🪚 Max value from a length-${N} rod = <span class="k">${dp[N]}</span>!`; ANIM=false; celebrate($('#rcArr'));
+  }
+  $('#rcPlay').onclick=play; $('#rcReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. coin min ================= */
+(function(){
+  const coins=[1,2,5]; const AMT=11; const st=$('#c1Status'),sp=$('#c1Speed'),stats=$('#c1Stats');
+  function build(){ const dp=Array(AMT+1).fill(Infinity); dp[0]=0; dpArr($('#c1Arr'),dp,{idx:[...Array(AMT+1).keys()]}); stats.innerHTML=''; st.textContent='Press play to find the fewest coins for 11.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(AMT+1).fill(Infinity); dp[0]=0; dpArr($('#c1Arr'),dp,{idx:[...Array(AMT+1).keys()],cls:{0:'done'}}); st.innerHTML=`dp[0]=0; all others ∞.`; await sleep(+sp.value);
+    for(let a=1;a<=AMT;a++){ for(const c of coins){ if(c<=a && dp[a-c]+1<dp[a]){ dp[a]=dp[a-c]+1; } } const dep={}; coins.forEach(c=>{ if(c<=a)dep[a-c]='dep'; }); dpArr($('#c1Arr'),dp,{idx:[...Array(AMT+1).keys()],cls:{...dep,[a]:'cur'}}); tickSound(); st.innerHTML=`dp[${a}] = 1 + min(dp[${a}−1], dp[${a}−2], dp[${a}−5]) = <span class="k">${dp[a]===Infinity?'∞':dp[a]}</span>.`; await sleep(+sp.value); dpArr($('#c1Arr'),dp,{idx:[...Array(AMT+1).keys()],cls:{[a]:'done'}}); stats.innerHTML=`<span class="pill blue">dp[${a}] = ${dp[a]===Infinity?'∞':dp[a]}</span>`; await sleep(+sp.value*0.4); }
+    dpArr($('#c1Arr'),dp,{idx:[...Array(AMT+1).keys()],cls:{[AMT]:'ans'}}); st.innerHTML=`🪙 Fewest coins to make ${AMT} = <span class="k">${dp[AMT]}</span> (5+5+1)!`; ANIM=false; celebrate($('#c1Arr'));
+  }
+  $('#c1Play').onclick=play; $('#c1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. coin ways 2D ================= */
+(function(){
+  const coins=[1,2,5]; const AMT=5; const st=$('#c2Status'),sp=$('#c2Speed'),stats=$('#c2Stats'),cont=$('#c2Grid');
+  const R=coins.length+1, C=AMT+1;
+  const rowLabels=['∅',...coins.map(c=>'coin '+c)]; const colLabels=[...Array(C).keys()];
+  function draw(grid,cls){ dpGrid(cont,grid,{rowLabels,colLabels,cls}); }
+  function fresh(){ const g=Array.from({length:R},()=>Array(C).fill(null)); return g; }
+  function build(){ const g=fresh(); draw(g); stats.innerHTML=''; st.textContent='Press play to count ways to make 5.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=fresh(); for(let r=0;r<R;r++)g[r][0]=1; draw(g,{}); st.innerHTML=`Base: dp[i][0] = 1 (one way to make 0 — take nothing).`; await sleep(+sp.value);
+    for(let i=1;i<R;i++){ const coin=coins[i-1]; for(let a=1;a<C;a++){ const skip=g[i-1][a]; const use=a>=coin?g[i][a-coin]:0; const cls={[i+','+a]:'cur',[(i-1)+','+a]:'dep'}; if(a>=coin)cls[i+','+(a-coin)]='dep'; draw(g,cls); tickSound(); st.innerHTML=`dp[${i}][${a}] (coin ${coin}) = skip ${skip} + use ${use} = <span class="k">${skip+use}</span>.`; await sleep(+sp.value); g[i][a]=skip+use; draw(g,{[i+','+a]:'done'}); await sleep(+sp.value*0.3); } }
+    draw(g,{[(R-1)+','+(C-1)]:'ans'}); stats.innerHTML=`<span class="pill green">ways = ${g[R-1][C-1]}</span>`; st.innerHTML=`🔢 Ways to make ${AMT} with {1,2,5} = <span class="k">${g[R-1][C-1]}</span>!`; ANIM=false; celebrate(cont);
+  }
+  $('#c2Play').onclick=play; $('#c2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. coin ways bottom-up ================= */
+(function(){
+  const coins=[1,2,5]; const AMT=5; const st=$('#cbStatus'),sp=$('#cbSpeed'),stats=$('#cbStats'),cont=$('#cbGrid');
+  const R=coins.length+1, C=AMT+1;
+  const rowLabels=['∅',...coins.map(c=>'coin '+c)]; const colLabels=[...Array(C).keys()];
+  function draw(grid,cls){ dpGrid(cont,grid,{rowLabels,colLabels,cls}); }
+  function fresh(){ return Array.from({length:R},()=>Array(C).fill(null)); }
+  function build(){ draw(fresh()); stats.innerHTML=''; st.textContent='Press play to fill the table bottom-up.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=fresh(); g[0][0]=1; for(let a=1;a<C;a++)g[0][a]=0; draw(g,{'0,0':'done'}); st.innerHTML=`Row ∅: dp[0][0]=1, rest 0 (no coins → can only make amount 0).`; await sleep(+sp.value);
+    for(let i=1;i<R;i++){ const coin=coins[i-1]; g[i][0]=1; draw(g,{[i+',0']:'done'}); await sleep(+sp.value*0.5); for(let a=1;a<C;a++){ const above=g[i-1][a]; const left=a>=coin?g[i][a-coin]:0; const cls={[i+','+a]:'cur',[(i-1)+','+a]:'dep'}; if(a>=coin)cls[i+','+(a-coin)]='dep'; draw(g,cls); tickSound(); st.innerHTML=`dp[${i}][${a}]: above ${above} + (coin ${coin}) left ${left} = <span class="k">${above+left}</span>.`; await sleep(+sp.value); g[i][a]=above+left; draw(g,{[i+','+a]:'done'}); await sleep(+sp.value*0.3); } }
+    draw(g,{[(R-1)+','+(C-1)]:'ans'}); stats.innerHTML=`<span class="pill green">answer = ${g[R-1][C-1]}</span>`; st.innerHTML=`📊 Bottom-up table → <span class="k">${g[R-1][C-1]}</span> ways!`; ANIM=false; celebrate(cont);
+  }
+  $('#cbPlay').onclick=play; $('#cbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. coin ways 1D ================= */
+(function(){
+  const coins=[1,2,5]; const AMT=5; const st=$('#csStatus'),sp=$('#csSpeed'),stats=$('#csStats');
+  function build(){ const dp=Array(AMT+1).fill(0); dp[0]=1; dpArr($('#csArr'),dp,{idx:[...Array(AMT+1).keys()]}); stats.innerHTML=''; st.textContent='Press play for the 1D coin-ways sweep.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(AMT+1).fill(0); dp[0]=1; dpArr($('#csArr'),dp,{idx:[...Array(AMT+1).keys()],cls:{0:'done'}}); st.innerHTML=`dp[0]=1.`; await sleep(+sp.value);
+    for(const coin of coins){ st.innerHTML=`<b>Coin ${coin}:</b> sweep left→right, dp[a] += dp[a−${coin}].`; await sleep(+sp.value*0.9); for(let a=coin;a<=AMT;a++){ dpArr($('#csArr'),dp,{idx:[...Array(AMT+1).keys()],cls:{[a]:'cur',[a-coin]:'dep'}}); tickSound(); const nv=dp[a]+dp[a-coin]; st.innerHTML=`Coin ${coin}: dp[${a}] += dp[${a-coin}] (${dp[a-coin]}) → ${nv}.`; await sleep(+sp.value); dp[a]=nv; dpArr($('#csArr'),dp,{idx:[...Array(AMT+1).keys()],cls:{[a]:'done'}}); await sleep(+sp.value*0.3); } stats.innerHTML=`<span class="pill blue">after coin ${coin}: [${dp.join(', ')}]</span>`; }
+    dpArr($('#csArr'),dp,{idx:[...Array(AMT+1).keys()],cls:{[AMT]:'ans'}}); st.innerHTML=`🎯 1D coin ways → <span class="k">${dp[AMT]}</span> (one array, O(amount) space)!`; ANIM=false; celebrate($('#csArr'));
+  }
+  $('#csPlay').onclick=play; $('#csReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 14. 0/1 knapsack 2D ================= */
+(function(){
+  const wt=[1,3,4,5], val=[1,4,5,7], CAP=7; const st=$('#k1Status'),sp=$('#k1Speed'),stats=$('#k1Stats'),cont=$('#k1Grid');
+  const R=wt.length+1, C=CAP+1;
+  const rowLabels=['∅',...wt.map((w,i)=>`i${i+1}(w${w},v${val[i]})`)]; const colLabels=[...Array(C).keys()];
+  function draw(grid,cls){ dpGrid(cont,grid,{rowLabels,colLabels,cls}); }
+  function fresh(){ return Array.from({length:R},()=>Array(C).fill(null)); }
+  function build(){ draw(fresh()); stats.innerHTML=''; st.textContent='Press play to fill the knapsack table.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=fresh(); for(let c=0;c<C;c++)g[0][c]=0; draw(g,{}); st.innerHTML=`Row ∅ = 0 (no items → no value).`; await sleep(+sp.value);
+    for(let i=1;i<R;i++){ const w=wt[i-1], v=val[i-1]; for(let c=0;c<C;c++){ const skip=g[i-1][c]; let use=-1; if(w<=c)use=v+g[i-1][c-w]; const best=Math.max(skip,use); const cls={[i+','+c]:'cur',[(i-1)+','+c]:'dep'}; if(w<=c)cls[(i-1)+','+(c-w)]='dep'; draw(g,cls); tickSound(); st.innerHTML=`dp[${i}][${c}]: skip ${skip}${w<=c?`, take ${v}+${g[i-1][c-w]}=${use}`:' (won\'t fit)'} → <span class="k">${best}</span>.`; await sleep(+sp.value); g[i][c]=best; draw(g,{[i+','+c]:'done'}); await sleep(+sp.value*0.25); } }
+    draw(g,{[(R-1)+','+(C-1)]:'ans'}); stats.innerHTML=`<span class="pill green">max value = ${g[R-1][C-1]}</span>`; st.innerHTML=`🎒 Best value within capacity ${CAP} = <span class="k">${g[R-1][C-1]}</span>!`; ANIM=false; celebrate(cont);
+  }
+  $('#k1Play').onclick=play; $('#k1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. 0/1 knapsack 1D ================= */
+(function(){
+  const wt=[1,3,4,5], val=[1,4,5,7], CAP=7; const st=$('#k2Status'),sp=$('#k2Speed'),stats=$('#k2Stats');
+  function build(){ const dp=Array(CAP+1).fill(0); dpArr($('#k2Arr'),dp,{idx:[...Array(CAP+1).keys()]}); stats.innerHTML=''; st.textContent='Press play for the reverse-sweep 1D knapsack.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(CAP+1).fill(0); dpArr($('#k2Arr'),dp,{idx:[...Array(CAP+1).keys()]}); st.innerHTML=`dp[] all 0.`; await sleep(+sp.value);
+    for(let i=0;i<wt.length;i++){ const w=wt[i], v=val[i]; st.innerHTML=`<b>Item ${i+1} (w${w}, v${v}):</b> sweep right→left.`; await sleep(+sp.value*0.9); for(let c=CAP;c>=w;c--){ const nv=Math.max(dp[c], v+dp[c-w]); dpArr($('#k2Arr'),dp,{idx:[...Array(CAP+1).keys()],cls:{[c]:'cur',[c-w]:'dep'}}); tickSound(); st.innerHTML=`dp[${c}] = max(${dp[c]}, ${v}+dp[${c-w}]=${v+dp[c-w]}) = <span class="k">${nv}</span>.`; await sleep(+sp.value); dp[c]=nv; dpArr($('#k2Arr'),dp,{idx:[...Array(CAP+1).keys()],cls:{[c]:'done'}}); await sleep(+sp.value*0.3); } stats.innerHTML=`<span class="pill blue">after item ${i+1}: [${dp.join(', ')}]</span>`; }
+    dpArr($('#k2Arr'),dp,{idx:[...Array(CAP+1).keys()],cls:{[CAP]:'ans'}}); st.innerHTML=`📦 1D 0/1 knapsack → <span class="k">${dp[CAP]}</span> (reverse sweep keeps items single-use)!`; ANIM=false; celebrate($('#k2Arr'));
+  }
+  $('#k2Play').onclick=play; $('#k2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ============ helpers for string/interval DP ============ */
+function chLabels(s){ return ['·',...s.split('')]; }
+function lisCompute(a){ const dp=a.map(()=>1); for(let i=0;i<a.length;i++)for(let j=0;j<i;j++) if(a[j]<a[i]) dp[i]=Math.max(dp[i],dp[j]+1); return dp; }
+
+/* ================= 16. LIS ================= */
+(function(){
+  const A=[10,9,2,5,3,7,101,18]; const st=$('#lisStatus'),sp=$('#lisSpeed'),stats=$('#lisStats'); const idx=A.map((_,i)=>i);
+  function build(){ dpArr($('#lisVal'),A,{idx}); dpArr($('#lisArr'),A.map(()=>null),{idx}); stats.innerHTML=''; st.textContent='Press play to compute the LIS length.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=A.map(()=>1);
+    for(let i=0;i<A.length;i++){ dpArr($('#lisVal'),A,{idx,cls:{[i]:'cur'}}); for(let j=0;j<i;j++){ dpArr($('#lisVal'),A,{idx,cls:{[i]:'cur',[j]:'dep'}}); dpArr($('#lisArr'),dp.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'cur',[j]:'dep'}}); tickSound(); if(A[j]<A[i]&&dp[j]+1>dp[i]){ dp[i]=dp[j]+1; } st.innerHTML=`dp[${i}] (a=${A[i]}): a[${j}]=${A[j]} ${A[j]<A[i]?`&lt; ${A[i]} → dp[${i}]=max→${dp[i]}`:'≥ skip'}.`; await sleep(+sp.value*0.6); } dpArr($('#lisArr'),dp.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'done'}}); stats.innerHTML=`<span class="pill blue">dp = [${dp.slice(0,i+1).join(', ')}]</span>`; await sleep(+sp.value*0.4); }
+    const ans=Math.max(...dp); const ai=dp.indexOf(ans); dpArr($('#lisArr'),dp,{idx,cls:{[ai]:'ans'}}); st.innerHTML=`📈 Longest increasing subsequence length = <span class="k">${ans}</span>!`; ANIM=false; celebrate($('#lisArr'));
+  }
+  $('#lisPlay').onclick=play; $('#lisReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 17. bitonic ================= */
+(function(){
+  const A=[1,11,2,10,4,5,2,1]; const st=$('#bitStatus'),sp=$('#bitSpeed'),stats=$('#bitStats'); const idx=A.map((_,i)=>i);
+  function build(){ dpArr($('#bitVal'),A,{idx}); dpArr($('#bitInc'),A.map(()=>null),{idx}); dpArr($('#bitDec'),A.map(()=>null),{idx}); stats.innerHTML=''; st.textContent='Press play to find the longest bitonic subsequence.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const n=A.length; const inc=A.map(()=>1),dec=A.map(()=>1);
+    for(let i=0;i<n;i++){ for(let j=0;j<i;j++) if(A[j]<A[i]) inc[i]=Math.max(inc[i],inc[j]+1); dpArr($('#bitInc'),inc.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'cur'}}); tickSound(); await sleep(+sp.value*0.5); }
+    dpArr($('#bitInc'),inc,{idx}); st.innerHTML=`inc[] (LIS→) computed. Now dec[] (LDS←)…`; await sleep(+sp.value);
+    for(let i=n-1;i>=0;i--){ for(let j=n-1;j>i;j--) if(A[j]<A[i]) dec[i]=Math.max(dec[i],dec[j]+1); dpArr($('#bitDec'),dec.map((v,k)=>k>=i?v:null),{idx,cls:{[i]:'cur'}}); tickSound(); await sleep(+sp.value*0.5); }
+    dpArr($('#bitDec'),dec,{idx}); let best=0,bi=0; for(let i=0;i<n;i++){ if(inc[i]+dec[i]-1>best){ best=inc[i]+dec[i]-1; bi=i; } }
+    dpArr($('#bitInc'),inc,{idx,cls:{[bi]:'ans'}}); dpArr($('#bitDec'),dec,{idx,cls:{[bi]:'ans'}}); dpArr($('#bitVal'),A,{idx,cls:{[bi]:'ans'}}); stats.innerHTML=`<span class="pill blue">peak at i=${bi}: ${inc[bi]}+${dec[bi]}−1</span>`; st.innerHTML=`⛰️ Longest bitonic subsequence = <span class="k">${best}</span> (peak value ${A[bi]})!`; ANIM=false; celebrate($('#bitVal'));
+  }
+  $('#bitPlay').onclick=play; $('#bitReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 18. envelopes I ================= */
+(function(){
+  const raw=[[5,4],[6,4],[6,7],[2,3]]; const st=$('#en1Status'),sp=$('#en1Speed'),stats=$('#en1Stats');
+  const env=[...raw].sort((a,b)=> a[0]-b[0] || b[1]-a[1]); const H=env.map(e=>e[1]); const idx=env.map((_,i)=>i);
+  function build(){ dpArr($('#en1Env'),env.map(e=>e[0]+'×'+e[1]),{idx}); dpArr($('#en1Arr'),env.map(()=>null),{idx}); stats.innerHTML=''; st.textContent='Press play to nest the envelopes.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=H.map(()=>1);
+    for(let i=0;i<H.length;i++){ dpArr($('#en1Env'),env.map(e=>e[0]+'×'+e[1]),{idx,cls:{[i]:'cur'}}); for(let j=0;j<i;j++){ if(H[j]<H[i]&&dp[j]+1>dp[i])dp[i]=dp[j]+1; dpArr($('#en1Arr'),dp.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'cur',[j]:'dep'}}); tickSound(); st.innerHTML=`Envelope ${env[i][0]}×${env[i][1]}: height ${H[i]} vs ${H[j]} → dp[${i}]=${dp[i]}.`; await sleep(+sp.value*0.6); } dpArr($('#en1Arr'),dp.map((v,k)=>k<=i?v:null),{idx,cls:{[i]:'done'}}); await sleep(+sp.value*0.3); }
+    const ans=Math.max(...dp); dpArr($('#en1Arr'),dp,{idx,cls:{[dp.indexOf(ans)]:'ans'}}); stats.innerHTML=`<span class="pill blue">heights [${H.join(', ')}]</span>`; st.innerHTML=`✉️ Max nested envelopes = <span class="k">${ans}</span> (LIS on heights)!`; ANIM=false; celebrate($('#en1Arr'));
+  }
+  $('#en1Play').onclick=play; $('#en1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 19. envelopes II (tails) ================= */
+(function(){
+  const H=[3,4,7,4]; const st=$('#en2Status'),sp=$('#en2Speed'),stats=$('#en2Stats'); const idx=H.map((_,i)=>i);
+  function build(){ dpArr($('#en2Heights'),H,{idx}); dpArr($('#en2Tails'),[],{}); stats.innerHTML=''; st.textContent='Press play for the binary-search LIS.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const tails=[];
+    for(let i=0;i<H.length;i++){ const h=H[i]; dpArr($('#en2Heights'),H,{idx,cls:{[i]:'cur'}}); // lower_bound first >= h
+      let lo=0,hi=tails.length; while(lo<hi){ const m=(lo+hi)>>1; if(tails[m]>=h)hi=m; else lo=m+1; } const pos=lo; const replaced=pos<tails.length;
+      tails[pos]=h; dpArr($('#en2Tails'),tails.slice(),{idx:tails.map((_,k)=>k),cls:{[pos]:replaced?'cur':'done'}}); tickSound(); st.innerHTML=`h=${h}: ${replaced?`replace tails[${pos}] (was ≥ ${h})`:`append → tails length ${tails.length}`}.`; stats.innerHTML=`<span class="pill blue">tails = [${tails.join(', ')}]</span>`; await sleep(+sp.value); }
+    dpArr($('#en2Tails'),tails.slice(),{idx:tails.map((_,k)=>k),cls:{[tails.length-1]:'ans'}}); st.innerHTML=`📩 LIS length = <span class="k">${tails.length}</span> in O(n log n) — same nesting as before!`; ANIM=false; celebrate($('#en2Tails'));
+  }
+  $('#en2Play').onclick=play; $('#en2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ============ generic LCS grid animator ============ */
+async function animLCS(cont, s, t, sp, st, stats){ const n=s.length,m=t.length; const g=Array.from({length:n+1},()=>Array(m+1).fill(null)); const rowLabels=chLabels(s), colLabels=chLabels(t);
+  const draw=(cls)=>dpGrid(cont,g,{rowLabels,colLabels,cls}); for(let i=0;i<=n;i++)g[i][0]=0; for(let j=0;j<=m;j++)g[0][j]=0; draw({}); st.innerHTML=`Base row/col = 0 (empty prefix → LCS 0).`; await sleep(+sp.value);
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){ const match=s[i-1]===t[j-1]; const cls={[i+','+j]:'cur'}; if(match)cls[(i-1)+','+(j-1)]='dep'; else { cls[(i-1)+','+j]='dep'; cls[i+','+(j-1)]='dep'; } draw(cls); tickSound(); g[i][j]=match? g[i-1][j-1]+1 : Math.max(g[i-1][j],g[i][j-1]); st.innerHTML=`dp[${i}][${j}] ('${s[i-1]}'${match?'=':'≠'}'${t[j-1]}') = <span class="k">${g[i][j]}</span>.`; await sleep(+sp.value); draw({[i+','+j]:'done'}); await sleep(+sp.value*0.2); }
+  draw({[n+','+m]:'ans'}); return g; }
+
+/* ================= 20. LCS I ================= */
+(function(){
+  const S="abcde", T="ace"; const st=$('#lc1Status'),sp=$('#lc1Speed'),stats=$('#lc1Stats'),cont=$('#lc1Grid');
+  function build(){ const g=Array.from({length:S.length+1},()=>Array(T.length+1).fill(null)); dpGrid(cont,g,{rowLabels:chLabels(S),colLabels:chLabels(T)}); stats.innerHTML=''; st.textContent='Press play to compute the LCS length.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=await animLCS(cont,S,T,sp,st,stats); stats.innerHTML=`<span class="pill green">LCS = ${g[S.length][T.length]}</span>`; st.innerHTML=`🧬 LCS("${S}","${T}") = <span class="k">${g[S.length][T.length]}</span> ("ace")!`; ANIM=false; celebrate(cont); }
+  $('#lc1Play').onclick=play; $('#lc1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 21. print LCS ================= */
+(function(){
+  const S="abcde", T="ace"; const st=$('#lcpStatus'),sp=$('#lcpSpeed'),stats=$('#lcpStats'),cont=$('#lcpGrid');
+  const n=S.length,m=T.length; function fullTable(){ const g=Array.from({length:n+1},()=>Array(m+1).fill(0)); for(let i=1;i<=n;i++)for(let j=1;j<=m;j++) g[i][j]= S[i-1]===T[j-1]? g[i-1][j-1]+1 : Math.max(g[i-1][j],g[i][j-1]); return g; }
+  function build(){ dpGrid(cont,fullTable(),{rowLabels:chLabels(S),colLabels:chLabels(T)}); $('#lcpOut').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to backtrack and print the LCS.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=fullTable(); dpGrid(cont,g,{rowLabels:chLabels(S),colLabels:chLabels(T)}); st.innerHTML=`Table ready. Backtrack from dp[${n}][${m}]…`; await sleep(+sp.value);
+    let i=n,j=m; const out=[]; const path={};
+    while(i>0&&j>0){ path[i+','+j]='cur'; dpGrid(cont,g,{rowLabels:chLabels(S),colLabels:chLabels(T),cls:{...path}}); tickSound(); if(S[i-1]===T[j-1]){ out.unshift(S[i-1]); path[i+','+j]='ans'; $('#lcpOut').innerHTML=out.map(c=>`<span class="schar dep">${c}</span>`).join(''); st.innerHTML=`Match '${S[i-1]}' → take it, move ↖.`; i--; j--; blip(660,0.09,'sine',0.1); } else if(g[i-1][j]>=g[i][j-1]){ st.innerHTML=`No match; up ≥ left → move ↑.`; i--; } else { st.innerHTML=`No match; left &gt; up → move ←.`; j--; } await sleep(+sp.value); }
+    dpGrid(cont,g,{rowLabels:chLabels(S),colLabels:chLabels(T),cls:{...path}}); stats.innerHTML=`<span class="pill green">LCS = "${out.join('')}"</span>`; st.innerHTML=`🖨️ Recovered LCS = <span class="k">"${out.join('')}"</span>!`; ANIM=false; celebrate($('#lcpOut'));
+  }
+  $('#lcpPlay').onclick=play; $('#lcpReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 22. LCS II (2-row) ================= */
+(function(){
+  const S="abcde", T="ace"; const st=$('#lc2Status'),sp=$('#lc2Speed'),stats=$('#lc2Stats'); const m=T.length; const idx=[...Array(m+1).keys()];
+  function build(){ dpArr($('#lc2Prev'),Array(m+1).fill(0),{idx}); dpArr($('#lc2Curr'),Array(m+1).fill(null),{idx}); stats.innerHTML=''; st.textContent='Press play for the two-row LCS.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let prev=Array(m+1).fill(0);
+    for(let i=1;i<=S.length;i++){ const curr=Array(m+1).fill(0); dpArr($('#lc2Prev'),prev,{idx}); st.innerHTML=`Row for '${S[i-1]}' — fill from prev row.`; await sleep(+sp.value*0.7); for(let j=1;j<=m;j++){ const match=S[i-1]===T[j-1]; curr[j]=match? prev[j-1]+1 : Math.max(prev[j],curr[j-1]); dpArr($('#lc2Prev'),prev,{idx,cls:match?{[j-1]:'dep'}:{[j]:'dep'}}); dpArr($('#lc2Curr'),curr.map((v,k)=>k<=j?v:null),{idx,cls:{[j]:'cur'}}); tickSound(); await sleep(+sp.value*0.7); } dpArr($('#lc2Curr'),curr,{idx}); stats.innerHTML=`<span class="pill blue">curr = [${curr.join(', ')}]</span>`; prev=curr; await sleep(+sp.value*0.4); }
+    dpArr($('#lc2Curr'),prev,{idx,cls:{[m]:'ans'}}); st.innerHTML=`🧵 LCS = <span class="k">${prev[m]}</span> using two rows (O(m) space)!`; ANIM=false; celebrate($('#lc2Curr'));
+  }
+  $('#lc2Play').onclick=play; $('#lc2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 23. LPS via LCS ================= */
+(function(){
+  const S="bbbab", T=[...S].reverse().join(''); const st=$('#lp3Status'),sp=$('#lp3Speed'),stats=$('#lp3Stats'),cont=$('#lp3Grid');
+  function build(){ const g=Array.from({length:S.length+1},()=>Array(T.length+1).fill(null)); dpGrid(cont,g,{rowLabels:chLabels(S),colLabels:chLabels(T)}); stats.innerHTML=''; st.textContent='Press play to get LPS via the reverse-LCS trick.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=await animLCS(cont,S,T,sp,st,stats); stats.innerHTML=`<span class="pill green">LPS = ${g[S.length][T.length]}</span>`; st.innerHTML=`🪞 LPS("${S}") = LCS(s, "${T}") = <span class="k">${g[S.length][T.length]}</span>!`; ANIM=false; celebrate(cont); }
+  $('#lp3Play').onclick=play; $('#lp3Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 24. LPS interval ================= */
+(function(){
+  const S="bbbab"; const n=S.length; const st=$('#lp4Status'),sp=$('#lp4Speed'),stats=$('#lp4Stats'),cont=$('#lp4Grid');
+  const labels=[...S.split('')];
+  function build(){ const g=Array.from({length:n},()=>Array(n).fill(null)); dpGrid(cont,g,{rowLabels:labels,colLabels:labels}); stats.innerHTML=''; st.textContent='Press play for the interval-DP LPS.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=Array.from({length:n},()=>Array(n).fill(null)); const draw=cls=>dpGrid(cont,g,{rowLabels:labels,colLabels:labels,cls});
+    for(let i=0;i<n;i++)g[i][i]=1; draw({}); st.innerHTML=`Length 1: every single char is a palindrome (dp[i][i]=1).`; await sleep(+sp.value);
+    for(let L=2;L<=n;L++){ for(let i=0;i+L-1<n;i++){ const j=i+L-1; const match=S[i]===S[j]; const cls={[i+','+j]:'cur'}; if(match&&L>2)cls[(i+1)+','+(j-1)]='dep'; else if(!match){cls[(i+1)+','+j]='dep';cls[i+','+(j-1)]='dep';} draw(cls); tickSound(); g[i][j]= match ? (L===2?2:2+g[i+1][j-1]) : Math.max(g[i+1][j],g[i][j-1]); st.innerHTML=`dp[${i}][${j}] "${S.substring(i,j+1)}": ${match?`ends match → ${g[i][j]}`:`max → ${g[i][j]}`}.`; await sleep(+sp.value); draw({[i+','+j]:'done'}); await sleep(+sp.value*0.2); } }
+    draw({['0,'+(n-1)]:'ans'}); stats.innerHTML=`<span class="pill green">LPS = ${g[0][n-1]}</span>`; st.innerHTML=`🌀 LPS("${S}") = <span class="k">${g[0][n-1]}</span> (interval DP)!`; ANIM=false; celebrate(cont); }
+  $('#lp4Play').onclick=play; $('#lp4Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 25. palindromic substring ================= */
+(function(){
+  const S="babad"; const n=S.length; const st=$('#lsbStatus'),sp=$('#lsbSpeed'),stats=$('#lsbStats'),cont=$('#lsbGrid'); const labels=[...S.split('')];
+  function strc(cls){ $('#lsbStr').innerHTML=[...S].map((ch,i)=>`<span class="schar ${cls&&cls[i]||''}">${ch}</span>`).join(''); }
+  function build(){ strc(); const g=Array.from({length:n},()=>Array(n).fill(null)); dpGrid(cont,g,{rowLabels:labels,colLabels:labels}); stats.innerHTML=''; st.textContent='Press play to find the longest palindromic substring.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const B=Array.from({length:n},()=>Array(n).fill(false)); const G=Array.from({length:n},()=>Array(n).fill(null)); const draw=cls=>dpGrid(cont,G,{rowLabels:labels,colLabels:labels,cls}); let bestLen=1,bi=0;
+    for(let i=0;i<n;i++){ B[i][i]=true; G[i][i]='✓'; } draw({}); strc(); st.innerHTML=`Length 1: all single chars are palindromes.`; await sleep(+sp.value);
+    for(let L=2;L<=n;L++){ for(let i=0;i+L-1<n;i++){ const j=i+L-1; const ok=S[i]===S[j] && (L<3 || B[i+1][j-1]); B[i][j]=ok; G[i][j]=ok?'✓':'✗'; const cls={[i+','+j]:'cur'}; if(L>=3)cls[(i+1)+','+(j-1)]='dep'; draw(cls); strc({[i]:'cur',[j]:'cur'}); tickSound(); if(ok&&L>bestLen){ bestLen=L; bi=i; } st.innerHTML=`"${S.substring(i,j+1)}": ends ${S[i]==S[j]?'match':'differ'}${L>=3?` &amp; inside ${B[i+1][j-1]?'✓':'✗'}`:''} → ${ok?'palindrome':'no'}.`; await sleep(+sp.value); draw({[i+','+j]:ok?'done':''}); } }
+    strc(Object.fromEntries([...Array(bestLen).keys()].map(k=>[bi+k,'dep']))); stats.innerHTML=`<span class="pill green">"${S.substring(bi,bi+bestLen)}" (len ${bestLen})</span>`; st.innerHTML=`🧿 Longest palindromic substring = <span class="k">"${S.substring(bi,bi+bestLen)}"</span> (length ${bestLen})!`; ANIM=false; celebrate(cont); }
+  $('#lsbPlay').onclick=play; $('#lsbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ============ generic edit distance ============ */
+async function animEdit(cont, s, t, sp, st){ const n=s.length,m=t.length; const g=Array.from({length:n+1},()=>Array(m+1).fill(null)); const rowLabels=chLabels(s), colLabels=chLabels(t); const draw=cls=>dpGrid(cont,g,{rowLabels,colLabels,cls});
+  for(let i=0;i<=n;i++)g[i][0]=i; for(let j=0;j<=m;j++)g[0][j]=j; draw({}); st.innerHTML=`Base: turning a prefix into "" costs its length.`; await sleep(+sp.value);
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){ const match=s[i-1]===t[j-1]; const cls={[i+','+j]:'cur',[(i-1)+','+(j-1)]:'dep',[(i-1)+','+j]:'dep',[i+','+(j-1)]:'dep'}; draw(cls); tickSound(); g[i][j]= match? g[i-1][j-1] : 1+Math.min(g[i-1][j-1],g[i-1][j],g[i][j-1]); st.innerHTML=`dp[${i}][${j}] ('${s[i-1]}'${match?'=':'≠'}'${t[j-1]}') = <span class="k">${g[i][j]}</span>.`; await sleep(+sp.value); draw({[i+','+j]:'done'}); await sleep(+sp.value*0.2); }
+  draw({[n+','+m]:'ans'}); return g; }
+
+/* ================= 26. edit distance I ================= */
+(function(){
+  const S="horse", T="ros"; const st=$('#ed1Status'),sp=$('#ed1Speed'),stats=$('#ed1Stats'),cont=$('#ed1Grid');
+  function build(){ const g=Array.from({length:S.length+1},()=>Array(T.length+1).fill(null)); dpGrid(cont,g,{rowLabels:chLabels(S),colLabels:chLabels(T)}); stats.innerHTML=''; st.textContent='Press play to compute the edit distance.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=await animEdit(cont,S,T,sp,st); stats.innerHTML=`<span class="pill green">edit distance = ${g[S.length][T.length]}</span>`; st.innerHTML=`✏️ Edit distance("${S}","${T}") = <span class="k">${g[S.length][T.length]}</span>!`; ANIM=false; celebrate(cont); }
+  $('#ed1Play').onclick=play; $('#ed1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 27. edit distance II (2-row) ================= */
+(function(){
+  const S="horse", T="ros"; const st=$('#ed2Status'),sp=$('#ed2Speed'),stats=$('#ed2Stats'); const m=T.length; const idx=[...Array(m+1).keys()];
+  function build(){ dpArr($('#ed2Prev'),[...Array(m+1).keys()],{idx}); dpArr($('#ed2Curr'),Array(m+1).fill(null),{idx}); stats.innerHTML=''; st.textContent='Press play for the two-row edit distance.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let prev=[...Array(m+1).keys()];
+    for(let i=1;i<=S.length;i++){ const curr=Array(m+1).fill(0); curr[0]=i; dpArr($('#ed2Prev'),prev,{idx}); st.innerHTML=`Row for '${S[i-1]}'.`; await sleep(+sp.value*0.7); for(let j=1;j<=m;j++){ const match=S[i-1]===T[j-1]; curr[j]= match? prev[j-1] : 1+Math.min(prev[j-1],prev[j],curr[j-1]); dpArr($('#ed2Prev'),prev,{idx,cls:{[j-1]:'dep',[j]:'dep'}}); dpArr($('#ed2Curr'),curr.map((v,k)=>k<=j?v:null),{idx,cls:{[j]:'cur'}}); tickSound(); await sleep(+sp.value*0.7); } dpArr($('#ed2Curr'),curr,{idx}); stats.innerHTML=`<span class="pill blue">curr = [${curr.join(', ')}]</span>`; prev=curr; await sleep(+sp.value*0.4); }
+    dpArr($('#ed2Curr'),prev,{idx,cls:{[m]:'ans'}}); st.innerHTML=`📝 Edit distance = <span class="k">${prev[m]}</span> using two rows!`; ANIM=false; celebrate($('#ed2Curr'));
+  }
+  $('#ed2Play').onclick=play; $('#ed2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 28. wildcard matching ================= */
+(function(){
+  const S="adceb", P="*a*b"; const n=S.length,m=P.length; const st=$('#pm1Status'),sp=$('#pm1Speed'),stats=$('#pm1Stats'),cont=$('#pm1Grid');
+  const rowLabels=chLabels(S), colLabels=chLabels(P);
+  function build(){ const g=Array.from({length:n+1},()=>Array(m+1).fill(null)); dpGrid(cont,g,{rowLabels,colLabels}); stats.innerHTML=''; st.textContent='Press play to match "adceb" against "*a*b".'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const B=Array.from({length:n+1},()=>Array(m+1).fill(false)); const G=Array.from({length:n+1},()=>Array(m+1).fill(null)); const draw=cls=>dpGrid(cont,G,{rowLabels,colLabels,cls});
+    B[0][0]=true; G[0][0]='✓'; for(let j=1;j<=m;j++){ if(P[j-1]==='*'){ B[0][j]=B[0][j-1]; } G[0][j]=B[0][j]?'✓':'✗'; } for(let i=1;i<=n;i++)G[i][0]='✗'; draw({}); st.innerHTML=`Base row: leading '*' matches empty text.`; await sleep(+sp.value);
+    for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){ const pc=P[j-1]; let cls={[i+','+j]:'cur'}; if(pc==='*'){ B[i][j]=B[i][j-1]||B[i-1][j]; cls[i+','+(j-1)]='dep'; cls[(i-1)+','+j]='dep'; } else { B[i][j]=(pc==='?'||pc===S[i-1]) && B[i-1][j-1]; cls[(i-1)+','+(j-1)]='dep'; } G[i][j]=B[i][j]?'✓':'✗'; draw(cls); tickSound(); st.innerHTML=`dp[${i}][${j}] (text '${S[i-1]}', pat '${pc}') = ${B[i][j]?'✓':'✗'}.`; await sleep(+sp.value); draw({[i+','+j]:B[i][j]?'done':''}); await sleep(+sp.value*0.15); }
+    draw({[n+','+m]:'ans'}); stats.innerHTML=`<span class="pill green">match = ${B[n][m]?'true':'false'}</span>`; st.innerHTML=`🃏 "${S}" vs "${P}" → <span class="k">${B[n][m]?'match ✓':'no match ✗'}</span>!`; ANIM=false; celebrate(cont); }
+  $('#pm1Play').onclick=play; $('#pm1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 29. regex matching ================= */
+(function(){
+  const S="aab", P="c*a*b"; const n=S.length,m=P.length; const st=$('#pm2Status'),sp=$('#pm2Speed'),stats=$('#pm2Stats'),cont=$('#pm2Grid');
+  const rowLabels=chLabels(S), colLabels=chLabels(P);
+  function build(){ const g=Array.from({length:n+1},()=>Array(m+1).fill(null)); dpGrid(cont,g,{rowLabels,colLabels}); stats.innerHTML=''; st.textContent='Press play to match "aab" against "c*a*b".'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const B=Array.from({length:n+1},()=>Array(m+1).fill(false)); const G=Array.from({length:n+1},()=>Array(m+1).fill(null)); const draw=cls=>dpGrid(cont,G,{rowLabels,colLabels,cls});
+    B[0][0]=true; G[0][0]='✓'; for(let j=1;j<=m;j++){ if(P[j-1]==='*'&&j>=2){ B[0][j]=B[0][j-2]; } G[0][j]=B[0][j]?'✓':'✗'; } for(let i=1;i<=n;i++)G[i][0]='✗'; draw({}); st.innerHTML=`Base row: 'x*' can match empty (jump back 2).`; await sleep(+sp.value);
+    for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){ const pc=P[j-1]; let cls={[i+','+j]:'cur'}; if(pc==='*'){ const prev=P[j-2]; B[i][j]=B[i][j-2] || ((prev==='.'||prev===S[i-1]) && B[i-1][j]); cls[i+','+(j-2>=0?j-2:0)]='dep'; cls[(i-1)+','+j]='dep'; } else { B[i][j]=(pc==='.'||pc===S[i-1]) && B[i-1][j-1]; cls[(i-1)+','+(j-1)]='dep'; } G[i][j]=B[i][j]?'✓':'✗'; draw(cls); tickSound(); st.innerHTML=`dp[${i}][${j}] (text '${S[i-1]}', pat '${pc}') = ${B[i][j]?'✓':'✗'}.`; await sleep(+sp.value); draw({[i+','+j]:B[i][j]?'done':''}); await sleep(+sp.value*0.15); }
+    draw({[n+','+m]:'ans'}); stats.innerHTML=`<span class="pill green">match = ${B[n][m]?'true':'false'}</span>`; st.innerHTML=`🔣 "${S}" vs "${P}" → <span class="k">${B[n][m]?'match ✓':'no match ✗'}</span>!`; ANIM=false; celebrate(cont); }
+  $('#pm2Play').onclick=play; $('#pm2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 30. counting subsequences I ================= */
+(function(){
+  const S="rabbbit", T="rabbit"; const n=S.length,m=T.length; const st=$('#cn1Status'),sp=$('#cn1Speed'),stats=$('#cn1Stats'),cont=$('#cn1Grid');
+  const rowLabels=chLabels(S), colLabels=chLabels(T);
+  function build(){ const g=Array.from({length:n+1},()=>Array(m+1).fill(null)); dpGrid(cont,g,{rowLabels,colLabels}); stats.innerHTML=''; st.textContent='Press play to count occurrences of "rabbit".'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=Array.from({length:n+1},()=>Array(m+1).fill(null)); const draw=cls=>dpGrid(cont,g,{rowLabels,colLabels,cls});
+    for(let i=0;i<=n;i++)g[i][0]=1; for(let j=1;j<=m;j++)g[0][j]=0; draw({}); st.innerHTML=`Base: empty target has 1 match (col 0 = 1).`; await sleep(+sp.value);
+    for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){ const match=S[i-1]===T[j-1]; const cls={[i+','+j]:'cur',[(i-1)+','+j]:'dep'}; if(match)cls[(i-1)+','+(j-1)]='dep'; draw(cls); tickSound(); g[i][j]= g[i-1][j] + (match? g[i-1][j-1] : 0); st.innerHTML=`dp[${i}][${j}] ('${S[i-1]}'${match?'=':'≠'}'${T[j-1]}') = ${g[i-1][j]}${match?` + ${g[i-1][j-1]}`:''} = <span class="k">${g[i][j]}</span>.`; await sleep(+sp.value); draw({[i+','+j]:'done'}); await sleep(+sp.value*0.15); }
+    draw({[n+','+m]:'ans'}); stats.innerHTML=`<span class="pill green">count = ${g[n][m]}</span>`; st.innerHTML=`🔟 "${T}" appears in "${S}" as a subsequence <span class="k">${g[n][m]}</span> times!`; ANIM=false; celebrate(cont); }
+  $('#cn1Play').onclick=play; $('#cn1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 31. counting subsequences II (1D) ================= */
+(function(){
+  const S="rabbbit", T="rabbit"; const m=T.length; const st=$('#cn2Status'),sp=$('#cn2Speed'),stats=$('#cn2Stats'); const idx=chLabels(T).map((c,i)=>i===0?'∅':c);
+  function build(){ const dp=Array(m+1).fill(0); dp[0]=1; dpArr($('#cn2Arr'),dp,{idx}); stats.innerHTML=''; st.textContent='Press play for the 1D subsequence count.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const dp=Array(m+1).fill(0); dp[0]=1; dpArr($('#cn2Arr'),dp,{idx,cls:{0:'done'}}); st.innerHTML=`dp[0]=1 (empty target).`; await sleep(+sp.value);
+    for(let i=0;i<S.length;i++){ const ch=S[i]; st.innerHTML=`<b>s char '${ch}':</b> sweep j high→low.`; await sleep(+sp.value*0.7); for(let j=m;j>=1;j--){ if(T[j-1]===ch){ dpArr($('#cn2Arr'),dp,{idx,cls:{[j]:'cur',[j-1]:'dep'}}); tickSound(); const nv=dp[j]+dp[j-1]; st.innerHTML=`'${ch}'=t[${j-1}] → dp[${j}] += dp[${j-1}] (${dp[j-1]}) → ${nv}.`; await sleep(+sp.value); dp[j]=nv; dpArr($('#cn2Arr'),dp,{idx,cls:{[j]:'done'}}); await sleep(+sp.value*0.25); } } stats.innerHTML=`<span class="pill blue">after '${ch}': [${dp.join(', ')}]</span>`; }
+    dpArr($('#cn2Arr'),dp,{idx,cls:{[m]:'ans'}}); st.innerHTML=`#️⃣ 1D count → <span class="k">${dp[m]}</span> (right→left keeps each s-char single-use)!`; ANIM=false; celebrate($('#cn2Arr'));
+  }
+  $('#cn2Play').onclick=play; $('#cn2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ============ generic MCM ============ */
+async function animMCM(cont, p, sp, st, stats, emoji){ const n=p.length-1; const g=Array.from({length:n},()=>Array(n).fill(null)); const labels=[...Array(n).keys()].map(i=>'A'+(i+1)); const draw=cls=>dpGrid(cont,g,{rowLabels:labels,colLabels:labels,cls});
+  for(let i=0;i<n;i++)g[i][i]=0; draw({}); st.innerHTML=`Diagonal dp[i][i]=0 (a single matrix needs no multiplication).`; await sleep(+sp.value);
+  for(let L=2;L<=n;L++){ for(let i=0;i+L-1<n;i++){ const j=i+L-1; let best=Infinity,bk=-1; for(let k=i;k<j;k++){ const cost=g[i][k]+g[k+1][j]+p[i]*p[k+1]*p[j+1]; const cls={[i+','+j]:'cur',[i+','+k]:'dep',[(k+1)+','+j]:'dep'}; draw(cls); tickSound(); if(cost<best){ best=cost; bk=k; } st.innerHTML=`dp[${i+1}][${j+1}] split@${bk+1}: ${g[i][k]}+${g[k+1][j]}+${p[i]}·${p[k+1]}·${p[j+1]} → best ${best}.`; await sleep(+sp.value*0.8); } g[i][j]=best; draw({[i+','+j]:'done'}); await sleep(+sp.value*0.3); } }
+  draw({['0,'+(n-1)]:'ans'}); return g[0][n-1]; }
+
+/* ================= 32. MCM I ================= */
+(function(){
+  const P=[1,2,3,4]; const st=$('#mc1Status'),sp=$('#mc1Speed'),stats=$('#mc1Stats'),cont=$('#mc1Grid');
+  const n=P.length-1; const labels=[...Array(n).keys()].map(i=>'A'+(i+1));
+  function build(){ const g=Array.from({length:n},()=>Array(n).fill(null)); dpGrid(cont,g,{rowLabels:labels,colLabels:labels}); stats.innerHTML=''; st.textContent='Press play to minimize multiplication cost.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const ans=await animMCM(cont,P,sp,st,stats); stats.innerHTML=`<span class="pill green">min cost = ${ans}</span>`; st.innerHTML=`✖️ Minimum multiplications = <span class="k">${ans}</span> (dims [${P.join(',')}])!`; ANIM=false; celebrate(cont); }
+  $('#mc1Play').onclick=play; $('#mc1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 33. MCM II ================= */
+(function(){
+  const P=[40,20,30,10,30]; const st=$('#mc2Status'),sp=$('#mc2Speed'),stats=$('#mc2Stats'),cont=$('#mc2Grid');
+  const n=P.length-1; const labels=[...Array(n).keys()].map(i=>'A'+(i+1));
+  function build(){ const g=Array.from({length:n},()=>Array(n).fill(null)); dpGrid(cont,g,{rowLabels:labels,colLabels:labels}); stats.innerHTML=''; st.textContent='Press play for the 4-matrix chain.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const ans=await animMCM(cont,P,sp,st,stats); stats.innerHTML=`<span class="pill green">min cost = ${ans}</span>`; st.innerHTML=`🧮 Minimum multiplications = <span class="k">${ans}</span> for dims [${P.join(',')}]!`; ANIM=false; celebrate(cont); }
+  $('#mc2Play').onclick=play; $('#mc2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recursion & Backtracking — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(26px,5vw,48px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:5px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11px; font-weight:600; padding:5px 9px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(19px,3.3vw,28px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12px; margin:8px 0 4px}
+  .vwrap{overflow-x:auto; display:flex; justify-content:center; margin:12px 0; padding:4px}
+  .tsvg .tedge{stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .tsvg .tedge.on{stroke:var(--accent)}
+  .tsvg .tnode{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .tsvg .tnode.cur{fill:#3a3620; stroke:var(--mid); stroke-width:3.5}
+  .tsvg .tnode.done{fill:#22345f; stroke:var(--accent)}
+  .tsvg .tnode.leaf{fill:#0d3b30; stroke:var(--found); stroke-width:3.5}
+  .tsvg .tnode.rep{fill:#3a1d2a; stroke:var(--accent2)}
+  .tsvg .tnode.fade{opacity:.12}
+  .tsvg .tlbl{fill:var(--ink); font-weight:800; font-size:11px; text-anchor:middle; dominant-baseline:central; font-family:'Consolas',monospace}
+  .tsvg .tlbl.fade{opacity:.12}
+
+  .stackbox{display:flex; flex-direction:column-reverse; gap:5px; align-items:center; min-height:50px; justify-content:flex-start; margin:8px 0}
+  .frame{min-width:170px; padding:7px 14px; border-radius:9px; background:#1d2a52; border:2px solid #2c3d6e; font-weight:800; font-family:'Consolas',monospace; font-size:13px; transition:.3s; text-align:center}
+  .frame.cur{border-color:var(--mid); background:#3a3620}
+  .frame.done{border-color:var(--found); background:#0d3b30}
+  .row{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; min-height:42px; margin:6px 0}
+  .cell{min-width:38px; height:40px; padding:0 6px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:15px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s; font-family:'Consolas',monospace}
+  .cell.cur{border-color:var(--mid); background:#3a3620}
+  .cell.add{border-color:var(--found); background:#0d3b30}
+  .cell.rem{border-color:var(--accent2); background:#3a1d2a; opacity:.5}
+  .cell.on{border-color:var(--found); background:#0d3b30}
+  .cell.off{opacity:.4}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0; min-height:34px}
+  .chip2{background:#22345f; border:2px solid var(--accent); border-radius:9px; padding:5px 11px; font-weight:800; font-family:'Consolas',monospace; font-size:13px; color:var(--accent)}
+  .chip2.gold{border-color:var(--mid); color:var(--mid); background:#3a3620}
+  .grid{display:inline-grid; gap:5px}
+  .gc{width:44px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-weight:800;font-size:14px;background:#1d2a52;border:2px solid #2c3d6e;font-family:'Consolas',monospace;transition:.3s}
+  .gc.cur{border-color:var(--mid);background:#3a3620}
+  .gc.dep{border-color:var(--accent);background:#22345f}
+  .gc.done{border-color:var(--found);background:#0d3b30}
+  .gc.ans{border-color:var(--found);background:#0d3b30;box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .work{font-family:'Consolas',monospace; font-size:14px; background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:8px auto; max-width:640px; text-align:center}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Recursion &amp; Backtracking — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Call stacks, recursion trees, backtracking with shared buffers, subsets, combinations &amp; divide-and-conquer — all animated. Built so recursion clicks for life.</p>
+</header>
+
+<nav>
+  <a href="#ba">🔁 Basics</a>
+  <a href="#sb">📏 Single Branch</a>
+  <a href="#tr">🌳 Recursion Tree</a>
+  <a href="#sk">📚 Recursion Stack</a>
+  <a href="#ref">🔗 Pass by Reference</a>
+  <a href="#dp1">🧭 Distinct Paths I</a>
+  <a href="#dp2">🗺️ Distinct Paths II</a>
+  <a href="#lc">☎️ Letter Combos</a>
+  <a href="#lc2">💾 Letter Combos (Space)</a>
+  <a href="#sub">🎛️ All Subsets</a>
+  <a href="#bm">🔢 Subsets (Bitmask)</a>
+  <a href="#dnc">✂️ Divide &amp; Conquer</a>
+  <a href="#fe">⚡ Fast Exponentiation</a>
+  <a href="#par">🧬 Balanced Parens</a>
+  <a href="#lex">🔤 Lexicographic Subsets</a>
+  <a href="#ss1">🎯 Subset Sum I</a>
+  <a href="#ss2">🧮 Subset Sum II</a>
+</nav>
+
+<main>
+
+  <!-- 1 BASICS -->
+  <section id="ba">
+    <h2>🔁 Basics of Recursion <span class="badge">base + recursive case</span></h2>
+    <p class="lead">A recursive function calls itself on a smaller input until it hits a <b>base case</b>. Every recursion needs a base case (to stop) and a recursive case (that shrinks the problem).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Descend then ascend:</span> <code>factorial(n) = n · factorial(n−1)</code>, with <code>factorial(0) = 1</code>. Calls dive down to the base case, then results multiply back up as the stack unwinds. 4! → 1 → 2 → 6 → <b>24</b>.</div>
+      <div class="steps-flow"><span class="chip">base case stops recursion</span><span class="arrow">→</span><span class="chip">recursive case shrinks input</span><span class="arrow">→</span><span class="chip">results combine on return</span></div>
+      <div class="oneliner">🔒 Keep forever: "Every recursion = a base case + a smaller-subproblem call; results assemble as the stack unwinds."</div>
+    </div>
+    <div class="lbl">call stack (descend to base, then return up)</div><div class="stackbox" id="baStack"></div>
+    <div class="status" id="baStatus">Press play to compute factorial(4).</div>
+    <div class="stats" id="baStats"></div>
+    <div class="controls"><button class="btn" id="baPlay">▶ factorial(4)</button><button class="btn ghost" id="baReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="baSpeed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> forget the base case → infinite recursion → stack overflow. The base case is not optional.</div></div>
+  </section>
+
+  <!-- 2 SINGLE BRANCH -->
+  <section id="sb">
+    <h2>📏 Single Branch Recursion <span class="badge">linear / one call</span></h2>
+    <p class="lead">When each call makes exactly <b>one</b> recursive call, the recursion is linear — a straight chain of depth n, like a loop written recursively.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One path down, one path up:</span> <code>sum(n) = n + sum(n−1)</code> has a single branch — no tree, just a chain. n frames deep, O(n) time and O(n) stack. sum(5) → 15.</div>
+      <div class="steps-flow"><span class="chip">one recursive call per frame</span><span class="arrow">→</span><span class="chip">depth n chain</span><span class="arrow">→</span><span class="chip">O(n) time &amp; space</span></div>
+      <div class="oneliner">🔒 Keep forever: "Single-branch recursion is a loop in disguise — a linear chain of n frames."</div>
+    </div>
+    <div class="lbl">call stack — a single chain</div><div class="stackbox" id="sbStack"></div>
+    <div class="status" id="sbStatus">Press play to compute sum(5) = 5+4+3+2+1.</div>
+    <div class="stats" id="sbStats"></div>
+    <div class="controls"><button class="btn" id="sbPlay">▶ sum(5)</button><button class="btn ghost" id="sbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="sbSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> single-branch recursions convert cleanly to iteration — no stack needed, giving O(1) space.</div></div>
+  </section>
+
+  <!-- 3 RECURSION TREE -->
+  <section id="tr">
+    <h2>🌳 Recursion Tree Diagram <span class="badge">branching calls</span></h2>
+    <p class="lead">When a call makes multiple recursive calls, the calls form a <b>tree</b>. The tree shows the total work and reveals repeated subproblems.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two branches per node:</span> <code>fib(n) = fib(n−1) + fib(n−2)</code> branches into a tree. Drawing it shows the exponential blow-up (and that fib(2) is recomputed — the reason to memoize). fib(4) = <b>3</b>.</div>
+      <div class="steps-flow"><span class="chip">each call → 2 children</span><span class="arrow">→</span><span class="chip">tree of calls</span><span class="arrow">→</span><span class="chip">repeated subtrees = waste</span></div>
+      <div class="oneliner">🔒 Keep forever: "A recursion tree visualizes total calls; repeated subtrees scream 'memoize me'."</div>
+    </div>
+    <div class="vwrap" id="trTree"></div>
+    <div class="status" id="trStatus">Press play to build the fib(4) recursion tree.</div>
+    <div class="stats" id="trStats"></div>
+    <div class="controls"><button class="btn" id="trPlay">▶ Build fib(4) tree</button><button class="btn ghost" id="trReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="trSpeed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the recursion tree's node count = number of calls = time complexity; its height = max stack depth = space.</div></div>
+  </section>
+
+  <!-- 4 RECURSION STACK -->
+  <section id="sk">
+    <h2>📚 Recursion Stack Diagram <span class="badge">frames push/pop</span></h2>
+    <p class="lead">At runtime, active calls live on the call stack. Each call pushes a frame; each return pops one. The max stack height is the recursion depth.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Only one path is "live":</span> even for a branching recursion, the stack holds just the current root-to-node path — not the whole tree. Frames push going down and pop on return. For fib(4), the stack never exceeds depth <b>4</b>.</div>
+      <div class="steps-flow"><span class="chip">call → push frame</span><span class="arrow">→</span><span class="chip">return → pop frame</span><span class="arrow">→</span><span class="chip">max height = depth</span></div>
+      <div class="oneliner">🔒 Keep forever: "Space of recursion = max stack depth (one active path), not the total number of calls."</div>
+    </div>
+    <div class="lbl">live call stack during fib(4)</div><div class="stackbox" id="skStack"></div>
+    <div class="status" id="skStatus">Press play to watch the stack push and pop through fib(4).</div>
+    <div class="stats" id="skStats"></div>
+    <div class="controls"><button class="btn" id="skPlay">▶ Trace stack</button><button class="btn ghost" id="skReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="skSpeed" min="250" max="2000" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> time = total calls (tree size); space = max depth (tree height). They can differ hugely (fib: O(2ⁿ) time, O(n) space).</div></div>
+  </section>
+
+  <!-- 5 PASS BY REFERENCE -->
+  <section id="ref">
+    <h2>🔗 Pass by Reference (Backtracking) <span class="badge">shared buffer</span></h2>
+    <p class="lead">Backtracking reuses one shared array (passed by reference) across all calls — you must <b>undo</b> your choice after recursing, or later calls see stale state.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Add, recurse, remove:</span> push a choice onto the shared <code>path</code>, recurse, then pop it to restore state for the next branch. Because the array is shared (by reference), forgetting the pop corrupts every sibling call. Generating subsets of {1,2} → <b>4</b> subsets.</div>
+      <div class="steps-flow"><span class="chip">path.push(choice)</span><span class="arrow">→</span><span class="chip">recurse</span><span class="arrow">→</span><span class="chip">path.pop() to undo</span></div>
+      <div class="oneliner">🔒 Keep forever: "Backtracking = choose → explore → un-choose; the shared buffer must be restored on the way out."</div>
+    </div>
+    <div class="lbl">shared path buffer (🟩 added / 🟥 removed)</div><div class="row" id="refBuf"></div>
+    <div class="lbl">recorded subsets</div><div class="chips" id="refOut"></div>
+    <div class="status" id="refStatus">Press play to generate subsets via a shared buffer.</div>
+    <div class="stats" id="refStats"></div>
+    <div class="controls"><button class="btn" id="refPlay">▶ Backtrack {1,2}</button><button class="btn ghost" id="refReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="refSpeed" min="350" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> record a <b>copy</b> of the shared buffer when saving a result — the buffer keeps mutating afterward.</div></div>
+  </section>
+
+  <!-- 6 DISTINCT PATHS I -->
+  <section id="dp1">
+    <h2>🧭 Distinct Paths I (Pure Recursion) <span class="badge">right / down</span></h2>
+    <p class="lead">Count paths from the top-left to bottom-right of a grid, moving only right or down. Recursively: paths(i,j) = paths(down) + paths(right).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Split by the first move:</span> from each cell you either go down or right, so <code>paths(i,j) = paths(i+1,j) + paths(i,j+1)</code>, with 1 path once you reach the destination. A 3×3 grid → <b>6</b> paths. (Pure recursion recomputes cells — fixed next.)</div>
+      <div class="steps-flow"><span class="chip">reach target → 1</span><span class="arrow">·</span><span class="chip">else down + right</span></div>
+      <div class="oneliner">🔒 Keep forever: "Grid paths = sum of the two sub-paths (down + right); base case is reaching the goal."</div>
+    </div>
+    <div class="vwrap" id="dp1Tree"></div>
+    <div class="status" id="dp1Status">Press play to count paths on a 3×3 grid by recursion.</div>
+    <div class="stats" id="dp1Stats"></div>
+    <div class="controls"><button class="btn" id="dp1Play">▶ Count paths (recursion)</button><button class="btn ghost" id="dp1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dp1Speed" min="300" max="2200" value="750" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> pure recursion here is exponential because the same (i,j) is recomputed on many branches.</div></div>
+  </section>
+
+  <!-- 7 DISTINCT PATHS II -->
+  <section id="dp2">
+    <h2>🗺️ Distinct Paths II (Memoized / DP) <span class="badge">O(n·m)</span></h2>
+    <p class="lead">Cache each cell's answer (or fill a DP grid): dp[i][j] = dp[i−1][j] + dp[i][j−1]. Each cell is computed once.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Fill the grid:</span> the first row and column are all 1 (only one way along an edge). Every other cell sums the cell above and the cell to its left. The bottom-right holds the answer. 3×3 grid → <b>6</b> paths, in O(n·m).</div>
+      <div class="steps-flow"><span class="chip">edges = 1</span><span class="arrow">→</span><span class="chip">dp[i][j]=dp[i−1][j]+dp[i][j−1]</span><span class="arrow">→</span><span class="chip">bottom-right = answer</span></div>
+      <div class="oneliner">🔒 Keep forever: "Memoize / tabulate the grid: each cell = above + left; the corner is the path count."</div>
+    </div>
+    <div class="vwrap" id="dp2Grid"></div>
+    <div class="status" id="dp2Status">Press play to fill the DP grid.</div>
+    <div class="stats" id="dp2Stats"></div>
+    <div class="controls"><button class="btn" id="dp2Play">▶ Fill DP grid</button><button class="btn ghost" id="dp2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dp2Speed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the closed form is C(m+n−2, n−1) — but the DP grid generalizes to obstacles &amp; weights.</div></div>
+  </section>
+
+  <!-- 8 LETTER COMBOS -->
+  <section id="lc">
+    <h2>☎️ Letter Combinations of a Phone Number <span class="badge">backtracking</span></h2>
+    <p class="lead">Each digit maps to letters (2→abc, 3→def…). Generate every combination by branching on each digit's letters.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One level per digit:</span> at digit index <code>i</code>, try each of its letters, append it, and recurse to the next digit. Leaves at depth = number of digits are the answers. "23" → a/b/c then d/e/f → <b>9</b> combinations.</div>
+      <div class="steps-flow"><span class="chip">for each letter of digit i</span><span class="arrow">→</span><span class="chip">append &amp; recurse to i+1</span><span class="arrow">→</span><span class="chip">index == len → record</span></div>
+      <div class="oneliner">🔒 Keep forever: "Combinations = one recursion level per position, branching over that position's choices."</div>
+    </div>
+    <div class="vwrap" id="lcTree"></div>
+    <div class="lbl">combinations</div><div class="chips" id="lcOut"></div>
+    <div class="status" id="lcStatus">Press play to generate letter combinations of "23".</div>
+    <div class="stats" id="lcStats"></div>
+    <div class="controls"><button class="btn" id="lcPlay">▶ Combos of "23"</button><button class="btn ghost" id="lcReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lcSpeed" min="300" max="2200" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the number of combinations is the product of each digit's letter count (here 3 × 3 = 9).</div></div>
+  </section>
+
+  <!-- 9 LETTER COMBOS SPACE -->
+  <section id="lc2">
+    <h2>💾 Letter Combinations — Saving Space <span class="badge">in-place buffer</span></h2>
+    <p class="lead">Instead of creating a new string at each call, mutate one shared character buffer: set the letter at the current index, recurse, then move on — O(depth) extra space.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Reuse one buffer:</span> keep a char array of length = #digits. At index i, write each letter into <code>buf[i]</code> and recurse to i+1. No new strings per branch — only one buffer of size L. Same <b>9</b> combos, less allocation.</div>
+      <div class="steps-flow"><span class="chip">buf[i] = letter</span><span class="arrow">→</span><span class="chip">recurse i+1</span><span class="arrow">→</span><span class="chip">i == L → snapshot buf</span></div>
+      <div class="oneliner">🔒 Keep forever: "Write into a shared buffer at index i instead of building new strings — O(L) space, not O(#answers·L) copies."</div>
+    </div>
+    <div class="lbl">shared char buffer (length 2)</div><div class="row" id="lc2Buf"></div>
+    <div class="lbl">combinations</div><div class="chips" id="lc2Out"></div>
+    <div class="status" id="lc2Status">Press play for the in-place buffer version.</div>
+    <div class="stats" id="lc2Stats"></div>
+    <div class="controls"><button class="btn" id="lc2Play">▶ In-place combos</button><button class="btn ghost" id="lc2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lc2Speed" min="300" max="2200" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> you still copy the buffer when <b>recording</b> a result — the saving is in avoiding per-branch string concatenations.</div></div>
+  </section>
+
+  <!-- 10 ALL SUBSETS -->
+  <section id="sub">
+    <h2>🎛️ All Subsets of a Set <span class="badge">include / exclude</span></h2>
+    <p class="lead">For each element, decide to include it or not. n elements → 2ⁿ subsets, generated by a binary decision tree.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two choices per element:</span> at element <code>i</code>, branch into "exclude" and "include", then recurse to <code>i+1</code>. Each root-to-leaf path is one subset. {1,2,3} → 2³ = <b>8</b> subsets.</div>
+      <div class="steps-flow"><span class="chip">exclude element i</span><span class="arrow">·</span><span class="chip">include element i</span><span class="arrow">→</span><span class="chip">leaf = one subset</span></div>
+      <div class="oneliner">🔒 Keep forever: "Subsets = per element include/exclude → 2ⁿ leaves in a binary decision tree."</div>
+    </div>
+    <div class="vwrap" id="subTree"></div>
+    <div class="lbl">subsets</div><div class="chips" id="subOut"></div>
+    <div class="status" id="subStatus">Press play to generate all subsets of {1,2,3}.</div>
+    <div class="stats" id="subStats"></div>
+    <div class="controls"><button class="btn" id="subPlay">▶ Subsets of {1,2,3}</button><button class="btn ghost" id="subReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="subSpeed" min="250" max="2000" value="600" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> 2ⁿ subsets means subset problems are only tractable for small n (≈ n ≤ 20).</div></div>
+  </section>
+
+  <!-- 11 SUBSETS BITMASK -->
+  <section id="bm">
+    <h2>🔢 Subsets with Bitmasking <span class="badge">iterative 2ⁿ</span></h2>
+    <p class="lead">No recursion needed: loop a mask from 0 to 2ⁿ−1. Each bit set means "include that element" — every mask is a unique subset.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Bits are choices:</span> for mask 0..2ⁿ−1, include element <code>j</code> iff bit <code>j</code> is set. Mask 000 = {}, 101 = {1,3}, 111 = {1,2,3}. All 2ⁿ masks give all <b>8</b> subsets — with zero recursion.</div>
+      <div class="steps-flow"><span class="chip">for mask = 0 … 2ⁿ−1</span><span class="arrow">→</span><span class="chip">bit j set? include element j</span></div>
+      <div class="oneliner">🔒 Keep forever: "Bitmask subsets: iterate all 2ⁿ masks; each set bit picks an element. No recursion."</div>
+    </div>
+    <div class="lbl">mask bits (⬜ off / 🟩 on)</div><div class="row" id="bmBits"></div>
+    <div class="lbl">subsets</div><div class="chips" id="bmOut"></div>
+    <div class="status" id="bmStatus">Press play to enumerate subsets via bitmasks.</div>
+    <div class="stats" id="bmStats"></div>
+    <div class="controls"><button class="btn" id="bmPlay">▶ Bitmask subsets</button><button class="btn ghost" id="bmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="bmSpeed" min="300" max="2200" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> bitmasking is often faster (no call overhead) and enables subset-DP where the state is a bitmask.</div></div>
+  </section>
+
+  <!-- 12 DIVIDE AND CONQUER -->
+  <section id="dnc">
+    <h2>✂️ Divide and Conquer <span class="badge">split · solve · combine</span></h2>
+    <p class="lead">Break a problem into independent halves, solve each recursively, then combine. Here: the maximum of an array.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Halve, recurse, merge:</span> split the array in two, find each half's max recursively (base case = single element), then combine with <code>max(leftMax, rightMax)</code>. [3,1,4,1,5] → <b>5</b>. The same skeleton is merge sort &amp; quicksort.</div>
+      <div class="steps-flow"><span class="chip">divide into halves</span><span class="arrow">→</span><span class="chip">conquer each recursively</span><span class="arrow">→</span><span class="chip">combine results</span></div>
+      <div class="oneliner">🔒 Keep forever: "Divide &amp; conquer = split into independent subproblems, solve, then merge the answers."</div>
+    </div>
+    <div class="vwrap" id="dncTree"></div>
+    <div class="status" id="dncStatus">Press play to find the max via divide &amp; conquer.</div>
+    <div class="stats" id="dncStats"></div>
+    <div class="controls"><button class="btn" id="dncPlay">▶ Max of [3,1,4,1,5]</button><button class="btn ghost" id="dncReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dncSpeed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> D&amp;C recurrences follow the Master Theorem — merge sort's T(n)=2T(n/2)+n gives O(n log n).</div></div>
+  </section>
+
+  <!-- 13 FAST EXPONENTIATION -->
+  <section id="fe">
+    <h2>⚡ Fast Exponentiation <span class="badge">O(log n)</span></h2>
+    <p class="lead">Compute xⁿ in O(log n) by squaring: xⁿ = (x^(n/2))² for even n, and x·x^(n−1) for odd n.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Halve the exponent:</span> instead of n multiplications, halve the exponent each step. <code>x^10 = (x^5)²</code>, <code>x^5 = x·(x^2)²</code>, and so on. Only ~log₂ n multiplications. 2¹⁰ = <b>1024</b>.</div>
+      <div class="steps-flow"><span class="chip">n even → (x^(n/2))²</span><span class="arrow">·</span><span class="chip">n odd → x · x^(n−1)</span><span class="arrow">·</span><span class="chip">n = 0 → 1</span></div>
+      <div class="oneliner">🔒 Keep forever: "Fast power: square the half-power (even) or multiply by x (odd) → O(log n) multiplications."</div>
+    </div>
+    <div class="work" id="feWork"></div>
+    <div class="status" id="feStatus">Press play to compute 2¹⁰ by fast exponentiation.</div>
+    <div class="stats" id="feStats"></div>
+    <div class="controls"><button class="btn" id="fePlay">▶ 2 ^ 10</button><button class="btn ghost" id="feReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="feSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the iterative "binary exponentiation" reads the exponent's bits — same O(log n), and standard for modular power.</div></div>
+  </section>
+
+  <!-- 14 BALANCED PARENS -->
+  <section id="par">
+    <h2>🧬 Balanced Parentheses <span class="badge">constrained backtracking</span></h2>
+    <p class="lead">Generate all valid strings of n pairs. Add '(' while opens remain; add ')' only while it wouldn't exceed the opens placed.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Prune the invalid:</span> track <code>open</code> and <code>close</code> counts. You may add '(' if <code>open &lt; n</code>, and ')' if <code>close &lt; open</code>. These two rules guarantee balance and cut off dead branches early. n=3 → <b>5</b> valid strings (Catalan C₃).</div>
+      <div class="steps-flow"><span class="chip">open &lt; n → add '('</span><span class="arrow">·</span><span class="chip">close &lt; open → add ')'</span><span class="arrow">→</span><span class="chip">length 2n → record</span></div>
+      <div class="oneliner">🔒 Keep forever: "Valid parens: add '(' while open&lt;n; add ')' while close&lt;open — pruning enforces balance."</div>
+    </div>
+    <div class="vwrap" id="parTree"></div>
+    <div class="lbl">valid strings</div><div class="chips" id="parOut"></div>
+    <div class="status" id="parStatus">Press play to generate valid parentheses for n=3.</div>
+    <div class="stats" id="parStats"></div>
+    <div class="controls"><button class="btn" id="parPlay">▶ Generate (n=3)</button><button class="btn ghost" id="parReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="parSpeed" min="300" max="2200" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the count of valid parenthesizations of n pairs is the nth Catalan number.</div></div>
+  </section>
+
+  <!-- 15 LEXICOGRAPHIC SUBSETS -->
+  <section id="lex">
+    <h2>🔤 Lexicographic Subsets <span class="badge">ordered generation</span></h2>
+    <p class="lead">Generate subsets in lexicographic order: for a start index, take the current prefix, then extend with each later element in increasing order.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Prefix then extend upward:</span> record the current subset, then loop <code>j</code> from the current index to n−1, include element j, recurse from j+1, and remove it. Choosing elements in increasing index order yields lexicographic output. {1,2,3} → <b>8</b> subsets in order.</div>
+      <div class="steps-flow"><span class="chip">record current subset</span><span class="arrow">→</span><span class="chip">for j = start … n−1: include, recurse(j+1), undo</span></div>
+      <div class="oneliner">🔒 Keep forever: "Lexicographic subsets: emit the prefix, then extend with each larger index in order."</div>
+    </div>
+    <div class="lbl">subsets in lexicographic order</div><div class="chips" id="lexOut"></div>
+    <div class="status" id="lexStatus">Press play to generate subsets of {1,2,3} in order.</div>
+    <div class="stats" id="lexStats"></div>
+    <div class="controls"><button class="btn" id="lexPlay">▶ Lexicographic subsets</button><button class="btn ghost" id="lexReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lexSpeed" min="350" max="2400" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> this "for j from start" template also generates combinations (C(n,k)) — just stop at size k.</div></div>
+  </section>
+
+  <!-- 16 SUBSET SUM I -->
+  <section id="ss1">
+    <h2>🎯 Subset Sum I (Exists?) <span class="badge">include / exclude</span></h2>
+    <p class="lead">Does any subset add up to a target? Branch on each element (include or exclude) and check if the remaining target hits 0.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Take it or leave it:</span> at element <code>i</code>, either subtract it from the target (include) or skip it (exclude). Success when target reaches 0; failure when you run out of elements. {3,34,4,12,5,2}, target 9 → <b>true</b> (4 + 5).</div>
+      <div class="steps-flow"><span class="chip">target == 0 → true</span><span class="arrow">·</span><span class="chip">include a[i] (target−a[i])</span><span class="arrow">·</span><span class="chip">or exclude a[i]</span></div>
+      <div class="oneliner">🔒 Keep forever: "Subset sum = include/exclude search; hit 0 → yes. Memoize (target, i) to make it pseudo-polynomial."</div>
+    </div>
+    <div class="vwrap" id="ss1Tree"></div>
+    <div class="status" id="ss1Status">Press play to check if a subset sums to 9.</div>
+    <div class="stats" id="ss1Stats"></div>
+    <div class="controls"><button class="btn" id="ss1Play">▶ Sum to 9?</button><button class="btn ghost" id="ss1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ss1Speed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> pruning helps — if the target goes negative or the remaining sum is too small, cut the branch.</div></div>
+  </section>
+
+  <!-- 17 SUBSET SUM II -->
+  <section id="ss2">
+    <h2>🧮 Subset Sum II (Count / List All) <span class="badge">enumerate solutions</span></h2>
+    <p class="lead">Instead of just "exists", count (or list) every subset that reaches the target — don't stop at the first hit.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Keep searching after a hit:</span> explore the full include/exclude tree; each time the running sum equals the target, record that subset (a copy of the shared path) and continue. {1,2,3,4,5}, target 5 → <b>3</b> subsets: {5}, {1,4}, {2,3}.</div>
+      <div class="steps-flow"><span class="chip">sum == target → record &amp; keep going</span><span class="arrow">·</span><span class="chip">explore include/exclude fully</span></div>
+      <div class="oneliner">🔒 Keep forever: "Counting/listing subsets = explore the whole tree; record every success instead of returning early."</div>
+    </div>
+    <div class="lbl">subsets that sum to 5</div><div class="chips" id="ss2Out"></div>
+    <div class="status" id="ss2Status">Press play to list all subsets of {1,2,3,4,5} summing to 5.</div>
+    <div class="stats" id="ss2Stats"></div>
+    <div class="controls"><button class="btn" id="ss2Play">▶ All subsets summing to 5</button><button class="btn ghost" id="ss2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ss2Speed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> "exists" can return early; "count/list all" must explore every branch — that's the key difference.</div></div>
+
+    <div class="note key">🏆 <b>Recursion &amp; backtracking mastered!</b> Base + recursive case · single-branch (linear) vs branching (tree) recursion · the call stack holds one live path · backtracking mutates a shared buffer (choose → explore → un-choose) · subsets via recursion &amp; bitmasking · combinations, balanced parens &amp; lexicographic order · divide &amp; conquer and fast exponentiation · and subset-sum search. Shrink the problem, trust the recursion, undo your choices! 🎯</div>
+  </section>
+
+</main>
+
+<footer>Recursion &amp; Backtracking — Animated Guide • Replay any animation, turn on 🎵 sound • Trust the recursion 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- renderers ---- */
+function stackR(cont, frames, opt={}){ cont.innerHTML=frames.map((f,i)=>`<div class="frame ${(opt.cls&&opt.cls[i])||''}">${f}</div>`).join(''); }
+function rowR(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>`<div class="cell ${(opt.cls&&opt.cls[i])||''}">${v}</div>`).join(''); }
+function chipsR(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>`<span class="chip2 ${(opt.cls&&opt.cls[i])||''}">${v}</span>`).join(''); }
+let TID=0;
+function tnode(label){ return {label, ch:[], _id:TID++, _cls:''}; }
+function treeSVG(cont, root, opt={}){ let leaf=0; (function lay(n,d){ n._d=d; if(!n.ch.length){ n._x=leaf++; } else { n.ch.forEach(c=>lay(c,d+1)); n._x=(n.ch[0]._x+n.ch[n.ch.length-1]._x)/2; } })(root,0);
+  const leaves=Math.max(leaf,1); const maxD=(function md(n){ let m=n._d; n.ch.forEach(c=>m=Math.max(m,md(c))); return m; })(root);
+  const W=Math.max(300,44+leaves*54), lh=58, H=28+maxD*lh+28; const px=n=>26+(leaves<=1?0.5:n._x/(leaves-1))*(W-52), py=n=>26+n._d*lh; let e='',ns='';
+  (function draw(n){ n.ch.forEach(c=>{ const on=(c._cls&&c._cls!=='fade')?'on':''; e+=`<line class="tedge ${on}" x1="${px(n)}" y1="${py(n)}" x2="${px(c)}" y2="${py(c)}"/>`; draw(c); }); })(root);
+  (function draw(n){ const cls=n._cls||''; const fade=cls.includes('fade')?'fade':''; ns+=`<circle class="tnode ${cls}" cx="${px(n)}" cy="${py(n)}" r="16"/><text class="tlbl ${fade}" x="${px(n)}" y="${py(n)}">${n.label}</text>`; n.ch.forEach(draw); })(root);
+  cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="tsvg">${e}${ns}</svg>`;
+}
+function fadeAll(root){ (function f(n){ n._cls='fade'; n.ch.forEach(f); })(root); }
+function preorder(root){ const out=[]; (function go(n){ out.push(n); n.ch.forEach(go); })(root); return out; }
+
+/* ================= 1. basics factorial ================= */
+(function(){
+  const st=$('#baStatus'),sp=$('#baSpeed'),stats=$('#baStats'),cont=$('#baStack');
+  function build(){ stackR(cont,[]); stats.innerHTML=''; st.textContent='Press play to compute factorial(4).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const frames=[];
+    for(let n=4;n>=1;n--){ frames.push(`factorial(${n})`); stackR(cont,frames,{[frames.length-1]:'cur'}); tickSound(); st.innerHTML=`Call factorial(${n}) = ${n} · factorial(${n-1}).`; await sleep(+sp.value); }
+    frames.push('factorial(0) = 1 ← base'); stackR(cont,frames,{[frames.length-1]:'done'}); blip(680,0.1,'sine',0.1); st.innerHTML=`Base case: factorial(0) = 1. Now return &amp; multiply up…`; await sleep(+sp.value*1.2);
+    let res=1; frames.pop();
+    for(let n=1;n<=4;n++){ res*=n; frames[frames.length-1]=`factorial(${n}) = ${res}`; stackR(cont,frames,{[frames.length-1]:'done'}); tickSound(); st.innerHTML=`Return factorial(${n}) = ${n}·${res/n} = <span class="k">${res}</span>.`; await sleep(+sp.value); frames.pop(); }
+    stackR(cont,[`factorial(4) = 24`],{0:'done'}); stats.innerHTML=`<span class="pill green">4! = 24</span>`; st.innerHTML=`🔁 factorial(4) = <span class="k">24</span> — descend to base, multiply on return!`; ANIM=false; celebrate(cont);
+  }
+  $('#baPlay').onclick=play; $('#baReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. single branch sum ================= */
+(function(){
+  const st=$('#sbStatus'),sp=$('#sbSpeed'),stats=$('#sbStats'),cont=$('#sbStack');
+  function build(){ stackR(cont,[]); stats.innerHTML=''; st.textContent='Press play to compute sum(5) = 5+4+3+2+1.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const frames=[];
+    for(let n=5;n>=1;n--){ frames.push(`sum(${n}) = ${n} + sum(${n-1})`); stackR(cont,frames,{[frames.length-1]:'cur'}); tickSound(); st.innerHTML=`One recursive call: sum(${n}).`; await sleep(+sp.value); }
+    frames.push('sum(0) = 0 ← base'); stackR(cont,frames,{[frames.length-1]:'done'}); blip(680,0.1,'sine',0.1); await sleep(+sp.value); frames.pop();
+    let res=0; for(let n=1;n<=5;n++){ res+=n; frames[frames.length-1]=`sum(${n}) = ${res}`; stackR(cont,frames,{[frames.length-1]:'done'}); tickSound(); st.innerHTML=`Return sum(${n}) = <span class="k">${res}</span>.`; await sleep(+sp.value); frames.pop(); }
+    stackR(cont,[`sum(5) = 15`],{0:'done'}); stats.innerHTML=`<span class="pill green">sum(5) = 15</span>`; st.innerHTML=`📏 sum(5) = <span class="k">15</span> — a single chain of 5 frames (O(n))!`; ANIM=false; celebrate(cont);
+  }
+  $('#sbPlay').onclick=play; $('#sbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. recursion tree fib ================= */
+(function(){
+  const st=$('#trStatus'),sp=$('#trSpeed'),stats=$('#trStats'),cont=$('#trTree');
+  function makeFib(n){ const nd=tnode('fib('+n+')'); nd.n=n; if(n>=2){ nd.ch=[makeFib(n-1),makeFib(n-2)]; } return nd; }
+  let root;
+  function build(){ TID=0; root=makeFib(4); fadeAll(root); treeSVG(cont,root); stats.innerHTML=''; st.textContent='Press play to build the fib(4) recursion tree.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=makeFib(4); fadeAll(root); const order=preorder(root); const seen={};
+    for(const nd of order){ nd._cls = (nd.n<2)?'leaf':(seen[nd.n]!==undefined?'rep':'cur'); if(nd.n>=2)seen[nd.n]=true; treeSVG(cont,root); tickSound(); st.innerHTML=`Call ${nd.label}${nd.n<2?' → base':''}${nd._cls==='rep'?' (recomputed!)':''}.`; await sleep(+sp.value); if(nd._cls==='cur')nd._cls='done'; treeSVG(cont,root); }
+    stats.innerHTML=`<span class="pill blue">9 calls for fib(4)=3</span>`; st.innerHTML=`🌳 fib(4) = <span class="k">3</span> — the tree has 9 nodes; pink = recomputed (memoize to fix)!`; ANIM=false; celebrate(cont);
+  }
+  $('#trPlay').onclick=play; $('#trReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. recursion stack ================= */
+(function(){
+  const st=$('#skStatus'),sp=$('#skSpeed'),stats=$('#skStats'),cont=$('#skStack');
+  function build(){ stackR(cont,[]); stats.innerHTML=''; st.textContent='Press play to watch the stack push and pop through fib(4).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const frames=[]; let maxD=0;
+    async function fib(n){ frames.push(`fib(${n})`); maxD=Math.max(maxD,frames.length); stackR(cont,frames,{[frames.length-1]:'cur'}); tickSound(); st.innerHTML=`Push fib(${n}). Stack depth = <span class="k">${frames.length}</span> (max ${maxD}).`; stats.innerHTML=`<span class="pill blue">depth ${frames.length} / max ${maxD}</span>`; await sleep(+sp.value); let r; if(n<2)r=n; else r=await fib(n-1)+await fib(n-2); frames.pop(); stackR(cont,frames); await sleep(+sp.value*0.5); return r; }
+    const res=await fib(4);
+    stats.innerHTML=`<span class="pill green">fib(4)=${res}, max depth ${maxD}</span>`; st.innerHTML=`📚 fib(4) = <span class="k">${res}</span> — 9 total calls, but max stack depth only <span class="k">${maxD}</span> (= tree height)!`; ANIM=false; celebrate(cont);
+  }
+  $('#skPlay').onclick=play; $('#skReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. pass by reference ================= */
+(function(){
+  const A=[1,2]; const st=$('#refStatus'),sp=$('#refSpeed'),stats=$('#refStats');
+  function buf(path,cls){ rowR($('#refBuf'), path.length?path:['(empty)'], {cls}); }
+  function build(){ buf([]); chipsR($('#refOut'),[]); stats.innerHTML=''; st.textContent='Press play to generate subsets via a shared buffer.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const path=[]; const out=[];
+    async function solve(i){ if(i===A.length){ out.push('{'+path.join(',')+'}'); chipsR($('#refOut'),out,{[out.length-1]:'gold'}); buf(path.slice(),{}); blip(680,0.09,'sine',0.1); st.innerHTML=`Reached end → record subset <span class="k">{${path.join(',')}}</span> (a copy!).`; await sleep(+sp.value); return; }
+      await solve(i+1); // exclude
+      path.push(A[i]); buf(path.slice(),{[path.length-1]:'add'}); tickSound(); st.innerHTML=`path.push(${A[i]}) → shared buffer = [${path.join(',')}].`; await sleep(+sp.value);
+      await solve(i+1); // include
+      const removed=path.pop(); buf(path.concat(removed),{[path.length]:'rem'}); tickSound(); st.innerHTML=`path.pop() removes ${removed} → restore buffer to [${path.join(',')}].`; await sleep(+sp.value); buf(path.slice(),{}); }
+    await solve(0);
+    buf([]); stats.innerHTML=`<span class="pill green">${out.length} subsets</span>`; st.innerHTML=`🔗 Generated <span class="k">${out.length}</span> subsets — the shared buffer is restored by pop() after each branch!`; ANIM=false; celebrate($('#refOut'));
+  }
+  $('#refPlay').onclick=play; $('#refReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. distinct paths I ================= */
+(function(){
+  const R=3,C=3; const st=$('#dp1Status'),sp=$('#dp1Speed'),stats=$('#dp1Stats'),cont=$('#dp1Tree');
+  // build recursion tree of countPaths(i,j) for a 3x3 grid (destination bottom-right)
+  function make(i,j){ const nd=tnode(`(${i},${j})`); nd.i=i;nd.j=j; if(i<R-1||j<C-1){ nd.ch=[]; if(i<R-1)nd.ch.push(make(i+1,j)); if(j<C-1)nd.ch.push(make(i,j+1)); } return nd; }
+  let root;
+  function build(){ TID=0; root=make(0,0); fadeAll(root); treeSVG(cont,root); stats.innerHTML=''; st.textContent='Press play to count paths on a 3×3 grid by recursion.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=make(0,0); fadeAll(root); let paths=0; const order=preorder(root);
+    for(const nd of order){ const isDest=(nd.i===R-1&&nd.j===C-1); nd._cls=isDest?'leaf':'cur'; if(isDest)paths++; treeSVG(cont,root); tickSound(); st.innerHTML=`Visit cell (${nd.i},${nd.j})${isDest?` → reached goal! path #${paths}`:''}.`; stats.innerHTML=`<span class="pill blue">paths = ${paths}</span>`; await sleep(+sp.value); if(!isDest)nd._cls='done'; }
+    st.innerHTML=`🧭 Distinct paths on a 3×3 grid = <span class="k">${paths}</span> (each leaf = one full route)!`; ANIM=false; celebrate(cont);
+  }
+  $('#dp1Play').onclick=play; $('#dp1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. distinct paths II (DP) ================= */
+(function(){
+  const R=3,C=3; const st=$('#dp2Status'),sp=$('#dp2Speed'),stats=$('#dp2Stats'),cont=$('#dp2Grid');
+  function draw(g,cls){ let h=`<div class="grid" style="grid-template-columns:repeat(${C},1fr)">`; for(let i=0;i<R;i++)for(let j=0;j<C;j++){ const v=g[i][j]; h+=`<div class="gc ${cls&&cls[i+','+j]||''}">${v===null?'·':v}</div>`; } h+='</div>'; cont.innerHTML=h; }
+  function build(){ draw(Array.from({length:R},()=>Array(C).fill(null))); stats.innerHTML=''; st.textContent='Press play to fill the DP grid.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const g=Array.from({length:R},()=>Array(C).fill(null));
+    for(let i=0;i<R;i++)for(let j=0;j<C;j++){ let v; const cls={[i+','+j]:'cur'}; if(i===0||j===0){ v=1; } else { v=g[i-1][j]+g[i][j-1]; cls[(i-1)+','+j]='dep'; cls[i+','+(j-1)]='dep'; } draw(g,cls); tickSound(); st.innerHTML=`dp[${i}][${j}] = ${(i===0||j===0)?'1 (edge)':`${g[i-1][j]} + ${g[i][j-1]} = ${v}`}.`; await sleep(+sp.value); g[i][j]=v; draw(g,{[i+','+j]:'done'}); await sleep(+sp.value*0.2); }
+    draw(g,{[(R-1)+','+(C-1)]:'ans'}); stats.innerHTML=`<span class="pill green">paths = ${g[R-1][C-1]}</span>`; st.innerHTML=`🗺️ DP grid filled → <span class="k">${g[R-1][C-1]}</span> paths, each cell computed once!`; ANIM=false; celebrate(cont);
+  }
+  $('#dp2Play').onclick=play; $('#dp2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. letter combos ================= */
+(function(){
+  const MAP={'2':'abc','3':'def'}; const D='23'; const st=$('#lcStatus'),sp=$('#lcSpeed'),stats=$('#lcStats'),cont=$('#lcTree');
+  function makeTree(i,prefix){ const nd=tnode(prefix||'root'); if(i<D.length){ nd.ch=[...MAP[D[i]]].map(ch=>makeTree(i+1,prefix+ch)); } return nd; }
+  let root;
+  function build(){ TID=0; root=makeTree(0,''); fadeAll(root); treeSVG(cont,root); chipsR($('#lcOut'),[]); stats.innerHTML=''; st.textContent='Press play to generate letter combinations of "23".'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=makeTree(0,''); fadeAll(root); const order=preorder(root); const out=[];
+    for(const nd of order){ const isLeaf=!nd.ch.length; nd._cls=isLeaf?'leaf':'cur'; treeSVG(cont,root); tickSound(); if(isLeaf){ out.push(nd.label); chipsR($('#lcOut'),out,{[out.length-1]:'gold'}); st.innerHTML=`Leaf → combination <span class="k">${nd.label}</span>.`; } else st.innerHTML=`Branch on digit letters → ${nd.label==='root'?'start':`"${nd.label}"`}.`; stats.innerHTML=`<span class="pill blue">${out.length} combos</span>`; await sleep(+sp.value); if(!isLeaf)nd._cls='done'; }
+    st.innerHTML=`☎️ "23" → <span class="k">${out.length}</span> combinations: ${out.join(', ')}!`; ANIM=false; celebrate(cont);
+  }
+  $('#lcPlay').onclick=play; $('#lcReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. letter combos in-place ================= */
+(function(){
+  const MAP={'2':'abc','3':'def'}; const D='23'; const st=$('#lc2Status'),sp=$('#lc2Speed'),stats=$('#lc2Stats');
+  function build(){ rowR($('#lc2Buf'),['_','_']); chipsR($('#lc2Out'),[]); stats.innerHTML=''; st.textContent='Press play for the in-place buffer version.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const buf=['_','_']; const out=[];
+    async function solve(i){ if(i===D.length){ out.push(buf.join('')); chipsR($('#lc2Out'),out,{[out.length-1]:'gold'}); rowR($('#lc2Buf'),buf.slice(),{0:'on',1:'on'}); blip(680,0.09,'sine',0.1); st.innerHTML=`Buffer full → snapshot <span class="k">${buf.join('')}</span>.`; await sleep(+sp.value); return; }
+      for(const ch of MAP[D[i]]){ buf[i]=ch; rowR($('#lc2Buf'),buf.slice(),{[i]:'cur'}); tickSound(); st.innerHTML=`buf[${i}] = '${ch}' (reuse the same buffer).`; await sleep(+sp.value); await solve(i+1); } buf[i]='_'; }
+    await solve(0);
+    rowR($('#lc2Buf'),['_','_']); stats.innerHTML=`<span class="pill green">${out.length} combos</span>`; st.innerHTML=`💾 Same <span class="k">${out.length}</span> combos using one length-2 buffer — no per-branch strings!`; ANIM=false; celebrate($('#lc2Out'));
+  }
+  $('#lc2Play').onclick=play; $('#lc2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. all subsets ================= */
+(function(){
+  const A=[1,2,3]; const st=$('#subStatus'),sp=$('#subSpeed'),stats=$('#subStats'),cont=$('#subTree');
+  function make(i,path){ const nd=tnode(i===0?'{}':'{'+path.join(',')+'}'); if(i<A.length){ nd.ch=[ make(i+1,path), make(i+1,[...path,A[i]]) ]; } return nd; }
+  let root;
+  function build(){ TID=0; root=make(0,[]); fadeAll(root); treeSVG(cont,root); chipsR($('#subOut'),[]); stats.innerHTML=''; st.textContent='Press play to generate all subsets of {1,2,3}.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=make(0,[]); fadeAll(root); const order=preorder(root); const out=[];
+    for(const nd of order){ const isLeaf=!nd.ch.length; nd._cls=isLeaf?'leaf':'cur'; treeSVG(cont,root); tickSound(); if(isLeaf){ out.push(nd.label); chipsR($('#subOut'),out,{[out.length-1]:'gold'}); st.innerHTML=`Leaf → subset <span class="k">${nd.label}</span>.`; } else st.innerHTML=`Decide include/exclude…`; stats.innerHTML=`<span class="pill blue">${out.length} subsets</span>`; await sleep(+sp.value); if(!isLeaf)nd._cls='done'; }
+    st.innerHTML=`🎛️ {1,2,3} has <span class="k">${out.length}</span> = 2³ subsets: ${out.join(', ')}!`; ANIM=false; celebrate(cont);
+  }
+  $('#subPlay').onclick=play; $('#subReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. subsets bitmask ================= */
+(function(){
+  const A=[1,2,3]; const n=A.length; const st=$('#bmStatus'),sp=$('#bmSpeed'),stats=$('#bmStats');
+  function bits(mask,cls){ const arr=[]; for(let j=n-1;j>=0;j--) arr.push((mask>>j)&1); rowR($('#bmBits'),arr.map(b=>b?'1':'0'),{cls}); }
+  function build(){ bits(0); chipsR($('#bmOut'),[]); stats.innerHTML=''; st.textContent='Press play to enumerate subsets via bitmasks.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const out=[];
+    for(let mask=0;mask<(1<<n);mask++){ const sub=[]; const cls={}; for(let j=0;j<n;j++){ if((mask>>j)&1){ sub.push(A[j]); cls[n-1-j]='on'; } else cls[n-1-j]='off'; } bits(mask,cls); tickSound(); out.push('{'+sub.join(',')+'}'); chipsR($('#bmOut'),out,{[out.length-1]:'gold'}); st.innerHTML=`mask ${mask.toString(2).padStart(n,'0')} → subset <span class="k">{${sub.join(',')}}</span>.`; stats.innerHTML=`<span class="pill blue">${out.length} / ${1<<n}</span>`; await sleep(+sp.value); }
+    st.innerHTML=`🔢 All <span class="k">${1<<n}</span> subsets from masks 000..111 — no recursion!`; ANIM=false; celebrate($('#bmOut'));
+  }
+  $('#bmPlay').onclick=play; $('#bmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. divide & conquer ================= */
+(function(){
+  const A=[3,1,4,1,5]; const st=$('#dncStatus'),sp=$('#dncSpeed'),stats=$('#dncStats'),cont=$('#dncTree');
+  function make(lo,hi){ const nd=tnode('['+A.slice(lo,hi+1).join(',')+']'); nd.lo=lo;nd.hi=hi; if(lo<hi){ const mid=(lo+hi)>>1; nd.ch=[make(lo,mid),make(mid+1,hi)]; } return nd; }
+  let root;
+  function build(){ TID=0; root=make(0,A.length-1); fadeAll(root); treeSVG(cont,root); stats.innerHTML=''; st.textContent='Press play to find the max via divide & conquer.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=make(0,A.length-1); fadeAll(root);
+    // reveal split (preorder), then combine (postorder)
+    for(const nd of preorder(root)){ nd._cls='cur'; treeSVG(cont,root); tickSound(); st.innerHTML=`Divide: ${nd.label}.`; await sleep(+sp.value*0.7); nd._cls='done'; }
+    async function combine(nd){ if(!nd.ch.length){ nd.val=A[nd.lo]; nd._cls='leaf'; nd.label='['+A[nd.lo]+']='+nd.val; treeSVG(cont,root); tickSound(); st.innerHTML=`Base: single element ${nd.val}.`; await sleep(+sp.value*0.7); return nd.val; }
+      const l=await combine(nd.ch[0]); const r=await combine(nd.ch[1]); nd.val=Math.max(l,r); nd._cls='leaf'; nd.label='max='+nd.val; treeSVG(cont,root); blip(600,0.09,'sine',0.09); st.innerHTML=`Combine: max(${l}, ${r}) = <span class="k">${nd.val}</span>.`; await sleep(+sp.value); return nd.val; }
+    const res=await combine(root);
+    stats.innerHTML=`<span class="pill green">max = ${res}</span>`; st.innerHTML=`✂️ Max of [3,1,4,1,5] = <span class="k">${res}</span> — split, conquer, combine!`; ANIM=false; celebrate(cont);
+  }
+  $('#dncPlay').onclick=play; $('#dncReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. fast exponentiation ================= */
+(function(){
+  const st=$('#feStatus'),sp=$('#feSpeed'),stats=$('#feStats'),w=$('#feWork');
+  function build(){ w.innerHTML='2 ^ 10'; stats.innerHTML=''; st.textContent='Press play to compute 2¹⁰ by fast exponentiation.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const lines=[]; const trace=[];
+    async function power(x,n,depth){ const pad='&nbsp;'.repeat(depth*2); if(n===0){ lines.push(`${pad}power(${x},0) = 1`); w.innerHTML=lines.join('<br>'); tickSound(); await sleep(+sp.value); return 1; }
+      if(n%2===0){ lines.push(`${pad}power(${x},${n}) = power(${x},${n/2})²`); w.innerHTML=lines.join('<br>'); tickSound(); st.innerHTML=`${n} even → square power(${x},${n/2}).`; await sleep(+sp.value); const h=await power(x,n/2,depth+1); const r=h*h; lines.push(`${pad}= ${h}² = <b>${r}</b>`); w.innerHTML=lines.join('<br>'); await sleep(+sp.value); return r; }
+      else { lines.push(`${pad}power(${x},${n}) = ${x}·power(${x},${n-1})`); w.innerHTML=lines.join('<br>'); tickSound(); st.innerHTML=`${n} odd → ${x} · power(${x},${n-1}).`; await sleep(+sp.value); const h=await power(x,n-1,depth+1); const r=x*h; lines.push(`${pad}= ${x}·${h} = <b>${r}</b>`); w.innerHTML=lines.join('<br>'); await sleep(+sp.value); return r; } }
+    const res=await power(2,10,0);
+    stats.innerHTML=`<span class="pill green">2¹⁰ = ${res}</span>`; st.innerHTML=`⚡ 2¹⁰ = <span class="k">${res}</span> in only ~log₂(10) ≈ 4 squarings!`; ANIM=false; celebrate(w);
+  }
+  $('#fePlay').onclick=play; $('#feReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 14. balanced parens ================= */
+(function(){
+  const N=3; const st=$('#parStatus'),sp=$('#parSpeed'),stats=$('#parStats'),cont=$('#parTree');
+  function make(s,open,close){ const nd=tnode(s||'ε'); if(s.length<2*N){ nd.ch=[]; if(open<N)nd.ch.push(make(s+'(',open+1,close)); if(close<open)nd.ch.push(make(s+')',open,close+1)); } return nd; }
+  let root;
+  function build(){ TID=0; root=make('',0,0); fadeAll(root); treeSVG(cont,root); chipsR($('#parOut'),[]); stats.innerHTML=''; st.textContent='Press play to generate valid parentheses for n=3.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=make('',0,0); fadeAll(root); const order=preorder(root); const out=[];
+    for(const nd of order){ const isLeaf=!nd.ch.length && nd.label.replace('ε','').length===2*N; nd._cls=isLeaf?'leaf':'cur'; treeSVG(cont,root); tickSound(); if(isLeaf){ out.push(nd.label); chipsR($('#parOut'),out,{[out.length-1]:'gold'}); st.innerHTML=`Valid string <span class="k">${nd.label}</span>!`; } else st.innerHTML=`Extend "${nd.label}" (add '(' if open&lt;n, ')' if close&lt;open).`; stats.innerHTML=`<span class="pill blue">${out.length} valid</span>`; await sleep(+sp.value); if(!isLeaf)nd._cls='done'; }
+    st.innerHTML=`🧬 <span class="k">${out.length}</span> valid strings for n=3: ${out.join(', ')} (= Catalan C₃)!`; ANIM=false; celebrate(cont);
+  }
+  $('#parPlay').onclick=play; $('#parReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. lexicographic subsets ================= */
+(function(){
+  const A=[1,2,3]; const st=$('#lexStatus'),sp=$('#lexSpeed'),stats=$('#lexStats');
+  function build(){ chipsR($('#lexOut'),[]); stats.innerHTML=''; st.textContent='Press play to generate subsets of {1,2,3} in order.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const out=[]; const path=[];
+    async function solve(start){ out.push('{'+path.join(',')+'}'); chipsR($('#lexOut'),out,{[out.length-1]:'gold'}); tickSound(); st.innerHTML=`Record <span class="k">{${path.join(',')}}</span>.`; await sleep(+sp.value);
+      for(let j=start;j<A.length;j++){ path.push(A[j]); await solve(j+1); path.pop(); } }
+    await solve(0);
+    stats.innerHTML=`<span class="pill green">${out.length} subsets in order</span>`; st.innerHTML=`🔤 Lexicographic subsets: <span class="k">${out.join(', ')}</span> (${out.length} total)!`; ANIM=false; celebrate($('#lexOut'));
+  }
+  $('#lexPlay').onclick=play; $('#lexReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 16. subset sum I ================= */
+(function(){
+  const A=[3,34,4,12,5,2]; const T=9; const st=$('#ss1Status'),sp=$('#ss1Speed'),stats=$('#ss1Stats'),cont=$('#ss1Tree');
+  // small illustrative tree over first few elements to reach 9 = 4+5
+  const items=[3,4,5,12]; // ordered so 4+5 found; keeps tree small
+  function make(i,rem,taken){ const nd=tnode(`t=${rem}`); nd.rem=rem; nd.taken=taken; if(rem>0 && i<items.length){ nd.ch=[ make(i+1,rem,taken), make(i+1,rem-items[i],[...taken,items[i]]) ]; } return nd; }
+  let root;
+  function build(){ TID=0; root=make(0,T,[]); fadeAll(root); treeSVG(cont,root); stats.innerHTML=''; st.textContent='Press play to check if a subset sums to 9.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; TID=0; root=make(0,T,[]); fadeAll(root); let found=null;
+    for(const nd of preorder(root)){ if(found)break; nd._cls=(nd.rem===0)?'leaf':'cur'; treeSVG(cont,root); tickSound(); if(nd.rem===0){ found=nd.taken; st.innerHTML=`Target hit 0 with subset <span class="k">{${nd.taken.join(',')}}</span> → <b style="color:var(--found)">YES</b>!`; break; } st.innerHTML=`Remaining target = ${nd.rem}${nd.taken.length?` (took ${nd.taken.join(',')})`:''}.`; await sleep(+sp.value); if(nd._cls==='cur')nd._cls='done'; }
+    treeSVG(cont,root); stats.innerHTML=found?`<span class="pill green">true — {${found.join(',')}}</span>`:`<span class="pill pink">no subset</span>`; st.innerHTML=`🎯 Subset summing to 9? <span class="k">${found?'YES ({'+found.join(',')+'})':'NO'}</span>!`; ANIM=false; celebrate(cont);
+  }
+  $('#ss1Play').onclick=play; $('#ss1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 17. subset sum II ================= */
+(function(){
+  const A=[1,2,3,4,5]; const T=5; const st=$('#ss2Status'),sp=$('#ss2Speed'),stats=$('#ss2Stats');
+  function build(){ chipsR($('#ss2Out'),[]); stats.innerHTML=''; st.textContent='Press play to list all subsets of {1,2,3,4,5} summing to 5.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const out=[]; const path=[];
+    async function solve(i,sum){ if(sum===T){ out.push('{'+path.join(',')+'}'); chipsR($('#ss2Out'),out,{[out.length-1]:'gold'}); blip(680,0.09,'sine',0.1); st.innerHTML=`Found subset <span class="k">{${path.join(',')}}</span> = 5 → keep searching…`; await sleep(+sp.value); return; }
+      if(i>=A.length || sum>T)return; path.push(A[i]); await solve(i+1,sum+A[i]); path.pop(); await solve(i+1,sum); }
+    await solve(0,0);
+    stats.innerHTML=`<span class="pill green">${out.length} subsets</span>`; st.innerHTML=`🧮 <span class="k">${out.length}</span> subsets sum to 5: ${out.join(', ')} — explored the whole tree!`; ANIM=false; celebrate($('#ss2Out'));
+  }
+  $('#ss2Play').onclick=play; $('#ss2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

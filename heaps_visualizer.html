@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Heaps & Priority Queues — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .heapwrap{overflow-x:auto; display:flex; justify-content:center; margin:12px 0; padding:4px}
+  .heapsvg{display:block}
+  .heapsvg .hedge{stroke:#2c3d6e; stroke-width:3; transition:.3s}
+  .heapsvg .hedge.on{stroke:var(--accent)}
+  .heapsvg .hnode{fill:#1d2a52; stroke:#2c3d6e; stroke-width:2.5; transition:.3s}
+  .heapsvg .hnode.cmp{fill:#3a3620; stroke:var(--mid); stroke-width:3.5}
+  .heapsvg .hnode.swap{fill:#3a1d2a; stroke:var(--accent2); stroke-width:4}
+  .heapsvg .hnode.top{fill:#0d3b30; stroke:var(--found); stroke-width:4}
+  .heapsvg .hnode.sorted{fill:#22345f; stroke:var(--accent); stroke-width:3.5; opacity:.6}
+  .heapsvg .hnode.new{fill:#0d3b30; stroke:var(--found); stroke-width:4}
+  .heapsvg .hnlbl{fill:var(--ink); font-weight:800; font-size:15px; text-anchor:middle; dominant-baseline:central; font-family:'Consolas',monospace}
+  .heapsvg .hidx{fill:var(--muted); font-weight:700; font-size:10.5px; text-anchor:middle; dominant-baseline:central}
+
+  .arrrow{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; min-height:44px; margin:6px 0}
+  .hcell{position:relative; min-width:40px; height:40px; padding:0 6px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:15px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .3s; font-family:'Consolas',monospace}
+  .hcell .ix{position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:10px; color:var(--muted); font-weight:700}
+  .hcell.cmp{border-color:var(--mid); background:#3a3620}
+  .hcell.swap{border-color:var(--accent2); background:#3a1d2a}
+  .hcell.top{border-color:var(--found); background:#0d3b30}
+  .hcell.sorted{border-color:var(--accent); background:#22345f; opacity:.65}
+  .hcell.new{border-color:var(--found); background:#0d3b30}
+  .lbl{text-align:center; color:var(--accent); font-weight:800; font-size:12px; margin:6px 0 2px}
+
+  .heappanel{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0; min-height:38px}
+  .hchip{background:#1d2a52; border:2px solid #2c3d6e; border-radius:9px; padding:5px 11px; font-weight:800; font-family:'Consolas',monospace; font-size:14px; transition:.3s}
+  .hchip.top{border-color:var(--found); background:#0d3b30; color:var(--found)}
+  .hchip.cmp{border-color:var(--mid); background:#3a3620}
+  .hchip.out{border-color:var(--accent2); background:#3a1d2a; opacity:.6}
+  .outrow{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:6px 0; min-height:34px}
+  .ochip{background:#22345f; border:2px solid var(--accent); border-radius:9px; padding:5px 11px; font-weight:800; font-family:'Consolas',monospace; font-size:13.5px; color:var(--accent)}
+  .rowset{display:flex; flex-direction:column; gap:5px; align-items:center; margin:8px 0}
+  .arline{display:flex; gap:5px; align-items:center}
+  .arline .tag{min-width:42px; text-align:right; color:var(--muted); font-size:12px; font-weight:700}
+  .sc{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:800;background:#1d2a52;border:2px solid #2c3d6e;font-family:'Consolas',monospace;font-size:13px;transition:.3s}
+  .sc.ptr{border-color:var(--mid); background:#3a3620}
+  .sc.used{opacity:.4}
+  .sc.top{border-color:var(--found); background:#0d3b30}
+  .planesvg .pt{fill:#4cc9f0; transition:.3s}
+  .planesvg .pt.sel{fill:var(--found)}
+  .planesvg .pt.cmp{fill:var(--mid)}
+  .planesvg .axis{stroke:#3a4a75; stroke-width:1.5}
+  .planesvg .ptlbl{fill:var(--muted); font-size:10px; text-anchor:middle}
+  .grid{display:inline-grid; gap:5px}
+  .gc{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-weight:800;font-size:15px;background:#1d2a52;border:2px solid #2c3d6e;font-family:'Consolas',monospace;transition:.3s}
+  .gc.cmp{border-color:var(--mid); background:#3a3620}
+  .gc.used{border-color:var(--accent); background:#22345f; opacity:.6}
+  .gc.top{border-color:var(--found); background:#0d3b30}
+  .timeline{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin:8px 0}
+  .slot{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-weight:800;font-family:'Consolas',monospace;background:#1d2a52;border:2px solid #2c3d6e;transition:.3s}
+  .slot.idle{color:var(--muted); border-style:dashed; background:#12182f}
+  .slot.fill{border-color:var(--found); background:#0d3b30; color:var(--found)}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  .pill.gold{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.4); color:var(--mid)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Heaps & Priority Queues — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch sift-ups, sift-downs, heap-sort, and every "top-k" trick come alive on a binary heap. Built so heaps stick for life.</p>
+</header>
+
+<nav>
+  <a href="#wh">🏔️ What is a Heap</a>
+  <a href="#b1">🔼 Build Max-Heap I</a>
+  <a href="#b2">🏗️ Build Max-Heap II</a>
+  <a href="#op">⚙️ Heap Operations</a>
+  <a href="#pq">🎫 Priority Queue</a>
+  <a href="#hs">📊 Heap Sort</a>
+  <a href="#kc">📍 K Closest Points</a>
+  <a href="#tr">🪢 Tying Ropes</a>
+  <a href="#mk">🔗 Merge K Sorted</a>
+  <a href="#ks">➕ K Smallest Pairs</a>
+  <a href="#ki">💻 K Pairs (Impl)</a>
+  <a href="#km">🔳 Kth in Matrix</a>
+  <a href="#tk">🗓️ Task Scheduling</a>
+  <a href="#u1">✨ Limited Primes I</a>
+  <a href="#u2">🌟 Limited Primes II</a>
+</nav>
+
+<main>
+
+  <!-- 1 WHAT IS HEAP -->
+  <section id="wh">
+    <h2>🏔️ What is a Heap? <span class="badge">complete tree + array</span></h2>
+    <p class="lead">A heap is a <b>complete binary tree</b> stored in an array, obeying the heap property: in a <b>max-heap</b>, every parent ≥ its children (so the max sits at the root).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Array is the tree:</span> no pointers needed — node <code>i</code>'s children are <code>2i+1</code> and <code>2i+2</code>, and its parent is <code>(i−1)/2</code>. "Complete" (filled left-to-right) keeps the array gap-free and the height ≈ log n. The root is always the extreme (max here).</div>
+      <div class="steps-flow"><span class="chip">children of i = 2i+1, 2i+2</span><span class="arrow">·</span><span class="chip">parent of i = (i−1)/2</span><span class="arrow">·</span><span class="chip">root = max</span></div>
+      <div class="oneliner">🔒 Keep forever: "A heap = a complete binary tree in an array; parent-child links are pure index math."</div>
+    </div>
+    <div class="lbl">tree view</div><div class="heapwrap" id="whTree"></div>
+    <div class="lbl">array view (same thing!)</div><div class="arrrow" id="whArr"></div>
+    <div class="status" id="whStatus">Press play to see the array indices map onto the tree.</div>
+    <div class="stats" id="whStats"></div>
+    <div class="controls"><button class="btn" id="whPlay">▶ Show the mapping</button><button class="btn ghost" id="whReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="whSpeed" min="250" max="1800" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a <b>min-heap</b> flips the rule (parent ≤ children, min at root). Same structure, opposite comparison.</div></div>
+  </section>
+
+  <!-- 2 BUILD 1 -->
+  <section id="b1">
+    <h2>🔼 Building a Max-Heap I <span class="badge">insert + sift-up · O(n log n)</span></h2>
+    <p class="lead">Insert elements one at a time. Each new value goes at the end, then <b>sifts up</b> — swapping with its parent while it's larger.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Bubble the newcomer up:</span> add the value as the last leaf (keeps it complete), then compare with its parent and swap upward until the parent is bigger or it becomes the root. Doing this for all n values builds the heap in O(n log n).</div>
+      <div class="steps-flow"><span class="chip">append at end</span><span class="arrow">→</span><span class="chip">while &gt; parent: swap up</span><span class="arrow">→</span><span class="chip">repeat for each element</span></div>
+      <div class="oneliner">🔒 Keep forever: "Insert = append then sift-up; building by repeated insert is O(n log n)."</div>
+    </div>
+    <div class="lbl">tree</div><div class="heapwrap" id="b1Tree"></div>
+    <div class="arrrow" id="b1Arr"></div>
+    <div class="status" id="b1Status">Press play to insert [4, 10, 3, 5, 1] with sift-up.</div>
+    <div class="stats" id="b1Stats"></div>
+    <div class="controls"><button class="btn" id="b1Play">▶ Build by insertion</button><button class="btn ghost" id="b1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="b1Speed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> sift-up only ever compares with the <b>parent</b> — a single path to the root, so O(log n) per insert.</div></div>
+  </section>
+
+  <!-- 3 BUILD 2 -->
+  <section id="b2">
+    <h2>🏗️ Building a Max-Heap II <span class="badge">bottom-up heapify · O(n)</span></h2>
+    <p class="lead">Start with the array as-is and <b>sift down</b> every internal node, from the last parent up to the root. Surprisingly, this is only O(n).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Fix small subtrees first:</span> leaves are already valid heaps. Process parents from the last one backward, pushing each down into its (already-heapified) subtree. Most nodes are near the bottom with tiny sift distances → the total is O(n), beating repeated insertion.</div>
+      <div class="steps-flow"><span class="chip">start at last parent (n/2−1)</span><span class="arrow">→</span><span class="chip">sift-down each, going up</span><span class="arrow">→</span><span class="chip">O(n) total</span></div>
+      <div class="oneliner">🔒 Keep forever: "Heapify bottom-up (sift-down from last parent to root) builds a heap in O(n)."</div>
+    </div>
+    <div class="lbl">tree</div><div class="heapwrap" id="b2Tree"></div>
+    <div class="arrrow" id="b2Arr"></div>
+    <div class="status" id="b2Status">Press play for bottom-up heapify of [4, 10, 3, 5, 1].</div>
+    <div class="stats" id="b2Stats"></div>
+    <div class="controls"><button class="btn" id="b2Play">▶ Heapify (O(n))</button><button class="btn ghost" id="b2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="b2Speed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the O(n) bound comes from the sum n·Σ(h/2ʰ) — most nodes barely move because they're leaves.</div></div>
+  </section>
+
+  <!-- 4 OPERATIONS -->
+  <section id="op">
+    <h2>⚙️ Heap Operations <span class="badge">insert · extract-max</span></h2>
+    <p class="lead">The two core operations: <b>insert</b> (append + sift-up) and <b>extract-max</b> (take the root, move last to root, sift-down). Both O(log n).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Root out, patch the hole:</span> the max is always the root. To remove it, swap it with the last leaf, drop the leaf, then <b>sift the new root down</b> — repeatedly swapping with the larger child until order is restored.</div>
+      <div class="steps-flow"><span class="chip">insert: append + sift-up</span><span class="arrow">·</span><span class="chip">extract: root↔last, pop, sift-down</span></div>
+      <div class="oneliner">🔒 Keep forever: "Peek is O(1) at the root; insert &amp; extract are O(log n) via sift-up / sift-down."</div>
+    </div>
+    <div class="lbl">tree</div><div class="heapwrap" id="opTree"></div>
+    <div class="arrrow" id="opArr"></div>
+    <div class="status" id="opStatus">Press play to insert 20, then extract the max.</div>
+    <div class="stats" id="opStats"></div>
+    <div class="controls"><button class="btn" id="opPlay">▶ Insert &amp; extract</button><button class="btn ghost" id="opReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="opSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> sift-down must swap with the <b>larger</b> child (in a max-heap) — swapping with the smaller one breaks the property.</div></div>
+    <pre><code><span class="fn">extractMax</span>(){ max=a[<span class="num">0</span>]; a[<span class="num">0</span>]=a.pop();
+  i=<span class="num">0</span>; <span class="kw">while</span>(true){ l=<span class="num">2</span>i+<span class="num">1</span>,r=<span class="num">2</span>i+<span class="num">2</span>,big=i;
+    <span class="kw">if</span>(l&lt;n&amp;&amp;a[l]&gt;a[big])big=l; <span class="kw">if</span>(r&lt;n&amp;&amp;a[r]&gt;a[big])big=r;
+    <span class="kw">if</span>(big==i)<span class="kw">break</span>; swap(i,big); i=big; } <span class="kw">return</span> max; }</code></pre>
+  </section>
+
+  <!-- 5 PRIORITY QUEUE -->
+  <section id="pq">
+    <h2>🎫 Priority Queue <span class="badge">heap in action</span></h2>
+    <p class="lead">A priority queue always serves the highest-priority item next. A heap is its natural implementation: push = insert, poll = extract-top.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">VIP line:</span> unlike a normal FIFO queue, a PQ dequeues by <b>priority</b>, not arrival order. Back it with a heap and every push/poll is O(log n) while peek at the best is O(1). Here a max-heap PQ always hands back the largest value.</div>
+      <div class="steps-flow"><span class="chip">push → sift-up</span><span class="arrow">·</span><span class="chip">poll → remove root, sift-down</span><span class="arrow">·</span><span class="chip">peek → root O(1)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Priority queue = a heap: dequeue by priority, not by arrival."</div>
+    </div>
+    <div class="lbl">heap (index 0 = top)</div><div class="heappanel" id="pqPanel"></div>
+    <div class="lbl">polled (in priority order)</div><div class="outrow" id="pqOut"></div>
+    <div class="status" id="pqStatus">Press play to push a mix of values, then poll them by priority.</div>
+    <div class="stats" id="pqStats"></div>
+    <div class="controls"><button class="btn" id="pqPlay">▶ Push &amp; poll</button><button class="btn ghost" id="pqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pqSpeed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> polling a max-heap PQ repeatedly yields values in <b>descending</b> priority — the seed of heap sort.</div></div>
+  </section>
+
+  <!-- 6 HEAP SORT -->
+  <section id="hs">
+    <h2>📊 Heap Sort <span class="badge">O(n log n) · in-place</span></h2>
+    <p class="lead">Build a max-heap, then repeatedly swap the root (current max) to the end and shrink the heap, sifting down. The array sorts itself ascending.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Peel the max to the back:</span> once it's a max-heap, the largest is at index 0. Swap it with the last unsorted slot (locking it in place), shrink the heap by one, and sift the new root down. Repeat until the heap is empty — a sorted array remains, using no extra memory.</div>
+      <div class="steps-flow"><span class="chip">build max-heap</span><span class="arrow">→</span><span class="chip">swap root ↔ last, shrink</span><span class="arrow">→</span><span class="chip">sift-down, repeat</span></div>
+      <div class="oneliner">🔒 Keep forever: "Heap sort = build a max-heap, then extract-max into the tail repeatedly — in-place O(n log n)."</div>
+    </div>
+    <div class="arrrow" id="hsArr"></div>
+    <div class="status" id="hsStatus">Press play to heap-sort [5, 3, 8, 4, 1, 2].</div>
+    <div class="stats" id="hsStats"></div>
+    <div class="controls"><button class="btn" id="hsPlay">▶ Heap sort</button><button class="btn ghost" id="hsReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="hsSpeed" min="250" max="2000" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> heap sort is in-place (O(1) extra) but <b>not stable</b>, and usually slower in practice than quicksort due to cache misses.</div></div>
+  </section>
+
+  <!-- 7 K CLOSEST -->
+  <section id="kc">
+    <h2>📍 K Closest Points to Origin <span class="badge">max-heap of size k</span></h2>
+    <p class="lead">Keep a <b>max-heap of size k</b> holding the closest points so far; if a new point is nearer than the heap's farthest, swap it in.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Guard the top-k:</span> a max-heap keyed by distance keeps the <b>worst</b> of the current best-k at the root. For each point, if it's closer than that worst, pop the worst and push the newcomer. After all points, the heap holds the k closest. O(n log k). Here k=2.</div>
+      <div class="steps-flow"><span class="chip">push first k</span><span class="arrow">→</span><span class="chip">closer than root? replace</span><span class="arrow">→</span><span class="chip">heap = k closest</span></div>
+      <div class="oneliner">🔒 Keep forever: "Top-k closest = a size-k max-heap by distance; evict the farthest when a nearer one arrives."</div>
+    </div>
+    <div class="heapwrap" id="kcPlane"></div>
+    <div class="lbl">max-heap (by distance², root = farthest kept)</div><div class="heappanel" id="kcPanel"></div>
+    <div class="status" id="kcStatus">Press play to keep the 2 closest points to the origin.</div>
+    <div class="stats" id="kcStats"></div>
+    <div class="controls"><button class="btn" id="kcPlay">▶ Find 2 closest</button><button class="btn ghost" id="kcReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="kcSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> for "k smallest" use a <b>max</b>-heap of size k; for "k largest" use a <b>min</b>-heap of size k. (Opposite of intuition!)</div></div>
+  </section>
+
+  <!-- 8 TYING ROPES -->
+  <section id="tr">
+    <h2>🪢 Tying Ropes (Min Cost to Connect) <span class="badge">min-heap greedy</span></h2>
+    <p class="lead">Repeatedly join the two <b>shortest</b> ropes; the cost of each join is their combined length. A min-heap always surfaces the two smallest.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Cheapest joins first:</span> joining costs the sum of the two ropes, and longer ropes get re-counted in every later join — so always merge the two <b>smallest</b> to keep re-counting cheap. Pop two mins, push their sum, add to total. This Huffman-style greedy is optimal. Ropes [4,3,2,6] → <b>29</b>.</div>
+      <div class="steps-flow"><span class="chip">min-heap of lengths</span><span class="arrow">→</span><span class="chip">pop two smallest, cost += sum</span><span class="arrow">→</span><span class="chip">push sum, repeat</span></div>
+      <div class="oneliner">🔒 Keep forever: "Connect-ropes = always merge the two shortest (min-heap) — a Huffman greedy."</div>
+    </div>
+    <div class="lbl">min-heap of rope lengths</div><div class="heappanel" id="trPanel"></div>
+    <div class="status" id="trStatus">Press play to tie ropes [4, 3, 2, 6] at minimum cost.</div>
+    <div class="stats" id="trStats"></div>
+    <div class="controls"><button class="btn" id="trPlay">▶ Tie the ropes</button><button class="btn ghost" id="trReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="trSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the same min-heap merge builds Huffman codes and solves "minimum cost to merge files/stones".</div></div>
+  </section>
+
+  <!-- 9 MERGE K -->
+  <section id="mk">
+    <h2>🔗 Merge K Sorted Arrays <span class="badge">min-heap of heads</span></h2>
+    <p class="lead">Put the first element of each array into a min-heap; repeatedly pop the smallest and push the next element from that same array.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Smallest head wins:</span> the next value in the merged output is the minimum among all current array heads. A min-heap holding one candidate per array gives that in O(log k). Pop it, advance that array, push its new head. Total O(N log k).</div>
+      <div class="steps-flow"><span class="chip">push each array's head</span><span class="arrow">→</span><span class="chip">pop min → output</span><span class="arrow">→</span><span class="chip">push next from that array</span></div>
+      <div class="oneliner">🔒 Keep forever: "Merge k sorted = a min-heap of the k current heads; pop-min then advance that list."</div>
+    </div>
+    <div class="rowset" id="mkRows"></div>
+    <div class="lbl">min-heap of (value)</div><div class="heappanel" id="mkPanel"></div>
+    <div class="lbl">merged output</div><div class="outrow" id="mkOut"></div>
+    <div class="status" id="mkStatus">Press play to merge 3 sorted arrays.</div>
+    <div class="stats" id="mkStats"></div>
+    <div class="controls"><button class="btn" id="mkPlay">▶ Merge k arrays</button><button class="btn ghost" id="mkReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mkSpeed" min="300" max="2200" value="800" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the identical idea merges k sorted <b>linked lists</b> — heap holds one node per list.</div></div>
+  </section>
+
+  <!-- 10 K SMALLEST PAIRS -->
+  <section id="ks">
+    <h2>➕ K Smallest Sum Pairs <span class="badge">min-heap frontier</span></h2>
+    <p class="lead">From two sorted arrays, find the k pairs (one from each) with the smallest sums — without generating all n×m pairs.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Grow a frontier:</span> the smallest sum is always <code>(nums1[0], nums2[0])</code>. From any popped pair <code>(i,j)</code>, the next candidates are <code>(i+1,j)</code> and <code>(i,j+1)</code>. A min-heap ordered by sum always yields the next-smallest pair. Here <code>[1,7,11] × [2,4,6]</code>, k=3 → <b>(1,2),(1,4),(1,6)</b>.</div>
+      <div class="steps-flow"><span class="chip">seed heap with (0,0)</span><span class="arrow">→</span><span class="chip">pop min sum → output</span><span class="arrow">→</span><span class="chip">push (i+1,j) &amp; (i,j+1)</span></div>
+      <div class="oneliner">🔒 Keep forever: "K smallest pairs = min-heap over sums, expanding neighbor indices from each popped pair."</div>
+    </div>
+    <div class="lbl">min-heap of candidate pairs (by sum)</div><div class="heappanel" id="ksPanel"></div>
+    <div class="lbl">output pairs</div><div class="outrow" id="ksOut"></div>
+    <div class="status" id="ksStatus">Press play to find the 3 smallest-sum pairs.</div>
+    <div class="stats" id="ksStats"></div>
+    <div class="controls"><button class="btn" id="ksPlay">▶ K smallest pairs</button><button class="btn ghost" id="ksReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ksSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> use a <b>visited set</b> so the same (i,j) isn't pushed twice from two different parents.</div></div>
+  </section>
+
+  <!-- 11 K SMALLEST PAIRS IMPL -->
+  <section id="ki">
+    <h2>💻 K Smallest Pairs — Implementation <span class="badge">the code</span></h2>
+    <p class="lead">A common tidy variant: seed the heap with only <code>(nums1[i], 0)</code> for each i, then from a popped <code>(i,j)</code> push just <code>(i, j+1)</code>. Fewer entries, no visited set needed.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One pointer per row:</span> think of an n×m sum-matrix sorted along each row. Start with each row's first column in the heap. Popping <code>(i,j)</code> only ever needs its right neighbor <code>(i,j+1)</code> — each row advances independently, so no duplicates arise. Same k pairs, cleaner bookkeeping.</div>
+      <div class="steps-flow"><span class="chip">push (i,0) for all i</span><span class="arrow">→</span><span class="chip">pop min → output</span><span class="arrow">→</span><span class="chip">push (i, j+1) only</span></div>
+      <div class="oneliner">🔒 Keep forever: "Row-seeded heap: one pointer per nums1 element advancing through nums2 — no visited set."</div>
+    </div>
+    <div class="lbl">heap entries (i, j) → sum</div><div class="heappanel" id="kiPanel"></div>
+    <div class="lbl">output pairs</div><div class="outrow" id="kiOut"></div>
+    <div class="status" id="kiStatus">Press play for the row-seeded implementation.</div>
+    <div class="stats" id="kiStats"></div>
+    <div class="controls"><button class="btn" id="kiPlay">▶ Run implementation</button><button class="btn ghost" id="kiReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="kiSpeed" min="350" max="2400" value="1050" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> heap entries store <b>indices</b> (i, j), not values — so you can look up both numbers and advance j.</div></div>
+    <pre><code>heap = [(nums1[i]+nums2[<span class="num">0</span>], i, <span class="num">0</span>) <span class="kw">for</span> i]  <span class="cm">// min-heap by sum</span>
+<span class="kw">while</span> heap <span class="kw">and</span> len(res)&lt;k:
+  s,i,j = heappop(heap); res.append((nums1[i],nums2[j]))
+  <span class="kw">if</span> j+<span class="num">1</span> &lt; len(nums2): heappush(heap,(nums1[i]+nums2[j+<span class="num">1</span>], i, j+<span class="num">1</span>))</code></pre>
+  </section>
+
+  <!-- 12 KTH IN MATRIX -->
+  <section id="km">
+    <h2>🔳 Kth Smallest in a Sorted Matrix <span class="badge">min-heap merge</span></h2>
+    <p class="lead">In a matrix with rows and columns sorted ascending, treat each row as a sorted list and merge — the kth popped value is the answer.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Merge k rows, stop at k:</span> seed a min-heap with each row's first element. Pop the smallest and push the next element in that row. The kth pop is the kth smallest overall. Here k=8 in a 3×3 matrix → <b>13</b>.</div>
+      <div class="steps-flow"><span class="chip">push row heads</span><span class="arrow">→</span><span class="chip">pop min, push right neighbor</span><span class="arrow">→</span><span class="chip">kth pop = answer</span></div>
+      <div class="oneliner">🔒 Keep forever: "Kth smallest in a sorted matrix = merge rows with a min-heap; stop after k pops."</div>
+    </div>
+    <div class="heapwrap" id="kmGrid"></div>
+    <div class="lbl">min-heap of (value)</div><div class="heappanel" id="kmPanel"></div>
+    <div class="status" id="kmStatus">Press play to find the 8th smallest value.</div>
+    <div class="stats" id="kmStats"></div>
+    <div class="controls"><button class="btn" id="kmPlay">▶ Kth smallest (k=8)</button><button class="btn ghost" id="kmReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="kmSpeed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> there's also an O(n log(range)) <b>binary-search-on-value</b> solution — count elements ≤ mid until you pin the kth.</div></div>
+  </section>
+
+  <!-- 13 TASK SCHEDULING -->
+  <section id="tk">
+    <h2>🗓️ Task Scheduling (with Cooldown) <span class="badge">max-heap greedy</span></h2>
+    <p class="lead">Identical tasks must be at least <code>n</code> slots apart. Minimize total time by always running the <b>most frequent</b> remaining task next.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Spread the busiest:</span> the task with the highest remaining count is the bottleneck, so schedule it as early as cooldown allows. Each cycle of <code>n+1</code> slots, pop the top counts from a max-heap, run them once, and re-add those still remaining. Tasks <code>AAABBB</code>, n=2 → <b>8</b> (A B idle A B idle A B).</div>
+      <div class="steps-flow"><span class="chip">max-heap of counts</span><span class="arrow">→</span><span class="chip">run top n+1 distinct per cycle</span><span class="arrow">→</span><span class="chip">idle if none ready</span></div>
+      <div class="oneliner">🔒 Keep forever: "Task scheduler = greedily run the most-frequent task each cooldown cycle (max-heap)."</div>
+    </div>
+    <div class="lbl">max-heap of remaining counts</div><div class="heappanel" id="tkPanel"></div>
+    <div class="lbl">timeline</div><div class="timeline" id="tkTimeline"></div>
+    <div class="status" id="tkStatus">Press play to schedule AAABBB with cooldown n=2.</div>
+    <div class="stats" id="tkStats"></div>
+    <div class="controls"><button class="btn" id="tkPlay">▶ Schedule tasks</button><button class="btn ghost" id="tkReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tkSpeed" min="300" max="2200" value="950" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> there's a neat formula too: <code>(maxCount−1)·(n+1) + (#tasks with maxCount)</code>, floored at total tasks.</div></div>
+  </section>
+
+  <!-- 14 LIMITED PRIMES 1 -->
+  <section id="u1">
+    <h2>✨ Numbers with Limited Prime Factors I <span class="badge">min-heap generation</span></h2>
+    <p class="lead">Generate numbers whose only prime factors come from a given set (e.g. {2,3,5} — the "ugly numbers"). A min-heap grows them in order.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Grow by multiplying:</span> start the heap with 1. Pop the smallest, output it, and push it multiplied by each allowed prime (2, 3, 5). A <b>seen set</b> avoids duplicates (6 = 2·3 = 3·2). The k-th popped value is the k-th such number. Primes {2,3,5}, k=10 → <b>12</b>.</div>
+      <div class="steps-flow"><span class="chip">heap = {1}</span><span class="arrow">→</span><span class="chip">pop min → output</span><span class="arrow">→</span><span class="chip">push value×each prime (dedupe)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Ugly / limited-prime numbers = min-heap seeded with 1, multiply by each prime, dedupe."</div>
+    </div>
+    <div class="lbl">min-heap</div><div class="heappanel" id="u1Panel"></div>
+    <div class="lbl">generated sequence</div><div class="outrow" id="u1Out"></div>
+    <div class="status" id="u1Status">Press play to generate the first 10 numbers with primes {2,3,5}.</div>
+    <div class="stats" id="u1Stats"></div>
+    <div class="controls"><button class="btn" id="u1Play">▶ Generate (heap)</button><button class="btn ghost" id="u1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="u1Speed" min="300" max="2200" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the heap can hold big duplicates; the <b>seen set</b> (or a peek-skip) is what keeps it correct.</div></div>
+  </section>
+
+  <!-- 15 LIMITED PRIMES 2 -->
+  <section id="u2">
+    <h2>🌟 Numbers with Limited Prime Factors II <span class="badge">multi-pointer DP</span></h2>
+    <p class="lead">The O(n·k) pointer method (no heap): keep one pointer per prime into the sequence built so far, and always take the smallest next candidate.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pointers instead of a heap:</span> build the array <code>dp</code> in order. For each prime keep an index <code>p</code>; its candidate is <code>dp[p]×prime</code>. The next number is the min of these candidates; advance every pointer that produced it (handles duplicates). Same sequence as the heap, O(n·k), no dedupe set. Primes {2,3,5}, 10th → <b>12</b>.</div>
+      <div class="steps-flow"><span class="chip">dp[0]=1, pointer per prime</span><span class="arrow">→</span><span class="chip">next = min(dp[pᵢ]×primeᵢ)</span><span class="arrow">→</span><span class="chip">advance tying pointers</span></div>
+      <div class="oneliner">🔒 Keep forever: "Super-ugly DP: one pointer per prime; next = min of dp[pᵢ]×primeᵢ, advance all ties."</div>
+    </div>
+    <div class="lbl">dp sequence (pointers marked)</div><div class="outrow" id="u2Out"></div>
+    <div class="lbl">candidates dp[pᵢ]×primeᵢ</div><div class="heappanel" id="u2Panel"></div>
+    <div class="status" id="u2Status">Press play for the multi-pointer DP (primes {2,3,5}).</div>
+    <div class="stats" id="u2Stats"></div>
+    <div class="controls"><button class="btn" id="u2Play">▶ Generate (DP)</button><button class="btn ghost" id="u2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="u2Speed" min="300" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> advance <b>every</b> pointer that hit the min (not just one) — otherwise duplicates like 6 slip in twice.</div></div>
+
+    <div class="note key">🏆 <b>Heaps mastered!</b> A heap is a complete tree in an array · build by sift-up (O(n log n)) or bottom-up heapify (O(n)) · insert/extract are O(log n) · it powers priority queues &amp; heap sort · and it's the engine behind every top-k trick: k-closest points, tying ropes, merge-k, k-smallest pairs, kth-in-matrix, task scheduling, and limited-prime numbers. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Heaps & Priority Queues — Animated Guide • Replay any animation, turn on 🎵 sound • The root is always the answer 🏔️</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.05 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*160,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ================= heap renderers ================= */
+function heapPos(n){ const p=[]; for(let i=0;i<n;i++){ const d=Math.floor(Math.log2(i+1)); const inLvl=i-((1<<d)-1); p.push({d, x:(inLvl+0.5)/(1<<d)}); } return p; }
+function heapTree(cont, arr, opt={}){ const n=arr.length; if(!n){cont.innerHTML='';return;} const pos=heapPos(n); const maxD=Math.max(...pos.map(p=>p.d)); const W=opt.W||460, lh=62, H=34+maxD*lh+34; const px=p=>28+p.x*(W-56), py=p=>32+p.d*lh; let e='',ns='';
+  for(let i=0;i<n;i++) for(const c of [2*i+1,2*i+2]) if(c<n){ e+=`<line class="hedge" x1="${px(pos[i])}" y1="${py(pos[i])}" x2="${px(pos[c])}" y2="${py(pos[c])}"/>`; }
+  for(let i=0;i<n;i++){ const cls=(opt.cls&&opt.cls[i])||''; ns+=`<circle class="hnode ${cls}" cx="${px(pos[i])}" cy="${py(pos[i])}" r="17"/>`; ns+=`<text class="hnlbl" x="${px(pos[i])}" y="${py(pos[i])}">${arr[i]}</text>`; ns+=`<text class="hidx" x="${px(pos[i])}" y="${py(pos[i])-23}">${i}</text>`; }
+  cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="heapsvg">${e}${ns}</svg>`;
+}
+function heapArr(cont, arr, opt={}){ cont.innerHTML=arr.map((v,i)=>`<div class="hcell ${(opt.cls&&opt.cls[i])||''}"><span class="ix">${i}</span>${v}</div>`).join(''); }
+function heapPanel(cont, arr, opt={}){ cont.innerHTML= arr.length? arr.map((v,i)=>`<span class="hchip ${(opt.cls&&opt.cls[i])||''} ${i===0?'top':''}">${opt.fmt?opt.fmt(v):v}</span>`).join('') : '<span class="hchip">empty</span>'; }
+function outRow(cont, arr, fmt){ cont.innerHTML=arr.map(v=>`<span class="ochip">${fmt?fmt(v):v}</span>`).join(''); }
+
+/* ---- generic binary-heap (array) with comparator ---- */
+function makeHeap(cmp){ const a=[]; const up=i=>{ while(i>0){ const p=(i-1)>>1; if(cmp(a[i],a[p])<0){ [a[i],a[p]]=[a[p],a[i]]; i=p; } else break; } }; const down=i=>{ const n=a.length; while(true){ let s=i,l=2*i+1,r=2*i+2; if(l<n&&cmp(a[l],a[s])<0)s=l; if(r<n&&cmp(a[r],a[s])<0)s=r; if(s===i)break; [a[i],a[s]]=[a[s],a[i]]; i=s; } };
+  return { a, push(x){ a.push(x); up(a.length-1); }, pop(){ const top=a[0], last=a.pop(); if(a.length){ a[0]=last; down(0); } return top; }, peek(){ return a[0]; }, size(){ return a.length; } }; }
+
+/* ================= 1. what is heap ================= */
+(function(){
+  const H=[16,14,10,8,7,9,3,2,4,1]; const st=$('#whStatus'),sp=$('#whSpeed'),stats=$('#whStats');
+  function build(){ heapTree($('#whTree'),H); heapArr($('#whArr'),H); stats.innerHTML=''; st.textContent='Press play to see the array indices map onto the tree.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; for(let i=0;i<H.length;i++){ const cls={[i]:'cmp'}; const l=2*i+1,r=2*i+2; if(l<H.length)cls[l]='top'; if(r<H.length)cls[r]='top'; heapTree($('#whTree'),H,{cls}); heapArr($('#whArr'),H,{cls:{[i]:'cmp'}}); tickSound(); st.innerHTML=`Node ${i} (=${H[i]}): children at ${l}${r<H.length?', '+r:''}${l<H.length?` = ${H[l]}${r<H.length?', '+H[r]:''}`:' (leaf)'}. Parent ≥ children ✓`; await sleep(+sp.value); }
+    heapTree($('#whTree'),H,{cls:{0:'top'}}); heapArr($('#whArr'),H,{cls:{0:'top'}}); stats.innerHTML=`<span class="pill green">valid max-heap · root = 16</span>`; st.innerHTML=`🏔️ Every parent ≥ its children → the max (16) is at the root, index 0!`; ANIM=false; celebrate($('#whTree'));
+  }
+  $('#whPlay').onclick=play; $('#whReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. build max-heap I (sift up) ================= */
+(function(){
+  const SRC=[4,10,3,5,1]; const st=$('#b1Status'),sp=$('#b1Speed'),stats=$('#b1Stats');
+  function build(){ heapTree($('#b1Tree'),[]); heapArr($('#b1Arr'),[]); stats.innerHTML=''; st.textContent='Press play to insert [4, 10, 3, 5, 1] with sift-up.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const a=[];
+    for(const v of SRC){ a.push(v); let i=a.length-1; heapTree($('#b1Tree'),a,{cls:{[i]:'new'}}); heapArr($('#b1Arr'),a,{cls:{[i]:'new'}}); tickSound(); st.innerHTML=`Insert ${v} at index ${i}; sift up…`; await sleep(+sp.value);
+      while(i>0){ const p=(i-1)>>1; heapTree($('#b1Tree'),a,{cls:{[i]:'cmp',[p]:'cmp'}}); heapArr($('#b1Arr'),a,{cls:{[i]:'cmp',[p]:'cmp'}}); await sleep(+sp.value); if(a[i]>a[p]){ [a[i],a[p]]=[a[p],a[i]]; heapTree($('#b1Tree'),a,{cls:{[i]:'swap',[p]:'swap'}}); heapArr($('#b1Arr'),a,{cls:{[i]:'swap',[p]:'swap'}}); blip(600,0.08,'sine',0.09); st.innerHTML=`${a[p]} &gt; ${a[i]} → swap up.`; await sleep(+sp.value); i=p; } else { st.innerHTML=`${a[i]} ≤ parent ${a[p]} → stop.`; break; } }
+      heapTree($('#b1Tree'),a); heapArr($('#b1Arr'),a); stats.innerHTML=`<span class="pill blue">heap: [${a.join(', ')}]</span>`; await sleep(+sp.value*0.5); }
+    heapTree($('#b1Tree'),a,{cls:{0:'top'}}); heapArr($('#b1Arr'),a,{cls:{0:'top'}}); st.innerHTML=`🔼 Max-heap built by insertion: [${a.join(', ')}] — root ${a[0]} is the max!`; ANIM=false; celebrate($('#b1Tree'));
+  }
+  $('#b1Play').onclick=play; $('#b1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. build max-heap II (bottom-up) ================= */
+(function(){
+  const SRC=[4,10,3,5,1]; const st=$('#b2Status'),sp=$('#b2Speed'),stats=$('#b2Stats');
+  function build(){ heapTree($('#b2Tree'),SRC); heapArr($('#b2Arr'),SRC); stats.innerHTML=''; st.textContent='Press play for bottom-up heapify of [4, 10, 3, 5, 1].'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const a=SRC.slice(); const n=a.length;
+    for(let i=(n>>1)-1;i>=0;i--){ heapTree($('#b2Tree'),a,{cls:{[i]:'cmp'}}); heapArr($('#b2Arr'),a,{cls:{[i]:'cmp'}}); tickSound(); st.innerHTML=`Sift-down node ${i} (=${a[i]}) into its subtree…`; await sleep(+sp.value);
+      let j=i; while(true){ let s=j,l=2*j+1,r=2*j+2; if(l<n&&a[l]>a[s])s=l; if(r<n&&a[r]>a[s])s=r; if(s===j)break; heapTree($('#b2Tree'),a,{cls:{[j]:'swap',[s]:'swap'}}); heapArr($('#b2Arr'),a,{cls:{[j]:'swap',[s]:'swap'}}); blip(600,0.08,'sine',0.09); await sleep(+sp.value); [a[j],a[s]]=[a[s],a[j]]; j=s; heapTree($('#b2Tree'),a); heapArr($('#b2Arr'),a); await sleep(+sp.value*0.5); }
+      stats.innerHTML=`<span class="pill blue">[${a.join(', ')}]</span>`; }
+    heapTree($('#b2Tree'),a,{cls:{0:'top'}}); heapArr($('#b2Arr'),a,{cls:{0:'top'}}); st.innerHTML=`🏗️ Heapified bottom-up in O(n): [${a.join(', ')}] — same heap, fewer operations!`; ANIM=false; celebrate($('#b2Tree'));
+  }
+  $('#b2Play').onclick=play; $('#b2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. operations ================= */
+(function(){
+  const st=$('#opStatus'),sp=$('#opSpeed'),stats=$('#opStats');
+  const START=[16,14,10,8,7,9,3];
+  function build(){ heapTree($('#opTree'),START); heapArr($('#opArr'),START); stats.innerHTML=''; st.textContent='Press play to insert 20, then extract the max.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const a=START.slice();
+    // insert 20
+    a.push(20); let i=a.length-1; heapTree($('#opTree'),a,{cls:{[i]:'new'}}); heapArr($('#opArr'),a,{cls:{[i]:'new'}}); tickSound(); st.innerHTML=`Insert 20 at index ${i}; sift up…`; await sleep(+sp.value);
+    while(i>0){ const p=(i-1)>>1; if(a[i]>a[p]){ [a[i],a[p]]=[a[p],a[i]]; heapTree($('#opTree'),a,{cls:{[i]:'swap',[p]:'swap'}}); heapArr($('#opArr'),a,{cls:{[i]:'swap',[p]:'swap'}}); blip(620,0.08,'sine',0.09); await sleep(+sp.value); i=p; } else break; }
+    heapTree($('#opTree'),a,{cls:{0:'top'}}); heapArr($('#opArr'),a,{cls:{0:'top'}}); stats.innerHTML=`<span class="pill green">inserted 20 → new max</span>`; st.innerHTML=`20 bubbled to the root. Now extract-max…`; await sleep(+sp.value*1.2);
+    // extract max
+    const mx=a[0]; a[0]=a[a.length-1]; a.pop(); const n=a.length; heapTree($('#opTree'),a,{cls:{0:'cmp'}}); heapArr($('#opArr'),a,{cls:{0:'cmp'}}); blip(400,0.1,'sawtooth',0.08); st.innerHTML=`Remove root ${mx}; move last to root; sift down…`; await sleep(+sp.value);
+    let j=0; while(true){ let s=j,l=2*j+1,r=2*j+2; if(l<n&&a[l]>a[s])s=l; if(r<n&&a[r]>a[s])s=r; if(s===j)break; heapTree($('#opTree'),a,{cls:{[j]:'swap',[s]:'swap'}}); heapArr($('#opArr'),a,{cls:{[j]:'swap',[s]:'swap'}}); await sleep(+sp.value); [a[j],a[s]]=[a[s],a[j]]; j=s; heapTree($('#opTree'),a); heapArr($('#opArr'),a); await sleep(+sp.value*0.5); }
+    heapTree($('#opTree'),a,{cls:{0:'top'}}); heapArr($('#opArr'),a,{cls:{0:'top'}}); stats.innerHTML=`<span class="pill blue">extracted max = ${mx}</span><span class="pill green">new root = ${a[0]}</span>`; st.innerHTML=`⚙️ Extracted max <span class="k">${mx}</span>; heap restored with new root ${a[0]} — both O(log n)!`; ANIM=false; celebrate($('#opTree'));
+  }
+  $('#opPlay').onclick=play; $('#opReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. priority queue ================= */
+(function(){
+  const PUSH=[5,1,8,3,9,2]; const st=$('#pqStatus'),sp=$('#pqSpeed'),stats=$('#pqStats');
+  function build(){ heapPanel($('#pqPanel'),[]); $('#pqOut').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to push a mix of values, then poll them by priority.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>y-x); const out=[];
+    for(const v of PUSH){ h.push(v); heapPanel($('#pqPanel'),h.a); tickSound(); st.innerHTML=`push(${v}) → top is now <span class="k">${h.peek()}</span>.`; await sleep(+sp.value); }
+    stats.innerHTML=`<span class="pill blue">${h.size()} items queued</span>`; st.innerHTML=`All pushed. Now poll by priority (largest first)…`; await sleep(+sp.value);
+    while(h.size()){ const top=h.pop(); out.push(top); heapPanel($('#pqPanel'),h.a); outRow($('#pqOut'),out); blip(680,0.09,'sine',0.1); st.innerHTML=`poll() → <span class="k">${top}</span> (highest priority).`; await sleep(+sp.value); }
+    st.innerHTML=`🎫 Polled in priority order: <span class="k">${out.join(' → ')}</span> — a heap serves the best first!`; ANIM=false; celebrate($('#pqOut'));
+  }
+  $('#pqPlay').onclick=play; $('#pqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. heap sort ================= */
+(function(){
+  const SRC=[5,3,8,4,1,2]; const st=$('#hsStatus'),sp=$('#hsSpeed'),stats=$('#hsStats');
+  function build(){ heapArr($('#hsArr'),SRC); stats.innerHTML=''; st.textContent='Press play to heap-sort [5, 3, 8, 4, 1, 2].'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const a=SRC.slice(); let n=a.length; const sorted={};
+    const draw=extra=>{ const cls={...sorted}; if(extra)Object.assign(cls,extra); heapArr($('#hsArr'),a,{cls}); };
+    // build max heap
+    for(let i=(n>>1)-1;i>=0;i--){ let j=i; while(true){ let s=j,l=2*j+1,r=2*j+2; if(l<n&&a[l]>a[s])s=l; if(r<n&&a[r]>a[s])s=r; if(s===j)break; [a[j],a[s]]=[a[s],a[j]]; j=s; } } draw(); st.innerHTML=`Built max-heap: [${a.join(', ')}]. Now peel the max to the tail…`; await sleep(+sp.value*1.2);
+    for(let end=n-1;end>0;end--){ draw({0:'top',[end]:'cmp'}); tickSound(); st.innerHTML=`Swap max ${a[0]} → position ${end} (locked).`; await sleep(+sp.value); [a[0],a[end]]=[a[end],a[0]]; sorted[end]='sorted'; draw(); await sleep(+sp.value*0.5);
+      let j=0; const m=end; while(true){ let s=j,l=2*j+1,r=2*j+2; if(l<m&&a[l]>a[s])s=l; if(r<m&&a[r]>a[s])s=r; if(s===j)break; [a[j],a[s]]=[a[s],a[j]]; draw({[j]:'swap',[s]:'swap'}); await sleep(+sp.value*0.6); j=s; } }
+    sorted[0]='sorted'; draw(); stats.innerHTML=`<span class="pill green">sorted: [${a.join(', ')}]</span>`; st.innerHTML=`📊 Heap sort done → [${a.join(', ')}] in O(n log n), in place!`; ANIM=false; celebrate($('#hsArr'));
+  }
+  $('#hsPlay').onclick=play; $('#hsReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. k closest points ================= */
+(function(){
+  const PTS=[[1,3],[-2,2],[5,8],[0,1],[3,3]]; const K=2; const st=$('#kcStatus'),sp=$('#kcSpeed'),stats=$('#kcStats');
+  const cont=$('#kcPlane');
+  function plane(sel,cmp){ const W=380,H=230, ox=150,oy=150, sc=22; let g='';
+    g+=`<line class="axis" x1="10" y1="${oy}" x2="${W-10}" y2="${oy}"/><line class="axis" x1="${ox}" y1="10" x2="${ox}" y2="${H-10}"/>`;
+    PTS.forEach((p,i)=>{ const x=ox+p[0]*sc, y=oy-p[1]*sc; let cls=''; if(sel&&sel.has(i))cls='sel'; if(cmp===i)cls='cmp'; g+=`<circle class="pt ${cls}" cx="${x}" cy="${y}" r="7"/><text class="ptlbl" x="${x}" y="${y-11}">(${p[0]},${p[1]})</text>`; });
+    g+=`<circle cx="${ox}" cy="${oy}" r="3" fill="#fff"/>`;
+    cont.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="heapsvg planesvg">${g}</svg>`;
+  }
+  const d2=p=>p[0]*p[0]+p[1]*p[1];
+  function build(){ plane(new Set()); heapPanel($('#kcPanel'),[]); stats.innerHTML=''; st.textContent='Press play to keep the 2 closest points to the origin.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>d2(y[1])-d2(x[1])); // max-heap by distance; item=[idx,point]
+    const sel=new Set();
+    for(let i=0;i<PTS.length;i++){ plane(sel,i); heapPanel($('#kcPanel'),h.a,{fmt:it=>`(${it[1][0]},${it[1][1]})·${d2(it[1])}`}); tickSound(); st.innerHTML=`Point (${PTS[i][0]},${PTS[i][1]}), dist²=${d2(PTS[i])}.`; await sleep(+sp.value);
+      if(h.size()<K){ h.push([i,PTS[i]]); sel.add(i); st.innerHTML=`Heap not full → keep (${PTS[i][0]},${PTS[i][1]}).`; }
+      else if(d2(PTS[i])<d2(h.peek()[1])){ const ev=h.pop(); sel.delete(ev[0]); h.push([i,PTS[i]]); sel.add(i); blip(660,0.09,'sine',0.1); st.innerHTML=`Closer than farthest kept (${ev[1][0]},${ev[1][1]}) → swap in.`; }
+      else { st.innerHTML=`Not closer than heap-top → discard.`; }
+      plane(sel); heapPanel($('#kcPanel'),h.a,{fmt:it=>`(${it[1][0]},${it[1][1]})·${d2(it[1])}`}); stats.innerHTML=`<span class="pill blue">kept: ${[...sel].map(i=>`(${PTS[i][0]},${PTS[i][1]})`).join(', ')}</span>`; await sleep(+sp.value); }
+    const ans=h.a.map(it=>`(${it[1][0]},${it[1][1]})`);
+    st.innerHTML=`📍 2 closest to origin: <span class="k">${ans.join(', ')}</span> (dist² 1 &amp; 8)!`; ANIM=false; celebrate(cont);
+  }
+  $('#kcPlay').onclick=play; $('#kcReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. tying ropes ================= */
+(function(){
+  const ROPES=[4,3,2,6]; const st=$('#trStatus'),sp=$('#trSpeed'),stats=$('#trStats');
+  function build(){ heapPanel($('#trPanel'),[]); stats.innerHTML=''; st.textContent='Press play to tie ropes [4, 3, 2, 6] at minimum cost.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>x-y); ROPES.forEach(r=>h.push(r)); heapPanel($('#trPanel'),h.a); let total=0;
+    st.innerHTML=`Min-heap of ropes: [${h.a.slice().sort((a,b)=>a-b).join(', ')}].`; await sleep(+sp.value);
+    while(h.size()>1){ const x=h.pop(); heapPanel($('#trPanel'),h.a); await sleep(+sp.value*0.6); const y=h.pop(); const s=x+y; total+=s; h.push(s); heapPanel($('#trPanel'),h.a,{cls:{0:'cmp'}}); blip(560,0.1,'sine',0.1); st.innerHTML=`Tie ${x} + ${y} = <span class="k">${s}</span> (cost ${s}); total = ${total}.`; stats.innerHTML=`<span class="pill gold">running cost = ${total}</span>`; await sleep(+sp.value); }
+    st.innerHTML=`🪢 Minimum cost to tie all ropes = <span class="k">${total}</span> (always merge the two shortest)!`; ANIM=false; celebrate($('#trPanel'));
+  }
+  $('#trPlay').onclick=play; $('#trReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. merge k sorted ================= */
+(function(){
+  const ARRS=[[1,4,7],[2,5,8],[3,6,9]]; const st=$('#mkStatus'),sp=$('#mkSpeed'),stats=$('#mkStats');
+  function rows(ptr){ $('#mkRows').innerHTML=ARRS.map((row,ri)=>`<div class="arline"><span class="tag">A${ri}</span>${row.map((v,ci)=>`<div class="sc ${ptr[ri]>ci?'used':(ptr[ri]===ci?'ptr':'')}">${v}</div>`).join('')}</div>`).join(''); }
+  function build(){ rows([0,0,0]); heapPanel($('#mkPanel'),[]); $('#mkOut').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to merge 3 sorted arrays.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const ptr=[0,0,0]; const h=makeHeap((x,y)=>x[0]-y[0]); const out=[];
+    for(let i=0;i<ARRS.length;i++){ h.push([ARRS[i][0],i]); } rows(ptr); heapPanel($('#mkPanel'),h.a,{fmt:it=>it[0]}); st.innerHTML=`Seed heap with each array's head: [${h.a.map(x=>x[0]).sort((a,b)=>a-b).join(', ')}].`; await sleep(+sp.value);
+    while(h.size()){ const [val,ri]=h.pop(); out.push(val); ptr[ri]++; rows(ptr); outRow($('#mkOut'),out); heapPanel($('#mkPanel'),h.a,{fmt:it=>it[0]}); tickSound(); st.innerHTML=`Pop min <span class="k">${val}</span> (from A${ri}); advance A${ri}.`; await sleep(+sp.value); if(ptr[ri]<ARRS[ri].length){ h.push([ARRS[ri][ptr[ri]],ri]); heapPanel($('#mkPanel'),h.a,{fmt:it=>it[0]}); await sleep(+sp.value*0.4); } stats.innerHTML=`<span class="pill blue">merged ${out.length}/9</span>`; }
+    st.innerHTML=`🔗 Merged output: [${out.join(', ')}] — one min-heap of ${ARRS.length} heads!`; ANIM=false; celebrate($('#mkOut'));
+  }
+  $('#mkPlay').onclick=play; $('#mkReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. k smallest pairs ================= */
+(function(){
+  const A=[1,7,11], B=[2,4,6], K=3; const st=$('#ksStatus'),sp=$('#ksSpeed'),stats=$('#ksStats');
+  function build(){ heapPanel($('#ksPanel'),[]); $('#ksOut').innerHTML=''; stats.innerHTML=`<span class="pill blue">nums1=[${A}] · nums2=[${B}] · k=${K}</span>`; st.textContent='Press play to find the 3 smallest-sum pairs.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>x[0]-y[0]); const seen=new Set(); const out=[];
+    h.push([A[0]+B[0],0,0]); seen.add('0,0'); heapPanel($('#ksPanel'),h.a,{fmt:it=>`(${A[it[1]]},${B[it[2]]})=${it[0]}`}); st.innerHTML=`Seed with (0,0): sum ${A[0]+B[0]}.`; await sleep(+sp.value);
+    while(out.length<K && h.size()){ const [s,i,j]=h.pop(); out.push([A[i],B[j]]); heapPanel($('#ksPanel'),h.a,{fmt:it=>`(${A[it[1]]},${B[it[2]]})=${it[0]}`}); outRow($('#ksOut'),out,p=>`(${p[0]},${p[1]})`); blip(660,0.09,'sine',0.1); st.innerHTML=`Pop smallest sum ${s} → pair <span class="k">(${A[i]},${B[j]})</span>.`; await sleep(+sp.value);
+      for(const [ni,nj] of [[i+1,j],[i,j+1]]){ if(ni<A.length&&nj<B.length&&!seen.has(ni+','+nj)){ seen.add(ni+','+nj); h.push([A[ni]+B[nj],ni,nj]); } } heapPanel($('#ksPanel'),h.a,{fmt:it=>`(${A[it[1]]},${B[it[2]]})=${it[0]}`}); stats.innerHTML=`<span class="pill blue">found ${out.length}/${K}</span>`; await sleep(+sp.value*0.6); }
+    st.innerHTML=`➕ ${K} smallest-sum pairs: <span class="k">${out.map(p=>`(${p[0]},${p[1]})`).join(', ')}</span>!`; ANIM=false; celebrate($('#ksOut'));
+  }
+  $('#ksPlay').onclick=play; $('#ksReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. k smallest pairs implementation ================= */
+(function(){
+  const A=[1,7,11], B=[2,4,6], K=3; const st=$('#kiStatus'),sp=$('#kiSpeed'),stats=$('#kiStats');
+  function build(){ heapPanel($('#kiPanel'),[]); $('#kiOut').innerHTML=''; stats.innerHTML=`<span class="pill blue">row-seeded · no visited set</span>`; st.textContent='Press play for the row-seeded implementation.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>x[0]-y[0]); const out=[];
+    for(let i=0;i<A.length;i++) h.push([A[i]+B[0],i,0]); heapPanel($('#kiPanel'),h.a,{fmt:it=>`(${it[1]},${it[2]})=${it[0]}`}); st.innerHTML=`Seed one entry per nums1[i] with j=0.`; await sleep(+sp.value);
+    while(out.length<K && h.size()){ const [s,i,j]=h.pop(); out.push([A[i],B[j]]); outRow($('#kiOut'),out,p=>`(${p[0]},${p[1]})`); heapPanel($('#kiPanel'),h.a,{fmt:it=>`(${it[1]},${it[2]})=${it[0]}`}); blip(660,0.09,'sine',0.1); st.innerHTML=`Pop (i=${i},j=${j}) sum ${s} → <span class="k">(${A[i]},${B[j]})</span>; push (${i},${j+1}).`; await sleep(+sp.value);
+      if(j+1<B.length){ h.push([A[i]+B[j+1],i,j+1]); heapPanel($('#kiPanel'),h.a,{fmt:it=>`(${it[1]},${it[2]})=${it[0]}`}); await sleep(+sp.value*0.5); } stats.innerHTML=`<span class="pill blue">found ${out.length}/${K}</span>`; }
+    st.innerHTML=`💻 Same result: <span class="k">${out.map(p=>`(${p[0]},${p[1]})`).join(', ')}</span> — one pointer per row, no duplicates!`; ANIM=false; celebrate($('#kiOut'));
+  }
+  $('#kiPlay').onclick=play; $('#kiReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. kth smallest in matrix ================= */
+(function(){
+  const M=[[1,5,9],[10,11,13],[12,13,15]]; const K=8; const st=$('#kmStatus'),sp=$('#kmSpeed'),stats=$('#kmStats');
+  const cont=$('#kmGrid');
+  function grid(state){ const R=M.length,C=M[0].length; let h=`<div class="grid" style="grid-template-columns:repeat(${C},1fr)">`; for(let r=0;r<R;r++)for(let c=0;c<C;c++){ const key=r+','+c; h+=`<div class="gc ${state&&state[key]||''}">${M[r][c]}</div>`; } h+='</div>'; cont.innerHTML=h; }
+  function build(){ grid(); heapPanel($('#kmPanel'),[]); stats.innerHTML=''; st.textContent='Press play to find the 8th smallest value.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>x[0]-y[0]); const used={};
+    for(let r=0;r<M.length;r++) h.push([M[r][0],r,0]); grid(); heapPanel($('#kmPanel'),h.a,{fmt:it=>it[0]}); st.innerHTML=`Seed heap with each row's first cell.`; await sleep(+sp.value);
+    let popped=0, ans=null;
+    while(popped<K && h.size()){ const [val,r,c]=h.pop(); popped++; used[r+','+c]='used'; ans=val; const state={...used}; state[r+','+c]=popped===K?'top':'cmp'; grid(state); heapPanel($('#kmPanel'),h.a,{fmt:it=>it[0]}); tickSound(); st.innerHTML=`Pop #${popped}: <span class="k">${val}</span> from (${r},${c}).`; stats.innerHTML=`<span class="pill blue">popped ${popped}/${K}</span>`; await sleep(+sp.value);
+      if(c+1<M[0].length){ h.push([M[r][c+1],r,c+1]); heapPanel($('#kmPanel'),h.a,{fmt:it=>it[0]}); await sleep(+sp.value*0.4); } }
+    st.innerHTML=`🔳 The ${K}th smallest value is <span class="k">${ans}</span> — merge rows, stop at k!`; ANIM=false; celebrate(cont);
+  }
+  $('#kmPlay').onclick=play; $('#kmReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. task scheduling ================= */
+(function(){
+  const TASKS='AAABBB'.split(''); const N=2; const st=$('#tkStatus'),sp=$('#tkSpeed'),stats=$('#tkStats');
+  function counts(){ const m={}; TASKS.forEach(t=>m[t]=(m[t]||0)+1); return m; }
+  function build(){ heapPanel($('#tkPanel'),Object.entries(counts()).map(([k,v])=>`${k}:${v}`)); $('#tkTimeline').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to schedule AAABBB with cooldown n=2.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>y[0]-x[0]); const m=counts(); for(const k in m) h.push([m[k],k]); const timeline=[]; let time=0;
+    function render(hi){ heapPanel($('#tkPanel'),h.a.map(it=>`${it[1]}:${it[0]}`)); $('#tkTimeline').innerHTML=timeline.map((s,i)=>`<div class="slot ${s==='idle'?'idle':'fill'} ${hi===i?'':''}">${s==='idle'?'∅':s}</div>`).join(''); }
+    render();
+    while(h.size()){ const cycle=[]; const temp=[];
+      for(let s=0;s<=N;s++){ if(h.size()){ const top=h.pop(); cycle.push(top[1]); timeline.push(top[1]); if(top[0]-1>0)temp.push([top[0]-1,top[1]]); }
+        else if(temp.length){ cycle.push('idle'); timeline.push('idle'); } time++; render(timeline.length-1); tickSound(); st.innerHTML=`Slot ${timeline.length}: run <span class="k">${timeline[timeline.length-1]}</span>.`; await sleep(+sp.value); if(!h.size()&&!temp.length)break; }
+      temp.forEach(t=>h.push(t)); render(); stats.innerHTML=`<span class="pill blue">time so far = ${timeline.length}</span>`; }
+    // trim trailing idles
+    while(timeline[timeline.length-1]==='idle')timeline.pop(); render(); stats.innerHTML=`<span class="pill green">total time = ${timeline.length}</span>`; st.innerHTML=`🗓️ Schedule <span class="k">${timeline.join(' ')}</span> finishes in <span class="k">${timeline.length}</span> slots!`; ANIM=false; celebrate($('#tkTimeline'));
+  }
+  $('#tkPlay').onclick=play; $('#tkReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 14. limited primes I (heap) ================= */
+(function(){
+  const PRIMES=[2,3,5]; const K=10; const st=$('#u1Status'),sp=$('#u1Speed'),stats=$('#u1Stats');
+  function build(){ heapPanel($('#u1Panel'),[]); $('#u1Out').innerHTML=''; stats.innerHTML=''; st.textContent='Press play to generate the first 10 numbers with primes {2,3,5}.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const h=makeHeap((x,y)=>x-y); const seen=new Set([1]); h.push(1); const seq=[];
+    heapPanel($('#u1Panel'),h.a); st.innerHTML=`Seed heap with 1.`; await sleep(+sp.value);
+    while(seq.length<K){ const v=h.pop(); seq.push(v); outRow($('#u1Out'),seq); heapPanel($('#u1Panel'),h.a,{cls:{0:'cmp'}}); tickSound(); st.innerHTML=`Pop #${seq.length}: <span class="k">${v}</span>; push ${PRIMES.map(p=>v*p).join(', ')}.`; stats.innerHTML=`<span class="pill blue">generated ${seq.length}/${K}</span>`; await sleep(+sp.value);
+      for(const p of PRIMES){ const nx=v*p; if(!seen.has(nx)){ seen.add(nx); h.push(nx); } } heapPanel($('#u1Panel'),h.a); await sleep(+sp.value*0.4); }
+    st.innerHTML=`✨ First ${K} numbers (primes {2,3,5}): [${seq.join(', ')}] — the ${K}th is <span class="k">${seq[K-1]}</span>!`; ANIM=false; celebrate($('#u1Out'));
+  }
+  $('#u1Play').onclick=play; $('#u1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. limited primes II (multi-pointer DP) ================= */
+(function(){
+  const PRIMES=[2,3,5]; const K=10; const st=$('#u2Status'),sp=$('#u2Speed'),stats=$('#u2Stats');
+  function build(){ outRow($('#u2Out'),[1]); heapPanel($('#u2Panel'),[]); stats.innerHTML=''; st.textContent='Press play for the multi-pointer DP (primes {2,3,5}).'; }
+  build();
+  function renderDP(dp,ptr){ $('#u2Out').innerHTML=dp.map((v,i)=>`<span class="ochip" style="${ptr.includes(i)?'border-color:var(--mid);color:var(--mid)':''}">${v}</span>`).join(''); }
+  async function play(){ if(ANIM)return; ANIM=true; const dp=[1]; const ptr=PRIMES.map(()=>0);
+    renderDP(dp,ptr); heapPanel($('#u2Panel'),PRIMES.map((p,i)=>`${dp[ptr[i]]}×${p}=${dp[ptr[i]]*p}`)); st.innerHTML=`dp=[1]; every prime pointer starts at index 0.`; await sleep(+sp.value);
+    while(dp.length<K){ const cands=PRIMES.map((p,i)=>dp[ptr[i]]*p); const mn=Math.min(...cands); dp.push(mn); heapPanel($('#u2Panel'),PRIMES.map((p,i)=>`${dp[ptr[i]]}×${p}=${dp[ptr[i]]*p}`),{cls:Object.fromEntries(cands.map((c,i)=>[i,c===mn?'cmp':'']))}); blip(560,0.09,'sine',0.09); st.innerHTML=`Candidates [${cands.join(', ')}] → next = <span class="k">${mn}</span>.`; await sleep(+sp.value);
+      for(let i=0;i<PRIMES.length;i++) if(cands[i]===mn) ptr[i]++; renderDP(dp,ptr); heapPanel($('#u2Panel'),PRIMES.map((p,i)=>`${dp[ptr[i]]}×${p}=${dp[ptr[i]]*p}`)); stats.innerHTML=`<span class="pill blue">dp size ${dp.length}/${K}</span>`; await sleep(+sp.value*0.6); }
+    st.innerHTML=`🌟 dp = [${dp.join(', ')}] — the ${K}th is <span class="k">${dp[K-1]}</span> (same as the heap, O(n·k))!`; ANIM=false; celebrate($('#u2Out'));
+  }
+  $('#u2Play').onclick=play; $('#u2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

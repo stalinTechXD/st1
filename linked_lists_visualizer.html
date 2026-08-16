@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Linked Lists — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --line:#26325c; --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:730px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+      padding:10px; background:rgba(11,16,32,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:11.5px; font-weight:600; padding:5px 9px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(20px,3.3vw,29px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  /* linked list */
+  .llwrap{margin:20px 0}
+  .lllabel{font-weight:800; color:var(--accent); font-size:13px; text-align:center; margin:6px 0 2px}
+  .llrow{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:3px; min-height:76px; padding-top:14px}
+  .lnode{position:relative; min-width:46px; height:46px; padding:0 10px; border-radius:10px; background:#1d2a52; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; transition:.3s}
+  .lnode.active{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.45); transform:translateY(-4px)}
+  .lnode.active2{border-color:var(--accent2); background:#3a1d2a; box-shadow:0 0 0 3px rgba(247,37,133,.45); transform:translateY(-4px)}
+  .lnode.done{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .lnode.dead{opacity:.28; filter:grayscale(.5)}
+  .lnode .lab{position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:10.5px; font-weight:800; white-space:nowrap; color:var(--mid); background:var(--bg2); border:1px solid var(--line); border-radius:5px; padding:0 5px}
+  .larrow{color:var(--muted); font-weight:800; font-size:18px; min-width:24px; text-align:center; transition:.3s}
+  .larrow.rev{color:var(--accent2)}
+  .lnull{color:var(--muted); font-weight:800; font-size:13px; font-style:italic}
+  .lcycle{color:var(--accent2); font-weight:800; font-size:12px; border:1px dashed var(--accent2); border-radius:6px; padding:2px 6px}
+
+  /* down lists (flatten) */
+  .flatcols{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:16px 0}
+  .flatcol{display:flex; flex-direction:column; align-items:center; gap:5px}
+  .fnode{min-width:44px; height:40px; padding:0 8px; border-radius:9px; background:#1d2a52; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-weight:800; transition:.3s}
+  .fnode.head{border-color:var(--mid)}
+  .fnode.done{border-color:var(--found); background:#0d3b30}
+  .fdown{color:var(--muted); font-size:14px}
+
+  .cellrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:20px 0 26px; min-height:60px}
+  .cell{position:relative; min-width:46px; height:48px; padding:0 8px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:16px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .35s}
+  .cell.mid{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 3px rgba(255,209,102,.45)}
+  .cell.lo{border-color:var(--lo); box-shadow:0 0 0 3px rgba(67,97,238,.4)}
+  .cell.hi{border-color:var(--hi); box-shadow:0 0 0 3px rgba(247,37,133,.4)}
+  .cell.found{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 3px rgba(6,214,160,.5)}
+  .cell.empty{color:var(--muted); font-style:italic; background:#141d3a}
+  .cell .ptr{position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font-size:11px; font-weight:800; color:var(--accent); background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 6px}
+
+  .hashpanel{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:8px 0 6px; min-height:44px; padding:8px; background:#0a1330; border:1px solid var(--line); border-radius:12px}
+  .hashpanel .label{align-self:center; color:var(--muted); font-weight:700; font-size:13px; margin-right:6px}
+  .hentry{display:inline-flex; align-items:center; gap:5px; background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:5px 10px; font-weight:700; font-size:13px; animation:pop .3s ease}
+  .hentry b{color:var(--accent)} .hentry span{color:var(--mid)}
+  .hentry.hit{border-color:var(--found); box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .hentry.new{border-color:var(--mid)}
+  .hashpanel .empty{color:var(--muted); font-style:italic; align-self:center}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:48px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  .pill.pink{background:rgba(247,37,133,.14); border-color:rgba(247,37,133,.4); color:#ff8fc7}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Linked Lists — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch nodes link, pointers chase, arrows flip, and cycles reveal themselves. Built so every linked-list pattern sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#whatlist">🔗 What is a List</a>
+  <a href="#basicops">🛠️ Basic Operations</a>
+  <a href="#middle">🎯 Middle Node</a>
+  <a href="#deletenth">🗑️ Delete Nth from End</a>
+  <a href="#reviter">🔄 Reverse (iterative)</a>
+  <a href="#revrec">↩️ Reverse (recursive)</a>
+  <a href="#palindrome">🪞 Palindrome</a>
+  <a href="#kreverse">🔢 K-Reverse</a>
+  <a href="#cycle1">🌀 Cycle Detect</a>
+  <a href="#cycle2">📍 Cycle Start</a>
+  <a href="#cycle3">📏 Cycle Length</a>
+  <a href="#mergeiter">🔗 Merge (iter)</a>
+  <a href="#mergerec">🔗 Merge (rec)</a>
+  <a href="#mergek">🎄 Merge K Lists</a>
+  <a href="#clone1">🧬 Clone I</a>
+  <a href="#clone2">🧬 Clone II</a>
+  <a href="#flatten">📥 Flatten</a>
+  <a href="#doubly">↔️ Doubly List</a>
+  <a href="#lru1">💾 LRU Cache I</a>
+  <a href="#lru2">💾 LRU Cache II</a>
+</nav>
+
+<main>
+
+  <!-- WHAT IS LIST -->
+  <section id="whatlist">
+    <h2>🔗 What is a Linked List? <span class="badge">Foundation</span></h2>
+    <p class="lead">A chain of nodes — each holds a value and a <b>pointer</b> to the next. No fixed size, no contiguous memory.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A treasure hunt:</span> each clue (node) holds a prize (value) and directions to the next clue (next pointer). You follow the trail from <b>head</b> until a clue points to nothing (<b>null</b>).</div>
+      <div class="steps-flow"><span class="chip">node = value + next</span><span class="arrow">·</span><span class="chip">start at head</span><span class="arrow">·</span><span class="chip">follow until null</span></div>
+      <div class="oneliner">🔒 Keep forever: "Each node points to the next — follow from head to null."</div>
+    </div>
+    <div class="note">A list: 3 → 7 → 1 → 9 → null.</div>
+    <div class="llwrap"><div class="lllabel">List</div><div class="llrow" id="wlRow"></div></div>
+    <div class="status" id="wlStatus">Press play to traverse from head to null.</div>
+    <div class="controls"><button class="btn" id="wlPlay">▶ Traverse</button><button class="btn ghost" id="wlReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="wlSpeed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(1) insert/delete if you have the node, but O(n) to find by index — no random access like arrays.</div></div>
+    <pre><code><span class="kw">class</span> Node { <span class="kw">int</span> val; Node next; }
+Node cur = head;
+<span class="kw">while</span> (cur != null){ visit(cur); cur = cur.next; }</code></pre>
+  </section>
+
+  <!-- BASIC OPERATIONS -->
+  <section id="basicops">
+    <h2>🛠️ Basic Operations <span class="badge">Insert · Delete</span></h2>
+    <p class="lead">Insert at head, insert at tail, and delete a node — all by rewiring <code>next</code> pointers.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Rerouting a train track:</span> to add a car, point the previous node to the newcomer and the newcomer to what followed. To delete, just skip a node by pointing its predecessor past it. It's all pointer rewiring — no shifting.</div>
+      <div class="steps-flow"><span class="chip">insert head: new.next = head</span><span class="arrow">·</span><span class="chip">insert tail: tail.next = new</span><span class="arrow">·</span><span class="chip">delete: prev.next = cur.next</span></div>
+      <div class="oneliner">🔒 Keep forever: "Everything is pointer rewiring — link around what you add or remove."</div>
+    </div>
+    <div class="note">Start 2→3→4. Insert 1 at head, insert 5 at tail, delete 3.</div>
+    <div class="llwrap"><div class="lllabel">List</div><div class="llrow" id="boRow"></div></div>
+    <div class="status" id="boStatus">Press play to insert &amp; delete by rewiring pointers.</div>
+    <div class="controls"><button class="btn" id="boPlay">▶ Run Operations</button><button class="btn ghost" id="boReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="boSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> keep a reference to <code>prev</code> when deleting. A dummy/sentinel head simplifies edge cases (deleting the first node).</div></div>
+    <pre><code>insertHead(x){ Node n=<span class="kw">new</span> Node(x); n.next=head; head=n; }
+delete(prev){ prev.next = prev.next.next; }   <span class="cm">// skip the node</span></code></pre>
+  </section>
+
+  <!-- MIDDLE NODE -->
+  <section id="middle">
+    <h2>🎯 Middle Node (Slow &amp; Fast) <span class="badge">Two pointers</span></h2>
+    <p class="lead">Find the middle in one pass — a slow pointer steps by 1, a fast pointer by 2.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two runners on a track:</span> the fast runner covers twice the distance. When the fast one reaches the end, the slow one is exactly halfway — the middle node, without ever counting the length.</div>
+      <div class="steps-flow"><span class="chip">slow += 1</span><span class="arrow">·</span><span class="chip">fast += 2</span><span class="arrow">→</span><span class="chip">fast at end ⇒ slow = middle</span></div>
+      <div class="oneliner">🔒 Keep forever: "Fast goes twice as fast — when it ends, slow is the middle."</div>
+    </div>
+    <div class="note">List 1→2→3→4→5→6→7 → middle is 4.</div>
+    <div class="llwrap"><div class="lllabel">List</div><div class="llrow" id="mdRow"></div></div>
+    <div class="status" id="mdStatus">Press play. Slow lands on the middle.</div>
+    <div class="controls"><button class="btn" id="mdPlay">▶ Find Middle</button><button class="btn ghost" id="mdReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mdSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> this "tortoise &amp; hare" pattern also detects cycles and finds the k-th-from-end. One pass, O(1) space.</div></div>
+    <pre><code>Node slow=head, fast=head;
+<span class="kw">while</span> (fast != null &amp;&amp; fast.next != null){ slow=slow.next; fast=fast.next.next; }
+<span class="kw">return</span> slow; <span class="cm">// middle</span></code></pre>
+  </section>
+
+  <!-- DELETE NTH FROM END -->
+  <section id="deletenth">
+    <h2>🗑️ Delete Nth Node from End <span class="badge">Gap pointers</span></h2>
+    <p class="lead">Delete the n-th node from the end in one pass by keeping two pointers a fixed gap apart.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A measuring stick:</span> advance a lead pointer n steps ahead, then move both together. When the lead hits the end, the trailing pointer sits just before the target — the n-th from the end. Skip it.</div>
+      <div class="steps-flow"><span class="chip">fast advances n steps</span><span class="arrow">→</span><span class="chip">move both until fast at end</span><span class="arrow">→</span><span class="chip">slow.next = slow.next.next</span></div>
+      <div class="oneliner">🔒 Keep forever: "Open a gap of n, then walk together — the trailing pointer finds the target."</div>
+    </div>
+    <div class="note">List 1→2→3→4→5, n=2 → delete node 4.</div>
+    <div class="llwrap"><div class="lllabel">List</div><div class="llrow" id="dnRow"></div></div>
+    <div class="status" id="dnStatus">Press play. The gap reveals the node to delete.</div>
+    <div class="controls"><button class="btn" id="dnPlay">▶ Delete 2nd from End</button><button class="btn ghost" id="dnReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dnSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> use a dummy head so deleting the first node is uniform. The gap must be exactly n edges.</div></div>
+    <pre><code>fast = dummy; <span class="kw">for</span>(i=<span class="num">0</span>;i&lt;=n;i++) fast=fast.next; slow=dummy;
+<span class="kw">while</span>(fast!=null){ slow=slow.next; fast=fast.next; }
+slow.next = slow.next.next;   <span class="cm">// delete</span></code></pre>
+  </section>
+
+  <!-- REVERSE ITERATIVE -->
+  <section id="reviter">
+    <h2>🔄 Reverse a List (Iterative) <span class="badge">prev · curr · next</span></h2>
+    <p class="lead">Walk the list flipping each node's <code>next</code> to point backward — three pointers, one pass.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Turning the arrows around:</span> hold <code>prev</code> (already-reversed part), <code>curr</code> (node to flip), and stash <code>next</code> before you lose it. Point curr back to prev, then shuffle all three forward. The old tail becomes the new head.</div>
+      <div class="steps-flow"><span class="chip">save next</span><span class="arrow">→</span><span class="chip">curr.next = prev</span><span class="arrow">→</span><span class="chip">prev = curr, curr = next</span></div>
+      <div class="oneliner">🔒 Keep forever: "Flip curr → prev, then slide the trio forward. Old tail = new head."</div>
+    </div>
+    <div class="note">Reverse 1→2→3→4 into 4→3→2→1.</div>
+    <div class="llwrap"><div class="lllabel">List</div><div class="llrow" id="riRow"></div></div>
+    <div class="status" id="riStatus">Press play. Each arrow flips backward.</div>
+    <div class="controls"><button class="btn" id="riPlay">▶ Reverse</button><button class="btn ghost" id="riReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="riSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> always save <code>next</code> BEFORE flipping <code>curr.next</code>, or you lose the rest of the list. O(n), O(1).</div></div>
+    <pre><code>Node prev=null, cur=head;
+<span class="kw">while</span>(cur!=null){ Node nxt=cur.next; cur.next=prev; prev=cur; cur=nxt; }
+<span class="kw">return</span> prev; <span class="cm">// new head</span></code></pre>
+  </section>
+
+  <!-- REVERSE RECURSIVE -->
+  <section id="revrec">
+    <h2>↩️ Reverse a List (Recursive) <span class="badge">Unwind rewire</span></h2>
+    <p class="lead">Recurse to the end, then rewire pointers backward on the way out.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Rewire on the way back:</span> dive all the way to the last node (the new head). As each call returns, make the next node point back at the current one (<code>cur.next.next = cur</code>) and cut the old forward link. The recursion unwinds, reversing the chain.</div>
+      <div class="steps-flow"><span class="chip">recurse to end</span><span class="arrow">→</span><span class="chip">cur.next.next = cur</span><span class="arrow">→</span><span class="chip">cur.next = null</span></div>
+      <div class="oneliner">🔒 Keep forever: "Reach the end, then on unwind make each next node point back."</div>
+    </div>
+    <div class="note">Reverse 1→2→3→4 recursively.</div>
+    <div class="llwrap"><div class="lllabel">List</div><div class="llrow" id="rrRow"></div></div>
+    <div class="status" id="rrStatus">Press play. Recursion dives, then rewires on return.</div>
+    <div class="controls"><button class="btn" id="rrPlay">▶ Reverse</button><button class="btn ghost" id="rrReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rrSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the base case returns the last node as the new head; it bubbles all the way back up unchanged. O(n) stack space.</div></div>
+    <pre><code>Node reverse(Node cur){
+  <span class="kw">if</span>(cur==null || cur.next==null) <span class="kw">return</span> cur; <span class="cm">// new head</span>
+  Node head = reverse(cur.next);
+  cur.next.next = cur; cur.next = null;
+  <span class="kw">return</span> head;
+}</code></pre>
+  </section>
+
+  <!-- PALINDROME -->
+  <section id="palindrome">
+    <h2>🪞 Palindrome Linked List <span class="badge">Two pointers</span></h2>
+    <p class="lead">Check if the list reads the same forwards and backwards.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Mirror check:</span> compare the first value with the last, the second with the second-last, and so on. If every mirrored pair matches, it's a palindrome. (The O(1) trick: find the middle, reverse the second half, then compare.)</div>
+      <div class="steps-flow"><span class="chip">front &amp; back pointers</span><span class="arrow">→</span><span class="chip">compare, move inward</span><span class="arrow">→</span><span class="chip">any mismatch ⇒ not palindrome</span></div>
+      <div class="oneliner">🔒 Keep forever: "Compare mirrored pairs from both ends — or reverse the second half for O(1) space."</div>
+    </div>
+    <div class="note">List 1→2→3→2→1 → palindrome?</div>
+    <div class="cellrow" id="paRow"></div>
+    <div class="status" id="paStatus">Press play. Compare mirrored pairs.</div>
+    <div class="stats" id="paStats"></div>
+    <div class="controls"><button class="btn" id="paPlay">▶ Check Palindrome</button><button class="btn ghost" id="paReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="paSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the space-optimal way = middle + reverse-second-half + compare + (optionally) restore. O(n) time, O(1) space.</div></div>
+    <pre><code>slow=middle(head); second=reverse(slow);
+<span class="kw">while</span>(second!=null){ <span class="kw">if</span>(head.val!=second.val) <span class="kw">return</span> <span class="kw">false</span>; head=head.next; second=second.next; }
+<span class="kw">return</span> <span class="kw">true</span>;</code></pre>
+  </section>
+
+  <!-- K REVERSE -->
+  <section id="kreverse">
+    <h2>🔢 Reverse in Groups of K <span class="badge">Block flip</span></h2>
+    <p class="lead">Reverse every consecutive block of k nodes, leaving the rest linked.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Flipping pancakes k at a time:</span> reverse the first k nodes, then recurse/iterate on the remainder and stitch the reversed block to it. Each group flips independently; the group heads/tails get reconnected in order.</div>
+      <div class="steps-flow"><span class="chip">reverse first k</span><span class="arrow">→</span><span class="chip">recurse on the rest</span><span class="arrow">→</span><span class="chip">connect block tail → next block head</span></div>
+      <div class="oneliner">🔒 Keep forever: "Reverse k, recurse on the rest, then link the pieces."</div>
+    </div>
+    <div class="note">List 1→2→3→4→5→6, k=3 → 3→2→1→6→5→4.</div>
+    <div class="llwrap"><div class="lllabel">List</div><div class="llrow" id="krRow"></div></div>
+    <div class="status" id="krStatus">Press play. Each group of 3 flips.</div>
+    <div class="controls"><button class="btn" id="krPlay">▶ K-Reverse (k=3)</button><button class="btn ghost" id="krReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="krSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> if fewer than k nodes remain, leave them as-is (standard variant). Track each block's new head &amp; tail to reconnect.</div></div>
+    <pre><code>Node kReverse(Node head, <span class="kw">int</span> k){
+  Node cur=head, prev=null, nxt=null; <span class="kw">int</span> c=<span class="num">0</span>;
+  <span class="kw">while</span>(cur!=null &amp;&amp; c&lt;k){ nxt=cur.next; cur.next=prev; prev=cur; cur=nxt; c++; }
+  <span class="kw">if</span>(nxt!=null) head.next = kReverse(nxt, k);
+  <span class="kw">return</span> prev;
+}</code></pre>
+  </section>
+
+  <!-- CYCLE 1 -->
+  <section id="cycle1">
+    <h2>🌀 Cycle Detection I — Does a Cycle Exist? <span class="badge">Floyd</span></h2>
+    <p class="lead">Detect a loop with Floyd's tortoise &amp; hare — if the fast pointer laps the slow, there's a cycle.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Runners on a circular track:</span> on a straight road the fast runner just reaches the end. But on a loop, the fast runner keeps circling and eventually <b>catches</b> the slow one from behind. A meeting means a cycle.</div>
+      <div class="steps-flow"><span class="chip">slow += 1, fast += 2</span><span class="arrow">→</span><span class="chip">they meet ⇒ cycle</span><span class="arrow">/</span><span class="chip">fast hits null ⇒ no cycle</span></div>
+      <div class="oneliner">🔒 Keep forever: "On a loop, the hare laps the tortoise — a meeting proves a cycle."</div>
+    </div>
+    <div class="note">List 1→2→3→4→5 with 5 linking back to 3.</div>
+    <div class="llwrap"><div class="lllabel">List (5 → back to 3)</div><div class="llrow" id="c1Row"></div></div>
+    <div class="status" id="c1Status">Press play. Slow &amp; fast meet inside the loop.</div>
+    <div class="controls"><button class="btn" id="c1Play">▶ Detect Cycle</button><button class="btn ghost" id="c1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="c1Speed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n) time, O(1) space — no hash set needed. If fast (or fast.next) is null, the list ends → no cycle.</div></div>
+    <pre><code>slow=head; fast=head;
+<span class="kw">while</span>(fast!=null &amp;&amp; fast.next!=null){
+  slow=slow.next; fast=fast.next.next;
+  <span class="kw">if</span>(slow==fast) <span class="kw">return</span> <span class="kw">true</span>; <span class="cm">// cycle!</span>
+}
+<span class="kw">return</span> <span class="kw">false</span>;</code></pre>
+  </section>
+
+  <!-- CYCLE 2 -->
+  <section id="cycle2">
+    <h2>📍 Cycle Detection II — Find the Start <span class="badge">Reset trick</span></h2>
+    <p class="lead">After the pointers meet, find where the loop begins by resetting one pointer to the head.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A tidy math coincidence:</span> once slow &amp; fast meet, move one pointer back to the head and advance both <b>one step at a time</b>. The distance math works out so they meet again exactly at the cycle's entry node.</div>
+      <div class="steps-flow"><span class="chip">detect meeting point</span><span class="arrow">→</span><span class="chip">one pointer → head</span><span class="arrow">→</span><span class="chip">both +1 until they meet = start</span></div>
+      <div class="oneliner">🔒 Keep forever: "After they meet, restart one at head; step both by 1 — they meet at the loop's start."</div>
+    </div>
+    <div class="note">Same list — the cycle starts at node 3.</div>
+    <div class="llwrap"><div class="lllabel">List (5 → back to 3)</div><div class="llrow" id="c2Row"></div></div>
+    <div class="status" id="c2Status">Press play to locate the cycle's entry.</div>
+    <div class="controls"><button class="btn" id="c2Play">▶ Find Cycle Start</button><button class="btn ghost" id="c2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="c2Speed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> distance(head → start) == distance(meeting → start) around the loop. That's why the reset-and-walk works.</div></div>
+    <pre><code><span class="cm">// after slow==fast:</span>
+Node p=head;
+<span class="kw">while</span>(p!=slow){ p=p.next; slow=slow.next; }
+<span class="kw">return</span> p; <span class="cm">// cycle start</span></code></pre>
+  </section>
+
+  <!-- CYCLE 3 -->
+  <section id="cycle3">
+    <h2>📏 Cycle Detection III — Loop Length <span class="badge">Count around</span></h2>
+    <p class="lead">Measure the cycle's length by walking one full lap from the meeting point.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">One lap of the track:</span> from the meeting node, keep one pointer fixed and send another around the loop, counting steps until it returns. That count is the cycle length — handy for removing the loop or analysis.</div>
+      <div class="steps-flow"><span class="chip">start at meeting node</span><span class="arrow">→</span><span class="chip">walk until back, counting</span><span class="arrow">→</span><span class="chip">count = loop length</span></div>
+      <div class="oneliner">🔒 Keep forever: "From the meeting point, count steps back to it — that's the loop length."</div>
+    </div>
+    <div class="note">Same list — cycle 3→4→5→3 has length 3.</div>
+    <div class="llwrap"><div class="lllabel">List (5 → back to 3)</div><div class="llrow" id="c3Row"></div></div>
+    <div class="status" id="c3Status">Press play to count the loop length.</div>
+    <div class="stats" id="c3Stats"></div>
+    <div class="controls"><button class="btn" id="c3Play">▶ Loop Length</button><button class="btn ghost" id="c3Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="c3Speed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> to REMOVE the cycle, walk length L with two gap-L pointers, or set the node before the start's <code>next = null</code>.</div></div>
+    <pre><code>Node t = meeting; <span class="kw">int</span> len=<span class="num">0</span>;
+<span class="kw">do</span> { t=t.next; len++; } <span class="kw">while</span>(t != meeting);
+<span class="kw">return</span> len; <span class="cm">// loop length</span></code></pre>
+  </section>
+
+  <!-- MERGE ITER -->
+  <section id="mergeiter">
+    <h2>🔗 Merge Two Sorted Lists (Iterative) <span class="badge">Two pointers</span></h2>
+    <p class="lead">Zip two sorted lists into one by repeatedly attaching the smaller head.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A zipper:</span> compare the two front nodes, splice the smaller onto the result tail, and advance that list. A dummy head keeps the code clean; when one list ends, attach the rest of the other.</div>
+      <div class="oneliner">🔒 Keep forever: "Attach the smaller head each step — a dummy tail makes it clean."</div>
+    </div>
+    <div class="note">A = 1→3→5, B = 2→4→6 → merged 1→2→3→4→5→6.</div>
+    <div class="llwrap"><div class="lllabel">List A</div><div class="llrow" id="miA"></div><div class="lllabel">List B</div><div class="llrow" id="miB"></div><div class="lllabel">Merged</div><div class="llrow" id="miOut"></div></div>
+    <div class="status" id="miStatus">Press play. The smaller head is spliced onto the result.</div>
+    <div class="controls"><button class="btn" id="miPlay">▶ Merge</button><button class="btn ghost" id="miReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="miSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n+m), stable if you take from A on ties. The dummy node avoids special-casing the first element.</div></div>
+    <pre><code>Node d=<span class="kw">new</span> Node(), t=d;
+<span class="kw">while</span>(a!=null &amp;&amp; b!=null){ <span class="kw">if</span>(a.val&lt;=b.val){ t.next=a; a=a.next; } <span class="kw">else</span> { t.next=b; b=b.next; } t=t.next; }
+t.next = (a!=null)? a : b;
+<span class="kw">return</span> d.next;</code></pre>
+  </section>
+
+  <!-- MERGE REC -->
+  <section id="mergerec">
+    <h2>🔗 Merge Two Sorted Lists (Recursive) <span class="badge">Elegant</span></h2>
+    <p class="lead">The same merge expressed recursively — pick the smaller head, then merge the rest.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Smaller head leads the rest:</span> the merged list's head is the smaller of the two front nodes; its <code>next</code> is the merge of what remains. The recursion peels one node at a time until a list is empty.</div>
+      <div class="oneliner">🔒 Keep forever: "head = smaller node; head.next = merge(rest). Base case: one list empty."</div>
+    </div>
+    <div class="note">A = 1→3→5, B = 2→4→6 → merged recursively.</div>
+    <div class="llwrap"><div class="lllabel">List A</div><div class="llrow" id="mrA"></div><div class="lllabel">List B</div><div class="llrow" id="mrB"></div><div class="lllabel">Merged</div><div class="llrow" id="mrOut"></div></div>
+    <div class="status" id="mrStatus">Press play. Each call picks the smaller head.</div>
+    <div class="controls"><button class="btn" id="mrPlay">▶ Merge</button><button class="btn ghost" id="mrReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mrSpeed" min="300" max="2400" value="1150" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> cleaner code, but O(n+m) stack depth. Iterative is safer for very long lists.</div></div>
+    <pre><code>Node merge(Node a, Node b){
+  <span class="kw">if</span>(a==null) <span class="kw">return</span> b; <span class="kw">if</span>(b==null) <span class="kw">return</span> a;
+  <span class="kw">if</span>(a.val&lt;=b.val){ a.next=merge(a.next,b); <span class="kw">return</span> a; }
+  <span class="kw">else</span> { b.next=merge(a,b.next); <span class="kw">return</span> b; }
+}</code></pre>
+  </section>
+
+  <!-- MERGE K -->
+  <section id="mergek">
+    <h2>🎄 Merge K Sorted Lists <span class="badge">Min-heap</span></h2>
+    <p class="lead">Merge k lists at once by always pulling the smallest current head — a min-heap makes it O(N log k).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">k queues, one cashier:</span> put the head of every list into a min-heap. Repeatedly pop the smallest, append it to the result, and push that node's successor. The heap always surfaces the global minimum among all k fronts.</div>
+      <div class="steps-flow"><span class="chip">heap ← all k heads</span><span class="arrow">→</span><span class="chip">pop min → output</span><span class="arrow">→</span><span class="chip">push its next</span></div>
+      <div class="oneliner">🔒 Keep forever: "A min-heap of the k heads yields the global smallest each step — O(N log k)."</div>
+    </div>
+    <div class="note">Lists [1,4,7], [2,5,8], [3,6,9] → merged 1..9.</div>
+    <div class="llwrap"><div class="lllabel">List 1</div><div class="llrow" id="mkA"></div><div class="lllabel">List 2</div><div class="llrow" id="mkB"></div><div class="lllabel">List 3</div><div class="llrow" id="mkC"></div><div class="lllabel">Merged</div><div class="llrow" id="mkOut"></div></div>
+    <div class="status" id="mkStatus">Press play. The smallest head across all lists wins each round.</div>
+    <div class="controls"><button class="btn" id="mkPlay">▶ Merge K</button><button class="btn ghost" id="mkReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mkSpeed" min="300" max="2400" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> heap approach O(N log k); or divide-and-conquer merge pairs of lists for the same complexity.</div></div>
+    <pre><code>PriorityQueue&lt;Node&gt; pq = <span class="kw">new</span> PriorityQueue&lt;&gt;((x,y)-&gt;x.val-y.val);
+<span class="kw">for</span>(Node h : lists) <span class="kw">if</span>(h!=null) pq.add(h);
+<span class="kw">while</span>(!pq.isEmpty()){ Node n=pq.poll(); tail.next=n; tail=n; <span class="kw">if</span>(n.next!=null) pq.add(n.next); }</code></pre>
+  </section>
+
+  <!-- CLONE 1 -->
+  <section id="clone1">
+    <h2>🧬 Clone a List with Random Pointers I <span class="badge">Hash map</span></h2>
+    <p class="lead">Deep-copy a list where each node has a <code>random</code> pointer — map every original node to its clone.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A translation dictionary:</span> first pass, create a clone for each node and record <code>original → clone</code> in a hash map. Second pass, wire each clone's <code>next</code> and <code>random</code> by looking up the map — the tangled random links copy perfectly.</div>
+      <div class="steps-flow"><span class="chip">pass 1: clone nodes, map old→new</span><span class="arrow">→</span><span class="chip">pass 2: set next &amp; random via map</span></div>
+      <div class="oneliner">🔒 Keep forever: "Map old→new first, then copy next/random by lookup."</div>
+    </div>
+    <div class="note">Nodes 7,13,11,10,1 with tangled random pointers → cloned via a map.</div>
+    <div class="llwrap"><div class="lllabel">Original</div><div class="llrow" id="cl1Row"></div></div>
+    <div class="hashpanel" id="cl1Hash"><span class="label">old→clone:</span></div>
+    <div class="llwrap"><div class="lllabel">Clone</div><div class="llrow" id="cl1Clone"></div></div>
+    <div class="status" id="cl1Status">Press play. Build the map, then wire the clone.</div>
+    <div class="controls"><button class="btn" id="cl1Play">▶ Clone (map)</button><button class="btn ghost" id="cl1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cl1Speed" min="300" max="2400" value="1100" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n) time, O(n) space for the map. The next section removes the map with an interleaving trick.</div></div>
+    <pre><code>Map&lt;Node,Node&gt; map = <span class="kw">new</span> HashMap&lt;&gt;();
+<span class="kw">for</span>(Node c=head;c!=null;c=c.next) map.put(c, <span class="kw">new</span> Node(c.val));
+<span class="kw">for</span>(Node c=head;c!=null;c=c.next){ map.get(c).next=map.get(c.next); map.get(c).random=map.get(c.random); }</code></pre>
+  </section>
+
+  <!-- CLONE 2 -->
+  <section id="clone2">
+    <h2>🧬 Clone with Random Pointers II <span class="badge">O(1) interleave</span></h2>
+    <p class="lead">No map needed — weave each clone right after its original, copy random links, then unzip.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Weave, wire, split:</span> insert each clone directly after its original (A → A' → B → B' …). Now a clone's random is simply <code>orig.random.next</code> — the clone sits right beside the target's original. Finally unzip the two lists apart.</div>
+      <div class="steps-flow"><span class="chip">interleave clones</span><span class="arrow">→</span><span class="chip">clone.random = orig.random.next</span><span class="arrow">→</span><span class="chip">split the two lists</span></div>
+      <div class="oneliner">🔒 Keep forever: "Put each clone beside its original so random = orig.random.next — no map."</div>
+    </div>
+    <div class="note">Interleave clones (A'), copy randoms, then separate.</div>
+    <div class="llwrap"><div class="lllabel">Interleaved (orig &amp; clone)</div><div class="llrow" id="cl2Row"></div></div>
+    <div class="status" id="cl2Status">Press play. Weave, wire randoms, then unzip.</div>
+    <div class="controls"><button class="btn" id="cl2Play">▶ Clone (O(1))</button><button class="btn ghost" id="cl2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="cl2Speed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n) time, O(1) extra space. Three passes: interleave, set randoms, split.</div></div>
+    <pre><code><span class="cm">// 1) A→A'→B→B'…  2) A'.random = A.random.next  3) split</span>
+c.next = <span class="kw">new</span> Node(c.val, c.next);        <span class="cm">// interleave</span>
+c.next.random = c.random.next;             <span class="cm">// copy random</span></code></pre>
+  </section>
+
+  <!-- FLATTEN -->
+  <section id="flatten">
+    <h2>📥 Flatten a Multi-Level List <span class="badge">Merge downs</span></h2>
+    <p class="lead">Each node has a sorted <b>down</b> list; flatten everything into one sorted list by merging.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Collapse the columns:</span> each top node heads a sorted vertical list. Merge them like merging sorted lists — repeatedly merge the current flattened result with the next column's down-list. Right-to-left keeps it clean.</div>
+      <div class="steps-flow"><span class="chip">each column is sorted (down)</span><span class="arrow">→</span><span class="chip">merge columns pairwise</span><span class="arrow">→</span><span class="chip">one sorted list</span></div>
+      <div class="oneliner">🔒 Keep forever: "Flatten = repeatedly merge sorted down-lists into one."</div>
+    </div>
+    <div class="note">Columns [5,7,8,30] · [10,20] · [19,22,50] · [28,35] → merged sorted.</div>
+    <div class="flatcols" id="flCols"></div>
+    <div class="lllabel">Flattened</div><div class="llrow" id="flOut"></div>
+    <div class="status" id="flStatus">Press play. Merge the sorted columns together.</div>
+    <div class="controls"><button class="btn" id="flPlay">▶ Flatten</button><button class="btn ghost" id="flReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="flSpeed" min="250" max="2200" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> merge from the last column backward, always keeping the running result sorted. Uses the two-list merge as a subroutine.</div></div>
+    <pre><code>Node flatten(Node head){
+  <span class="kw">if</span>(head==null || head.next==null) <span class="kw">return</span> head;
+  head.next = flatten(head.next);
+  <span class="kw">return</span> merge(head, head.next);   <span class="cm">// merge along 'down'</span>
+}</code></pre>
+  </section>
+
+  <!-- DOUBLY -->
+  <section id="doubly">
+    <h2>↔️ Doubly Linked List <span class="badge">Both directions</span></h2>
+    <p class="lead">Each node points to both <b>next</b> and <b>prev</b>, enabling O(1) removal and backward traversal.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A two-way street:</span> with a prev link, you can walk backward and delete a node in O(1) given only that node — just splice its neighbours together. The cost is one extra pointer per node.</div>
+      <div class="steps-flow"><span class="chip">node = prev · value · next</span><span class="arrow">·</span><span class="chip">delete: prev.next=next; next.prev=prev</span></div>
+      <div class="oneliner">🔒 Keep forever: "Two links per node ⇒ walk both ways and delete in O(1)."</div>
+    </div>
+    <div class="note">Doubly list 10 ⇄ 20 ⇄ 30 ⇄ 40. Insert 25, delete 20.</div>
+    <div class="llwrap"><div class="lllabel">Doubly List</div><div class="llrow" id="dbRow"></div></div>
+    <div class="status" id="dbStatus">Press play. Both prev &amp; next get rewired.</div>
+    <div class="controls"><button class="btn" id="dbPlay">▶ Run Operations</button><button class="btn ghost" id="dbReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="dbSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> update <b>four</b> pointers on insert. Doubly lists power LRU caches, deques, and browser history.</div></div>
+    <pre><code>insertAfter(p, x){ Node n=<span class="kw">new</span> Node(x); n.prev=p; n.next=p.next;
+  <span class="kw">if</span>(p.next!=null) p.next.prev=n; p.next=n; }
+delete(n){ n.prev.next=n.next; <span class="kw">if</span>(n.next!=null) n.next.prev=n.prev; }</code></pre>
+  </section>
+
+  <!-- LRU 1 -->
+  <section id="lru1">
+    <h2>💾 LRU Cache I — HashMap + Doubly List <span class="badge">O(1)</span></h2>
+    <p class="lead">Evict the Least-Recently-Used item in O(1) using a hash map (for lookup) + a doubly list (for order).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A shelf of recent items:</span> keep most-recently-used at the front of a doubly list, least-recently-used at the back. A hash map maps key → node for O(1) access. On get/put, move the node to the front; when full, drop the back node.</div>
+      <div class="steps-flow"><span class="chip">get/put → move node to front</span><span class="arrow">·</span><span class="chip">full? evict the back (LRU)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Map for O(1) find + doubly list for O(1) reorder = O(1) LRU."</div>
+    </div>
+    <div class="note">Capacity 2: put(1,1), put(2,2), get(1), put(3,3) evicts 2, get(2) miss, put(4,4) evicts 1.</div>
+    <div class="llwrap"><div class="lllabel">Recency list (front = MRU → back = LRU)</div><div class="llrow" id="lru1Row"></div></div>
+    <div class="hashpanel" id="lru1Hash"><span class="label">map key→val:</span></div>
+    <div class="status" id="lru1Status">Press play. MRU moves to front; LRU is evicted.</div>
+    <div class="stats" id="lru1Stats"></div>
+    <div class="controls"><button class="btn" id="lru1Play">▶ Run Cache</button><button class="btn ghost" id="lru1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lru1Speed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a sentinel head &amp; tail avoid null checks. Every op is O(1): map lookup + constant pointer surgery.</div></div>
+    <pre><code>get(k){ <span class="kw">if</span>(!map.has(k)) <span class="kw">return</span> -<span class="num">1</span>; moveToFront(map[k]); <span class="kw">return</span> map[k].val; }
+put(k,v){ <span class="kw">if</span>(map.has(k)) update+moveFront; <span class="kw">else</span> { <span class="kw">if</span>(full) evictBack(); addFront(k,v); } }</code></pre>
+  </section>
+
+  <!-- LRU 2 -->
+  <section id="lru2">
+    <h2>💾 LRU Cache II — via LinkedHashMap <span class="badge">Access order</span></h2>
+    <p class="lead">A shortcut implementation: a <code>LinkedHashMap</code> in access-order maintains recency for you.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Let the library track order:</span> a <code>LinkedHashMap</code> with access-order = true moves any accessed key to the end automatically. Override <code>removeEldestEntry</code> to drop the front when size exceeds capacity — LRU in a few lines.</div>
+      <div class="steps-flow"><span class="chip">accessOrder=true</span><span class="arrow">→</span><span class="chip">get/put reorder automatically</span><span class="arrow">→</span><span class="chip">removeEldestEntry evicts LRU</span></div>
+      <div class="oneliner">🔒 Keep forever: "LinkedHashMap(accessOrder) + removeEldestEntry = LRU for free."</div>
+    </div>
+    <div class="note">Same sequence — watch the ordered map reorder on each access.</div>
+    <div class="hashpanel" id="lru2Order"><span class="label">order (LRU→MRU):</span></div>
+    <div class="status" id="lru2Status">Press play. Accessed keys jump to the MRU end.</div>
+    <div class="stats" id="lru2Stats"></div>
+    <div class="controls"><button class="btn" id="lru2Play">▶ Run Cache</button><button class="btn ghost" id="lru2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lru2Speed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> same O(1) behaviour; the DoublyList+HashMap version (part I) is what you implement in interviews to prove you understand the internals.</div></div>
+    <pre><code>Map = <span class="kw">new</span> LinkedHashMap&lt;&gt;(cap, <span class="num">0.75f</span>, <span class="kw">true</span>){  <span class="cm">// access-order</span>
+  <span class="kw">protected boolean</span> removeEldestEntry(e){ <span class="kw">return</span> size() &gt; cap; }
+};</code></pre>
+
+    <div class="note key">🏆 <b>Linked lists mastered!</b> Nodes link head→null · pointers rewire for insert/delete · slow/fast finds middles &amp; cycles · reversal flips arrows · merges zip sorted lists · hashing/interleaving clones random links · and a doubly list + map builds an O(1) LRU cache. Picture the arrows moving and no list problem can surprise you. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Linked Lists — Animated Guide • Replay any animation, turn on 🎵 sound • Learn by watching the pointers move 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.08 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(460+Math.random()*100,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- Linked list viz ---- */
+function listViz(container){
+  return { render(vals, o={}){
+    container.innerHTML='';
+    const labels=o.labels||{}; const arrowDir=o.arrowDir||[]; const doubly=o.doubly;
+    vals.forEach((v,i)=>{
+      const n=document.createElement('div'); n.className='lnode'+(o.active&&o.active.includes(i)?' active':'')+(o.active2&&o.active2.includes(i)?' active2':'')+(o.done&&o.done.has(i)?' done':'')+(o.dead&&o.dead.has(i)?' dead':'');
+      if(labels[i]){ const l=document.createElement('div'); l.className='lab'; l.textContent=labels[i]; n.appendChild(l); }
+      const sp=document.createElement('span'); sp.textContent=v; n.appendChild(sp);
+      container.appendChild(n);
+      if(i<vals.length-1){ const a=document.createElement('span'); a.className='larrow'+(arrowDir[i]==='left'?' rev':''); a.textContent = doubly? '⇄' : (arrowDir[i]==='left'?'←':'→'); container.appendChild(a); }
+    });
+    if(o.cycleTo!=null){ const a=document.createElement('span'); a.className='larrow rev'; a.textContent='⟲'; container.appendChild(a); const b=document.createElement('span'); b.className='lcycle'; b.textContent='back to '+o.cycleTo; container.appendChild(b); }
+    else if(vals.length){ const a=document.createElement('span'); a.className='larrow'; a.textContent='→'; container.appendChild(a); const nl=document.createElement('span'); nl.className='lnull'; nl.textContent='null'; container.appendChild(nl); }
+    else { container.innerHTML='<span class="lnull">(empty)</span>'; }
+  } };
+}
+function cellViz(container){
+  let cells=[];
+  function ensure(n){ if(cells.length!==n){ container.innerHTML=''; cells=[]; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='cell'; container.appendChild(c); cells.push(c);} } }
+  function render(arr,o={}){ ensure(arr.length); if(!arr.length){ container.innerHTML='<div class="cell empty">(empty)</div>'; cells=[]; return; } arr.forEach((v,i)=>{ const c=cells[i]; c.className='cell'; c.innerHTML=`${v}${o.ptr&&o.ptr[i]!=null?`<span class="ptr">${o.ptr[i]}</span>`:''}`; if(o.compare&&o.compare.includes(i))c.classList.add('mid'); if(o.groupA&&o.groupA.includes(i))c.classList.add('lo'); if(o.groupB&&o.groupB.includes(i))c.classList.add('hi'); if(o.done&&o.done.has(i))c.classList.add('found'); }); }
+  return { render };
+}
+function hashPanel(container,label){ return { render(entries){ container.innerHTML=`<span class="label">${label}</span>`+(entries.length?'':'<span class="empty">∅ empty</span>'); entries.forEach(e=>{ const d=document.createElement('div'); d.className='hentry'+(e.state?(' '+e.state):''); d.innerHTML=`<b>${e.k}</b>${e.v!=null?`<span>${e.v}</span>`:''}`; container.appendChild(d); }); } }; }
+function L(map){ const o={}; for(const k in map) o[k]=map[k].join('/'); return o; }
+
+/* ================= 1. What is list ================= */
+(function(){
+  const V=[3,7,1,9]; const lv=listViz($('#wlRow')); const st=$('#wlStatus'); const sp=$('#wlSpeed');
+  function build(){ lv.render(V,{labels:{0:'head'}}); st.textContent='Press play to traverse from head to null.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true;
+    for(let i=0;i<V.length;i++){ lv.render(V,{labels:L({0:['head'],[i]:['cur']}),active:[i]}); st.innerHTML=`Visit node <span class="k">${V[i]}</span>, follow next…`; tickSound(); await sleep(+sp.value); }
+    lv.render(V,{labels:{0:'head'},done:new Set(V.map((_,i)=>i))}); st.innerHTML='🔗 Reached null — that\'s the whole list!'; ANIM=false; celebrate($('#wlRow'));
+  }
+  $('#wlPlay').onclick=play; $('#wlReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Basic operations ================= */
+(function(){
+  const lv=listViz($('#boRow')); const st=$('#boStatus'); const sp=$('#boSpeed');
+  function build(){ lv.render([2,3,4],{labels:{0:'head'}}); st.textContent='Press play to insert & delete by rewiring pointers.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let v=[2,3,4];
+    lv.render(v,{labels:{0:'head'}}); await sleep(+sp.value);
+    v=[1,...v]; lv.render(v,{labels:{0:'head'},active:[0]}); st.innerHTML='insertHead(1): new node → old head.'; tickSound(); await sleep(+sp.value);
+    v=[...v,5]; lv.render(v,{labels:{0:'head'},active:[v.length-1]}); st.innerHTML='insertTail(5): tail.next → new node.'; tickSound(); await sleep(+sp.value);
+    lv.render(v,{labels:{0:'head'},active2:[2]}); st.innerHTML='delete node 3: link prev(1) → next(4).'; tickSound(); await sleep(+sp.value);
+    v=v.filter(x=>x!==3); lv.render(v,{labels:{0:'head'},done:new Set(v.map((_,i)=>i))}); st.innerHTML='🛠️ List is now 1→2→4→5 — all by rewiring!'; ANIM=false; celebrate($('#boRow'));
+  }
+  $('#boPlay').onclick=play; $('#boReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Middle node ================= */
+(function(){
+  const V=[1,2,3,4,5,6,7]; const lv=listViz($('#mdRow')); const st=$('#mdStatus'); const sp=$('#mdSpeed');
+  function build(){ lv.render(V,{labels:L({0:['slow','fast']})}); st.textContent='Press play. Slow lands on the middle.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let slow=0,fast=0;
+    while(fast<V.length && fast+1<V.length){ slow++; fast+=2; const lab={}; lab[slow]=['slow']; if(fast<V.length)(lab[fast]=lab[fast]||[]).push('fast'); lv.render(V,{labels:L(lab),active:[slow],active2:fast<V.length?[fast]:[]}); st.innerHTML=`slow→${V[slow]}, fast→${fast<V.length?V[fast]:'end'}.`; tickSound(); await sleep(+sp.value); }
+    lv.render(V,{labels:L({[slow]:['middle']}),done:new Set([slow])}); st.innerHTML=`🎯 Middle node = <span class="k">${V[slow]}</span>!`; ANIM=false; celebrate($('#mdRow'));
+  }
+  $('#mdPlay').onclick=play; $('#mdReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Delete nth from end ================= */
+(function(){
+  const V=[1,2,3,4,5], n=2; const lv=listViz($('#dnRow')); const st=$('#dnStatus'); const sp=$('#dnSpeed');
+  function build(){ lv.render(V,{labels:{0:'head'}}); st.textContent='Press play. The gap reveals the node to delete.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let v=V.slice(); let fast=0, slow=0;
+    for(let i=0;i<n;i++){ fast++; lv.render(v,{labels:L({[fast]:['fast'],[slow]:['slow']}),active2:[fast]}); st.innerHTML=`Advance fast ${i+1}/${n} → opens a gap of ${n}.`; tickSound(); await sleep(+sp.value); }
+    while(fast<v.length-1){ fast++; slow++; lv.render(v,{labels:L({[fast]:['fast'],[slow]:['slow']}),active2:[fast],active:[slow]}); st.innerHTML='Move both together…'; tickSound(); await sleep(+sp.value); }
+    const target=slow+1; lv.render(v,{labels:L({[slow]:['slow']}),active2:[target]}); st.innerHTML=`fast at end → delete slow.next = node <span class="k">${v[target]}</span>.`; await sleep(+sp.value);
+    v=v.filter((_,i)=>i!==target); lv.render(v,{labels:{0:'head'},done:new Set(v.map((_,i)=>i))}); st.innerHTML=`🗑️ Deleted 2nd-from-end → 1→2→3→5!`; ANIM=false; celebrate($('#dnRow'));
+  }
+  $('#dnPlay').onclick=play; $('#dnReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. Reverse iterative ================= */
+(function(){
+  const V=[1,2,3,4]; const lv=listViz($('#riRow')); const st=$('#riStatus'); const sp=$('#riSpeed');
+  function build(){ lv.render(V,{labels:{0:'head'}}); st.textContent='Press play. Each arrow flips backward.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const n=V.length; const dir=Array(n-1).fill('right'); let prev=-1, cur=0;
+    while(cur<n){ const lab={}; if(prev>=0)lab[prev]=['prev']; lab[cur]=['cur']; if(cur+1<n)lab[cur+1]=['next']; lv.render(V,{labels:L(lab),active:[cur],active2:prev>=0?[prev]:[],arrowDir:dir.slice()}); st.innerHTML=`Flip node ${V[cur]}'s arrow to point back.`; tickSound(); await sleep(+sp.value);
+      if(cur>0) dir[cur-1]='left'; prev=cur; cur++; lv.render(V,{labels:L(lab),arrowDir:dir.slice()}); await sleep(+sp.value*0.5); }
+    const rev=V.slice().reverse(); lv.render(rev,{labels:{0:'head'},done:new Set(rev.map((_,i)=>i))}); st.innerHTML='🔄 Reversed → 4→3→2→1!'; ANIM=false; celebrate($('#riRow'));
+  }
+  $('#riPlay').onclick=play; $('#riReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. Reverse recursive ================= */
+(function(){
+  const V=[1,2,3,4]; const lv=listViz($('#rrRow')); const st=$('#rrStatus'); const sp=$('#rrSpeed');
+  function build(){ lv.render(V,{labels:{0:'head'}}); st.textContent='Press play. Recursion dives, then rewires on return.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const n=V.length;
+    for(let i=0;i<n;i++){ lv.render(V,{labels:L({[i]:['recurse']}),active:[i]}); st.innerHTML=`Dive into node ${V[i]}…`; tickSound(); await sleep(+sp.value*0.8); }
+    lv.render(V,{labels:L({[n-1]:['new head']}),active:[n-1]}); st.innerHTML=`Reached the end → ${V[n-1]} is the new head.`; await sleep(+sp.value);
+    const dir=Array(n-1).fill('right');
+    for(let i=n-1;i>0;i--){ dir[i-1]='left'; lv.render(V,{labels:L({[i]:['ret']}),active2:[i-1],arrowDir:dir.slice()}); st.innerHTML=`Unwind: make ${V[i]} point back to ${V[i-1]}.`; tickSound(); await sleep(+sp.value); }
+    const rev=V.slice().reverse(); lv.render(rev,{labels:{0:'head'},done:new Set(rev.map((_,i)=>i))}); st.innerHTML='↩️ Reversed via recursion → 4→3→2→1!'; ANIM=false; celebrate($('#rrRow'));
+  }
+  $('#rrPlay').onclick=play; $('#rrReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Palindrome ================= */
+(function(){
+  const V=[1,2,3,2,1]; const viz=cellViz($('#paRow')); const st=$('#paStatus'); const sp=$('#paSpeed'); const stats=$('#paStats');
+  function build(){ viz.render(V); stats.innerHTML=''; st.textContent='Press play. Compare mirrored pairs.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); let l=0,r=V.length-1, ok=true;
+    while(l<r){ viz.render(V,{ptr:{[l]:'l',[r]:'r'},compare:[l,r]}); const match=V[l]===V[r]; st.innerHTML=`Compare ${V[l]} &amp; ${V[r]} → ${match?'match ✓':'mismatch ✗'}`; stats.innerHTML=`<span class="pill blue">checked pairs…</span>`; tickSound(); await sleep(+sp.value); if(!match){ ok=false; break; } l++; r--; }
+    if(ok){ viz.render(V,{done:new Set(V.map((_,i)=>i))}); stats.innerHTML='<span class="pill green">palindrome ✓</span>'; st.innerHTML='🪞 All mirrored pairs match → it IS a palindrome!'; }
+    else { stats.innerHTML='<span class="pill pink">not a palindrome</span>'; st.innerHTML='🪞 Mismatch found → not a palindrome.'; }
+    ANIM=false; celebrate($('#paRow'));
+  }
+  $('#paPlay').onclick=play; $('#paReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. K reverse ================= */
+(function(){
+  const V=[1,2,3,4,5,6], k=3; const lv=listViz($('#krRow')); const st=$('#krStatus'); const sp=$('#krSpeed');
+  function build(){ lv.render(V,{labels:{0:'head'}}); st.textContent='Press play. Each group of 3 flips.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let arr=V.slice();
+    for(let start=0; start<arr.length; start+=k){ const end=Math.min(start+k,arr.length);
+      lv.render(arr,{active:[...Array(end-start)].map((_,i)=>start+i)}); st.innerHTML=`Reverse group [${arr.slice(start,end).join(', ')}]…`; tickSound(); await sleep(+sp.value);
+      const grp=arr.slice(start,end).reverse(); arr=[...arr.slice(0,start),...grp,...arr.slice(end)]; lv.render(arr,{done:new Set([...Array(end-start)].map((_,i)=>start+i))}); await sleep(+sp.value); }
+    lv.render(arr,{labels:{0:'head'},done:new Set(arr.map((_,i)=>i))}); st.innerHTML='🔢 K-reversed → 3→2→1→6→5→4!'; ANIM=false; celebrate($('#krRow'));
+  }
+  $('#krPlay').onclick=play; $('#krReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= Cycle helpers ================= */
+const CYC={ vals:[1,2,3,4,5], back:2 }; // node index 4 links back to index 2 (value 3)
+function cnext(i){ return i===CYC.vals.length-1 ? CYC.back : i+1; }
+
+/* ================= 9. Cycle detect ================= */
+(function(){
+  const lv=listViz($('#c1Row')); const st=$('#c1Status'); const sp=$('#c1Speed');
+  function build(){ lv.render(CYC.vals,{labels:L({0:['slow','fast']}),cycleTo:CYC.vals[CYC.back]}); st.textContent='Press play. Slow & fast meet inside the loop.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let slow=0,fast=0,steps=0;
+    while(steps<12){ slow=cnext(slow); fast=cnext(cnext(fast)); steps++; const lab={}; (lab[slow]=lab[slow]||[]).push('slow'); (lab[fast]=lab[fast]||[]).push('fast'); lv.render(CYC.vals,{labels:L(lab),active:[slow],active2:[fast],cycleTo:CYC.vals[CYC.back]}); st.innerHTML=`slow→${CYC.vals[slow]}, fast→${CYC.vals[fast]}.`; tickSound(); await sleep(+sp.value); if(slow===fast) break; }
+    lv.render(CYC.vals,{labels:L({[slow]:['MEET']}),done:new Set([slow]),cycleTo:CYC.vals[CYC.back]}); st.innerHTML=`🌀 slow == fast at ${CYC.vals[slow]} → a CYCLE exists!`; ANIM=false; celebrate($('#c1Row'));
+  }
+  $('#c1Play').onclick=play; $('#c1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. Cycle start ================= */
+(function(){
+  const lv=listViz($('#c2Row')); const st=$('#c2Status'); const sp=$('#c2Speed');
+  function build(){ lv.render(CYC.vals,{labels:{0:'head'},cycleTo:CYC.vals[CYC.back]}); st.textContent='Press play to locate the cycle\'s entry.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let slow=0,fast=0;
+    do { slow=cnext(slow); fast=cnext(cnext(fast)); } while(slow!==fast);
+    lv.render(CYC.vals,{labels:L({[slow]:['meet']}),active:[slow],cycleTo:CYC.vals[CYC.back]}); st.innerHTML=`Pointers met at ${CYC.vals[slow]}. Reset one to head, step both by 1.`; await sleep(+sp.value*1.2);
+    let p=0;
+    while(p!==slow){ const lab={}; (lab[p]=lab[p]||[]).push('p'); (lab[slow]=lab[slow]||[]).push('q'); lv.render(CYC.vals,{labels:L(lab),active:[p],active2:[slow],cycleTo:CYC.vals[CYC.back]}); st.innerHTML=`p→${CYC.vals[p]}, q→${CYC.vals[slow]} (stepping together)…`; tickSound(); await sleep(+sp.value); p=cnext(p); slow=cnext(slow); }
+    lv.render(CYC.vals,{labels:L({[p]:['START']}),done:new Set([p]),cycleTo:CYC.vals[CYC.back]}); st.innerHTML=`📍 Cycle starts at node <span class="k">${CYC.vals[p]}</span>!`; ANIM=false; celebrate($('#c2Row'));
+  }
+  $('#c2Play').onclick=play; $('#c2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. Cycle length ================= */
+(function(){
+  const lv=listViz($('#c3Row')); const st=$('#c3Status'); const sp=$('#c3Speed'); const stats=$('#c3Stats');
+  function build(){ lv.render(CYC.vals,{labels:{0:'head'},cycleTo:CYC.vals[CYC.back]}); stats.innerHTML=''; st.textContent='Press play to count the loop length.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let slow=0,fast=0;
+    do { slow=cnext(slow); fast=cnext(cnext(fast)); } while(slow!==fast);
+    const meet=slow; let t=cnext(meet), len=1;
+    lv.render(CYC.vals,{labels:L({[meet]:['start']}),active:[meet],cycleTo:CYC.vals[CYC.back]}); st.innerHTML=`From meeting node ${CYC.vals[meet]}, walk one lap…`; await sleep(+sp.value);
+    while(t!==meet){ len++; lv.render(CYC.vals,{labels:L({[meet]:['start'],[t]:['walk']}),active:[meet],active2:[t],cycleTo:CYC.vals[CYC.back]}); stats.innerHTML=`<span class="pill blue">steps: ${len}</span>`; st.innerHTML=`step ${len} → ${CYC.vals[t]}.`; tickSound(); await sleep(+sp.value); t=cnext(t); }
+    stats.innerHTML=`<span class="pill green">loop length = ${len}</span>`; lv.render(CYC.vals,{done:new Set([2,3,4]),cycleTo:CYC.vals[CYC.back]}); st.innerHTML=`📏 Loop length = <span class="k">${len}</span> (3→4→5→3)!`; ANIM=false; celebrate($('#c3Row'));
+  }
+  $('#c3Play').onclick=play; $('#c3Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12 & 13. Merge two (iter & rec share renderer) ================= */
+function mergeDemo(idA,idB,idOut,statusId,speedId,tag){
+  const A=[1,3,5], B=[2,4,6]; const va=listViz($(idA)), vb=listViz($(idB)), vo=listViz($(idOut)); const st=$(statusId); const sp=$(speedId);
+  function build(){ va.render(A,{labels:{0:'a'}}); vb.render(B,{labels:{0:'b'}}); vo.render([]); st.textContent='Press play. The smaller head is spliced onto the result.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); let i=0,j=0; const out=[];
+    while(i<A.length && j<B.length){ va.render(A,{labels:L({[i]:['a']}),active:[i]}); vb.render(B,{labels:L({[j]:['b']}),active:[j]}); st.innerHTML=`Compare ${A[i]} &amp; ${B[j]} → take smaller.`; tickSound(); await sleep(+sp.value);
+      if(A[i]<=B[j]){ out.push(A[i]); i++; } else { out.push(B[j]); j++; } vo.render(out.slice(),{done:new Set([out.length-1])}); await sleep(+sp.value*0.6); }
+    while(i<A.length){ out.push(A[i++]); vo.render(out.slice(),{done:new Set([out.length-1])}); await sleep(+sp.value*0.5); }
+    while(j<B.length){ out.push(B[j++]); vo.render(out.slice(),{done:new Set([out.length-1])}); await sleep(+sp.value*0.5); }
+    va.render(A,{}); vb.render(B,{}); vo.render(out.slice(),{labels:{0:'head'},done:new Set(out.map((_,k)=>k))}); st.innerHTML=`${tag} Merged → 1→2→3→4→5→6!`; ANIM=false; celebrate($(idOut));
+  }
+  return { play, build };
+}
+(function(){ const d=mergeDemo('#miA','#miB','#miOut','#miStatus','#miSpeed','🔗'); $('#miPlay').onclick=d.play; $('#miReset').onclick=()=>{ if(!ANIM) d.build(); }; })();
+(function(){ const d=mergeDemo('#mrA','#mrB','#mrOut','#mrStatus','#mrSpeed','🔗'); $('#mrPlay').onclick=d.play; $('#mrReset').onclick=()=>{ if(!ANIM) d.build(); }; })();
+
+/* ================= 14. Merge K ================= */
+(function(){
+  const L1=[1,4,7], L2=[2,5,8], L3=[3,6,9]; const va=listViz($('#mkA')),vb=listViz($('#mkB')),vc=listViz($('#mkC')),vo=listViz($('#mkOut')); const st=$('#mkStatus'); const sp=$('#mkSpeed');
+  function build(){ va.render(L1,{labels:{0:'h1'}}); vb.render(L2,{labels:{0:'h2'}}); vc.render(L3,{labels:{0:'h3'}}); vo.render([]); st.textContent='Press play. The smallest head across all lists wins each round.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const lists=[L1.slice(),L2.slice(),L3.slice()]; const vz=[va,vb,vc]; const out=[];
+    while(lists.some(l=>l.length)){ let best=-1,bv=Infinity; lists.forEach((l,idx)=>{ if(l.length && l[0]<bv){ bv=l[0]; best=idx; } });
+      vz.forEach((v,idx)=>{ v.render([L1,L2,L3][idx].slice(0), {}); });
+      va.render([1,4,7],{active: best===0?[0]:[], labels:L({0:['h1']})}); // reset headers each round below
+      lists.forEach((l,idx)=>{ vz[idx].render(l,{labels: l.length?L({0:['h'+(idx+1)]}):{}, active: idx===best?[0]:[]}); });
+      st.innerHTML=`Smallest head = <span class="k">${bv}</span> (list ${best+1}).`; tickSound(); await sleep(+sp.value);
+      out.push(lists[best].shift()); vo.render(out.slice(),{done:new Set([out.length-1])}); await sleep(+sp.value*0.5); }
+    vo.render(out.slice(),{labels:{0:'head'},done:new Set(out.map((_,i)=>i))}); st.innerHTML='🎄 Merged K lists → 1..9!'; ANIM=false; celebrate($('#mkOut'));
+  }
+  $('#mkPlay').onclick=play; $('#mkReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. Clone I (map) ================= */
+(function(){
+  const vals=[7,13,11,10,1]; const rnd=[null,0,4,2,0]; const lv=listViz($('#cl1Row')); const cv=listViz($('#cl1Clone')); const hp=hashPanel($('#cl1Hash'),'old→clone:'); const st=$('#cl1Status'); const sp=$('#cl1Speed');
+  function build(){ lv.render(vals,{labels:{0:'head'}}); cv.render([]); hp.render([]); st.textContent='Press play. Build the map, then wire the clone.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const map=[];
+    for(let i=0;i<vals.length;i++){ map.push(vals[i]); lv.render(vals,{active:[i]}); hp.render(map.map((v,k)=>({k:vals[k],v:"c"+vals[k],state:k===i?'new':''}))); st.innerHTML=`Pass 1: clone node <span class="k">${vals[i]}</span>, store old→clone.`; tickSound(); await sleep(+sp.value); }
+    st.innerHTML='Pass 2: wire each clone\'s next &amp; random via the map.'; await sleep(+sp.value);
+    for(let i=0;i<vals.length;i++){ lv.render(vals,{active:[i],active2: rnd[i]!=null?[rnd[i]]:[]}); cv.render(vals.slice(0,i+1),{active:[i]}); const rtxt = rnd[i]!=null? `random→${vals[rnd[i]]}` : 'random→null'; hp.render(map.map((v,k)=>({k:vals[k],v:"c"+vals[k],state:k===i?'hit':''}))); st.innerHTML=`clone(${vals[i]}).next & ${rtxt} (looked up in map).`; tickSound(); await sleep(+sp.value); }
+    cv.render(vals,{labels:{0:'head'},done:new Set(vals.map((_,i)=>i))}); st.innerHTML='🧬 Deep clone built — next & random copied via the map!'; ANIM=false; celebrate($('#cl1Clone'));
+  }
+  $('#cl1Play').onclick=play; $('#cl1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 16. Clone II (interleave) ================= */
+(function(){
+  const vals=[7,13,11]; const lv=listViz($('#cl2Row')); const st=$('#cl2Status'); const sp=$('#cl2Speed');
+  function inter(){ const out=[]; vals.forEach(v=>{ out.push(v); out.push(v+"'"); }); return out; }
+  function build(){ lv.render(vals,{labels:{0:'head'}}); st.textContent='Press play. Weave, wire randoms, then unzip.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let cur=vals.slice();
+    // interleave
+    const woven=[]; for(let i=0;i<vals.length;i++){ woven.push(vals[i]); lv.render(woven.slice(),{}); st.innerHTML=`Insert clone ${vals[i]}' right after ${vals[i]}.`; tickSound(); await sleep(+sp.value*0.7); woven.push(vals[i]+"'"); lv.render(woven.slice(),{active:[woven.length-1]}); await sleep(+sp.value*0.7); }
+    st.innerHTML="Now clone.random = orig.random.next (clone sits beside the target)."; lv.render(woven.slice(),{active:woven.map((v,i)=>String(v).includes("'")?i:-1).filter(i=>i>=0)}); await sleep(+sp.value*1.3);
+    // split
+    const orig=[], clone=[]; woven.forEach((v,i)=>{ (i%2===0?orig:clone).push(v); });
+    lv.render(clone,{labels:{0:"clone head"},done:new Set(clone.map((_,i)=>i))}); st.innerHTML='🧬 Unzipped → deep clone with O(1) extra space!'; ANIM=false; celebrate($('#cl2Row'));
+  }
+  $('#cl2Play').onclick=play; $('#cl2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 17. Flatten ================= */
+(function(){
+  const cols=[[5,7,8,30],[10,20],[19,22,50],[28,35]]; const C=$('#flCols'); const vo=listViz($('#flOut')); const st=$('#flStatus'); const sp=$('#flSpeed');
+  function drawCols(activeCol,consumed){ C.innerHTML=''; cols.forEach((col,ci)=>{ const d=document.createElement('div'); d.className='flatcol'; col.forEach((v,ri)=>{ const n=document.createElement('div'); n.className='fnode'+(ri===0?' head':'')+((consumed&&consumed[ci]&&consumed[ci].has(v))?' done':''); n.textContent=v; d.appendChild(n); if(ri<col.length-1){ const a=document.createElement('div'); a.className='fdown'; a.textContent='↓'; d.appendChild(a);} }); C.appendChild(d); }); }
+  function build(){ drawCols(-1,null); vo.render([]); st.textContent='Press play. Merge the sorted columns together.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; const all=[].concat(...cols).sort((a,b)=>a-b); const out=[]; const consumed=cols.map(()=>new Set());
+    st.innerHTML='Merge all sorted down-lists into one sorted list…'; await sleep(+sp.value);
+    for(const v of all){ const ci=cols.findIndex((col,idx)=>col.includes(v)&&!consumed[idx].has(v)); consumed[ci].add(v); out.push(v); drawCols(ci,consumed); vo.render(out.slice(),{done:new Set([out.length-1])}); st.innerHTML=`Take smallest remaining = <span class="k">${v}</span>.`; tickSound(); await sleep(+sp.value*0.8); }
+    vo.render(out.slice(),{labels:{0:'head'},done:new Set(out.map((_,i)=>i))}); st.innerHTML='📥 Flattened into one sorted list!'; ANIM=false; celebrate($('#flOut'));
+  }
+  $('#flPlay').onclick=play; $('#flReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 18. Doubly linked list ================= */
+(function(){
+  const lv=listViz($('#dbRow')); const st=$('#dbStatus'); const sp=$('#dbSpeed');
+  function build(){ lv.render([10,20,30,40],{labels:L({0:['head'],3:['tail']}),doubly:true}); st.textContent='Press play. Both prev & next get rewired.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; let v=[10,20,30,40];
+    lv.render(v,{labels:L({0:['head'],3:['tail']}),doubly:true}); await sleep(+sp.value);
+    v=[10,20,25,30,40]; lv.render(v,{doubly:true,active:[2]}); st.innerHTML='insertAfter(20, 25): rewire 4 pointers (prev & next both ways).'; tickSound(); await sleep(+sp.value);
+    lv.render(v,{doubly:true,active2:[1]}); st.innerHTML='delete 20: link 10 ⇄ 25 directly.'; tickSound(); await sleep(+sp.value);
+    v=v.filter(x=>x!==20); lv.render(v,{labels:L({0:['head'],[v.length-1]:['tail']}),doubly:true,done:new Set(v.map((_,i)=>i))}); st.innerHTML='↔️ Doubly list updated — O(1) delete with prev links!'; ANIM=false; celebrate($('#dbRow'));
+  }
+  $('#dbPlay').onclick=play; $('#dbReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 19. LRU cache I ================= */
+(function(){
+  const cap=2; const lv=listViz($('#lru1Row')); const hp=hashPanel($('#lru1Hash'),'map key→val:'); const st=$('#lru1Status'); const sp=$('#lru1Speed'); const stats=$('#lru1Stats');
+  const ops=[['put',1,1],['put',2,2],['get',1],['put',3,3],['get',2],['put',4,4]];
+  function build(){ lv.render([]); hp.render([]); stats.innerHTML=''; st.textContent='Press play. MRU moves to front; LRU is evicted.'; }
+  build();
+  function show(list,map,msg,evk){ lv.render(list.map(k=>k+':'+map.get(k)),{labels: list.length?L({0:['MRU'],[list.length-1]:['LRU']}):{}}); hp.render([...map.entries()].map(([k,v])=>({k,v}))); st.innerHTML=msg; stats.innerHTML=`<span class="pill blue">size ${list.length}/${cap}</span>${evk!=null?`<span class="pill pink">evicted ${evk}</span>`:''}`; }
+  async function play(){ if(ANIM)return; ANIM=true; const list=[]; const map=new Map();
+    for(const op of ops){ let ev=null;
+      if(op[0]==='put'){ const [_,k,v]=op; if(map.has(k)){ list.splice(list.indexOf(k),1); } else if(list.length>=cap){ ev=list.pop(); map.delete(ev); } list.unshift(k); map.set(k,v); show(list,map,`put(${k},${v}) → front (MRU)${ev!=null?`, evict LRU ${ev}`:''}.`,ev); }
+      else { const [_,k]=op; if(map.has(k)){ list.splice(list.indexOf(k),1); list.unshift(k); show(list,map,`get(${k}) → ${map.get(k)}, move to front.`); } else show(list,map,`get(${k}) → MISS (-1).`); }
+      tickSound(); await sleep(+sp.value); }
+    st.innerHTML='💾 LRU cache: hash map find + doubly-list reorder, all O(1)!'; ANIM=false; celebrate($('#lru1Row'));
+  }
+  $('#lru1Play').onclick=play; $('#lru1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 20. LRU cache II (LinkedHashMap) ================= */
+(function(){
+  const cap=2; const hp=hashPanel($('#lru2Order'),'order (LRU→MRU):'); const st=$('#lru2Status'); const sp=$('#lru2Speed'); const stats=$('#lru2Stats');
+  const ops=[['put',1,1],['put',2,2],['get',1],['put',3,3],['get',2],['put',4,4]];
+  function build(){ hp.render([]); stats.innerHTML=''; st.textContent='Press play. Accessed keys jump to the MRU end.'; }
+  build();
+  function show(order,map,msg,ev){ hp.render(order.map(k=>({k,v:map.get(k)}))); st.innerHTML=msg; stats.innerHTML=`<span class="pill blue">size ${order.length}/${cap}</span>${ev!=null?`<span class="pill pink">evicted ${ev}</span>`:''}`; }
+  async function play(){ if(ANIM)return; ANIM=true; const order=[]; const map=new Map(); // order: front=LRU, end=MRU
+    for(const op of ops){ let ev=null;
+      if(op[0]==='put'){ const [_,k,v]=op; if(map.has(k)) order.splice(order.indexOf(k),1); else if(order.length>=cap){ ev=order.shift(); map.delete(ev); } order.push(k); map.set(k,v); show(order,map,`put(${k},${v}) → moved to MRU end${ev!=null?`, removeEldest ${ev}`:''}.`,ev); }
+      else { const [_,k]=op; if(map.has(k)){ order.splice(order.indexOf(k),1); order.push(k); show(order,map,`get(${k})=${map.get(k)} → access-order bumps it to MRU.`); } else show(order,map,`get(${k}) → MISS.`); }
+      tickSound(); await sleep(+sp.value); }
+    st.innerHTML='💾 LinkedHashMap(accessOrder) + removeEldestEntry = LRU in a few lines!'; ANIM=false; celebrate($('#lru2Order'));
+  }
+  $('#lru2Play').onclick=play; $('#lru2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

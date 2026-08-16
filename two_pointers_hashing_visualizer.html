@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Two Pointers, Hashing &amp; Windows — Animated Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --pivot:#b5179e; --line:#26325c;
+    --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden}
+  header{text-align:center; padding:60px 20px 26px}
+  header h1{font-size:clamp(28px,5vw,50px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent; background-size:200% auto; animation:shimmer 6s ease-in-out infinite}
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:720px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:7px; justify-content:center;
+      padding:12px; background:rgba(11,16,32,.8); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12.5px; font-weight:600; padding:6px 11px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(21px,3.4vw,30px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12.5px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent)}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  .cellrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:26px 0 30px; min-height:70px}
+  .cell{position:relative; min-width:50px; height:52px; padding:0 8px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:17px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink); transition:all .38s cubic-bezier(.2,.8,.2,1)}
+  .cell .idx{position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--muted); font-weight:700}
+  .cell .ptr{position:absolute; bottom:-23px; left:50%; transform:translateX(-50%); font-size:11.5px; font-weight:800; white-space:nowrap; color:var(--accent); background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 6px}
+  .cell.in-range{border-color:var(--accent); background:#22345f}
+  .cell.dead{opacity:.32; filter:grayscale(.5); transform:scale(.92)}
+  .cell.lo{border-color:var(--lo); box-shadow:0 0 0 3px rgba(67,97,238,.4)}
+  .cell.hi{border-color:var(--hi); background:#3a1d2a; box-shadow:0 0 0 3px rgba(247,37,133,.4)}
+  .cell.mid{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 4px rgba(255,209,102,.45); transform:scale(1.1) translateY(-4px)}
+  .cell.found{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 4px rgba(6,214,160,.55)}
+
+  .hashpanel{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:8px 0 6px; min-height:44px; padding:8px; background:#0a1330; border:1px solid var(--line); border-radius:12px}
+  .hashpanel .label{align-self:center; color:var(--muted); font-weight:700; font-size:13px; margin-right:6px}
+  .hentry{display:inline-flex; align-items:center; gap:6px; background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:5px 10px; font-weight:700; font-size:13px; animation:pop .3s ease}
+  .hentry b{color:var(--accent)} .hentry span{color:var(--mid)}
+  .hentry.hit{border-color:var(--found); box-shadow:0 0 0 3px rgba(6,214,160,.4)}
+  .hentry.new{border-color:var(--mid)}
+  .hashpanel .empty{color:var(--muted); font-style:italic; align-self:center}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  .gwrap{text-align:center; margin:16px 0}
+  .grid{display:inline-grid; gap:8px}
+  .gcell{width:46px;height:46px;border-radius:10px;border:2px solid #21305a;background:#101a36;display:flex;align-items:center;justify-content:center;transition:.3s;position:relative}
+  .gcell.pt::after{content:'';width:16px;height:16px;border-radius:50%;background:radial-gradient(circle,#6ee7ff,#2f7fb0)}
+  .gcell.rowA{box-shadow:0 0 0 3px rgba(255,209,102,.4); border-color:var(--mid)}
+  .gcell.col{background:#22345f}
+  .gcell.corner{border-color:var(--found); box-shadow:0 0 0 3px rgba(6,214,160,.55)}
+  .gcell.corner::after{background:radial-gradient(circle,#8affd8,var(--found))}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  .status{margin-top:14px; text-align:center; min-height:50px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; min-height:20px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px} .memhook b{color:var(--mid)}
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}.sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}.sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Two Pointers · Hashing · Windows</h1>
+  <p><span class="pulse-dot"></span>Watch pointers converge, hash maps light up, and windows slide. Built so the patterns stick for life.</p>
+</header>
+
+<nav>
+  <a href="#pairsum1">➕ Pair Sum I (hash)</a>
+  <a href="#pairsum2">➕ Pair Sum II (2-ptr)</a>
+  <a href="#pairdiff">➖ Pair Difference</a>
+  <a href="#subarraysum">📦 Subarray Sum</a>
+  <a href="#triplet">3️⃣ Triplet Sum</a>
+  <a href="#quadruplet">4️⃣ Quadruplet Sum</a>
+  <a href="#rectangles">▭ Distinct Rectangles</a>
+  <a href="#longestsub">🪟 Longest Substring</a>
+  <a href="#smallestwin">🎯 Smallest Window</a>
+  <a href="#minexpr">🧮 Minimize Expression</a>
+  <a href="#primefact">🔱 Prime Factorization</a>
+</nav>
+
+<main>
+
+  <!-- PAIR SUM 1 -->
+  <section id="pairsum1">
+    <h2>➕ Pair Sum I — Unsorted (Hashing) <span class="badge">O(n)</span></h2>
+    <p class="lead">Find two numbers that add to a target in an <b>unsorted</b> array — one pass with a hash set.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The name-tag desk:</span> as each guest arrives you ask "has your partner (target − you) already checked in?" If yes, pair found. If not, drop your own tag in the box. One walk down the line finds the pair.</div>
+      <div class="steps-flow"><span class="chip">for each x</span><span class="arrow">→</span><span class="chip">need = target − x</span><span class="arrow">→</span><span class="chip">need in set? pair!</span><span class="arrow">/</span><span class="chip">else add x</span></div>
+      <div class="oneliner">🔒 Keep forever: "Remember what you've seen; each element asks if its complement already arrived."</div>
+    </div>
+    <div class="note">Array <code>[8, 3, 5, 2, 7, 1]</code>, target <b>10</b>.</div>
+    <div class="cellrow" id="ps1Row"></div>
+    <div class="hashpanel" id="ps1Hash"><span class="label">seen:</span></div>
+    <div class="status" id="ps1Status">Press play to find a pair summing to 10.</div>
+    <div class="controls"><button class="btn" id="ps1Play">▶ Find Pair</button><button class="btn ghost" id="ps1Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ps1Speed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> hashing turns "search for a partner" from O(n) into O(1). Works even when the array is unsorted.</div></div>
+    <pre><code>Set&lt;Integer&gt; seen = <span class="kw">new</span> HashSet&lt;&gt;();
+<span class="kw">for</span> (<span class="kw">int</span> x : a) {
+  <span class="kw">if</span> (seen.contains(target - x)) <span class="kw">return</span> {target - x, x};
+  seen.add(x);
+}</code></pre>
+  </section>
+
+  <!-- PAIR SUM 2 -->
+  <section id="pairsum2">
+    <h2>➕ Pair Sum II — Sorted (Two Pointers) <span class="badge">O(n)</span></h2>
+    <p class="lead">In a <b>sorted</b> array, find <b>all</b> pairs summing to a target using pointers from both ends.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The see-saw again:</span> smallest on the left, largest on the right. Sum too big? pull the right finger in. Too small? push the left finger out. Equal? record it and step both inward.</div>
+      <div class="steps-flow"><span class="chip">l=0, r=n−1</span><span class="arrow">→</span><span class="chip">sum&gt;T? r−−</span><span class="arrow">/</span><span class="chip">sum&lt;T? l++</span><span class="arrow">/</span><span class="chip">== ? record, l++ r−−</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sorted + two pointers = converge from both ends, no extra memory."</div>
+    </div>
+    <div class="note">Sorted <code>[1,2,3,4,6,7,8,9]</code>, target <b>10</b> → all pairs.</div>
+    <div class="cellrow" id="ps2Row"></div>
+    <div class="status" id="ps2Status">Press play to find every pair summing to 10.</div>
+    <div class="stats" id="ps2Stats"></div>
+    <div class="controls"><button class="btn" id="ps2Play">▶ Find All Pairs</button><button class="btn ghost" id="ps2Reset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ps2Speed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> hashing (Pair Sum I) uses O(n) space; sorted two-pointer uses O(1) space. Pick by whether the array is already sorted.</div></div>
+    <pre><code><span class="kw">int</span> l=<span class="num">0</span>, r=n-<span class="num">1</span>;
+<span class="kw">while</span> (l &lt; r) {
+  <span class="kw">int</span> s = a[l] + a[r];
+  <span class="kw">if</span> (s == target) { record(a[l], a[r]); l++; r--; }
+  <span class="kw">else if</span> (s &lt; target) l++; <span class="kw">else</span> r--;
+}</code></pre>
+  </section>
+
+  <!-- PAIR DIFFERENCE -->
+  <section id="pairdiff">
+    <h2>➖ Pair with Given Difference <span class="badge">Same-direction 2-ptr</span></h2>
+    <p class="lead">In a sorted array, find pairs whose difference equals <code>d</code> — both pointers move <b>forward</b>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The measuring caliper:</span> two jaws slide rightward. Gap too small? open the front jaw (j++). Gap too big? drag the back jaw forward (i++). When the gap equals d, you've caught a pair.</div>
+      <div class="steps-flow"><span class="chip">i, j both →</span><span class="arrow">→</span><span class="chip">gap&lt;d? j++</span><span class="arrow">/</span><span class="chip">gap&gt;d? i++</span><span class="arrow">/</span><span class="chip">==? record</span></div>
+      <div class="oneliner">🔒 Keep forever: "For differences, both pointers march forward — open or close the gap toward d."</div>
+    </div>
+    <div class="note">Sorted <code>[1,3,5,8,9,12]</code>, difference <b>d = 3</b>.</div>
+    <div class="cellrow" id="pdRow"></div>
+    <div class="status" id="pdStatus">Press play to find pairs with difference 3.</div>
+    <div class="stats" id="pdStats"></div>
+    <div class="controls"><button class="btn" id="pdPlay">▶ Find Pairs (d=3)</button><button class="btn ghost" id="pdReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pdSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> sums use <b>opposite</b> ends (l,r converge); differences use <b>same direction</b> (i,j both advance). Keep <code>i&lt;j</code>.</div></div>
+    <pre><code><span class="kw">int</span> i=<span class="num">0</span>, j=<span class="num">1</span>;
+<span class="kw">while</span> (j &lt; n) {
+  <span class="kw">int</span> diff = a[j] - a[i];
+  <span class="kw">if</span> (diff == d &amp;&amp; i != j) { record(a[i], a[j]); i++; j++; }
+  <span class="kw">else if</span> (diff &lt; d) j++; <span class="kw">else</span> i++;
+}</code></pre>
+  </section>
+
+  <!-- SUBARRAY SUM -->
+  <section id="subarraysum">
+    <h2>📦 Subarray Sum = K (Prefix + Hash) <span class="badge">Handles negatives</span></h2>
+    <p class="lead">Find a contiguous subarray summing to K — even with negative numbers — using prefix sums + a hash map.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Mile markers on a road:</span> record the running total at every step. A stretch sums to K whenever <code>current − K</code> was a total you've seen before — the road between those two markers is exactly K long.</div>
+      <div class="steps-flow"><span class="chip">prefix += a[i]</span><span class="arrow">→</span><span class="chip">seen (prefix − K)?</span><span class="arrow">→</span><span class="chip">yes → subarray!</span><span class="arrow">/</span><span class="chip">store prefix</span></div>
+      <div class="oneliner">🔒 Keep forever: "A subarray = difference of two prefix sums; hash the sums you've seen."</div>
+    </div>
+    <div class="note">Array <code>[3, 4, 7, 2, -3, 1, 4, 2]</code>, K = <b>10</b>.</div>
+    <div class="cellrow" id="ssRow"></div>
+    <div class="hashpanel" id="ssHash"><span class="label">prefix→idx:</span></div>
+    <div class="status" id="ssStatus">Press play. Running total meets a seen (prefix − K).</div>
+    <div class="controls"><button class="btn" id="ssPlay">▶ Find Subarray = 10</button><button class="btn ghost" id="ssReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ssSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> seed the map with <code>{0 → −1}</code> so subarrays starting at index 0 are found. Sliding window only works when all values are positive.</div></div>
+    <pre><code>map.put(<span class="num">0</span>, -<span class="num">1</span>); <span class="kw">int</span> prefix = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++) {
+  prefix += a[i];
+  <span class="kw">if</span> (map.containsKey(prefix - K)) <span class="kw">return</span> {map.get(prefix-K)+<span class="num">1</span>, i};
+  map.putIfAbsent(prefix, i);
+}</code></pre>
+  </section>
+
+  <!-- TRIPLET SUM -->
+  <section id="triplet">
+    <h2>3️⃣ Triplet Sum (3-Sum) <span class="badge">Sort + 2-ptr</span></h2>
+    <p class="lead">Find triples <code>a + b + c = target</code> by fixing one element and two-pointering the rest.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pin one, chase two:</span> sort the array. Fix the first number, then the problem shrinks to "pair sum = target − fixed" on the remaining sorted tail — solved with the see-saw two pointers. Slide the pin across the array.</div>
+      <div class="steps-flow"><span class="chip">sort</span><span class="arrow">→</span><span class="chip">fix i</span><span class="arrow">→</span><span class="chip">two-pointer for target−a[i]</span></div>
+      <div class="oneliner">🔒 Keep forever: "k-sum = fix one, recurse into (k−1)-sum. 3-sum = fix + pair sum."</div>
+    </div>
+    <div class="note">Sorted <code>[-4,-1,-1,0,1,2]</code>, target <b>0</b>.</div>
+    <div class="cellrow" id="tpRow"></div>
+    <div class="status" id="tpStatus">Press play. Pin i (yellow); l,r chase the rest.</div>
+    <div class="stats" id="tpStats"></div>
+    <div class="controls"><button class="btn" id="tpPlay">▶ Find Triplets = 0</button><button class="btn ghost" id="tpReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="tpSpeed" min="250" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> sorting first is what unlocks the inner two-pointer and makes skipping duplicates easy. Overall O(n²).</div></div>
+    <pre><code>sort(a);
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n-<span class="num">2</span>; i++) {
+  <span class="kw">int</span> l=i+<span class="num">1</span>, r=n-<span class="num">1</span>;
+  <span class="kw">while</span> (l&lt;r) {
+    <span class="kw">int</span> s = a[i]+a[l]+a[r];
+    <span class="kw">if</span> (s==target){ record(); l++; r--; }
+    <span class="kw">else if</span> (s&lt;target) l++; <span class="kw">else</span> r--;
+  }
+}</code></pre>
+  </section>
+
+  <!-- QUADRUPLET SUM -->
+  <section id="quadruplet">
+    <h2>4️⃣ Quadruplet Sum (4-Sum) <span class="badge">Sort + 2 fixed + 2-ptr</span></h2>
+    <p class="lead">Find quadruples summing to target — fix <b>two</b> elements, two-pointer the remaining two.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Pin two, chase two:</span> the exact same ladder as 3-sum, one rung deeper. Fix <code>i</code> and <code>j</code>, then two-pointer for <code>target − a[i] − a[j]</code>. Every k-sum is just more nested pins over one final pair scan.</div>
+      <div class="oneliner">🔒 Keep forever: "4-sum = fix two, then pair sum. The pattern nests for any k."</div>
+    </div>
+    <div class="note">Sorted <code>[-2,-1,0,0,1,2]</code>, target <b>0</b>.</div>
+    <div class="cellrow" id="qpRow"></div>
+    <div class="status" id="qpStatus">Press play. Pins i,j (yellow); l,r chase the rest.</div>
+    <div class="stats" id="qpStats"></div>
+    <div class="controls"><button class="btn" id="qpPlay">▶ Find Quadruplets = 0</button><button class="btn ghost" id="qpReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="qpSpeed" min="200" max="2000" value="850" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> 2-sum O(n) → 3-sum O(n²) → 4-sum O(n³). Each extra fixed element adds one factor of n.</div></div>
+    <pre><code>sort(a);
+<span class="kw">for</span> i: <span class="kw">for</span> j=i+<span class="num">1</span>: {
+  <span class="kw">int</span> l=j+<span class="num">1</span>, r=n-<span class="num">1</span>, need=target-a[i]-a[j];
+  <span class="kw">while</span> (l&lt;r) {
+    <span class="kw">int</span> s=a[l]+a[r];
+    <span class="kw">if</span> (s==need){ record(); l++; r--; }
+    <span class="kw">else if</span> (s&lt;need) l++; <span class="kw">else</span> r--;
+  }
+}</code></pre>
+  </section>
+
+  <!-- DISTINCT RECTANGLES -->
+  <section id="rectangles">
+    <h2>▭ Distinct Rectangles from Points <span class="badge">Pair hashing</span></h2>
+    <p class="lead">Count axis-aligned rectangles among grid points: two rows sharing the <b>same pair of columns</b> form one.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Matching fence posts:</span> a rectangle needs two rows that each have posts in the <b>same two columns</b>. So compare rows pairwise; every pair of shared columns between two rows is one rectangle. c shared columns → C(c,2) rectangles.</div>
+      <div class="steps-flow"><span class="chip">for each row-pair</span><span class="arrow">→</span><span class="chip">count shared columns c</span><span class="arrow">→</span><span class="chip">add C(c,2)</span></div>
+      <div class="oneliner">🔒 Keep forever: "Two rows + two shared columns = one rectangle. Count shared column-pairs."</div>
+    </div>
+    <div class="note">Points on a 4×4 grid. Watch matching column-pairs light up as rectangles.</div>
+    <div class="gwrap"><div class="grid" id="rectGrid"></div></div>
+    <div class="status" id="rectStatus">Press play to count distinct rectangles.</div>
+    <div class="stats" id="rectStats"></div>
+    <div class="controls"><button class="btn" id="rectPlay">▶ Count Rectangles</button><button class="btn ghost" id="rectReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rectSpeed" min="400" max="2600" value="1500" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> hashing column-pairs per row makes this O(rows × cols²) instead of checking all 4-point combos.</div></div>
+    <pre><code><span class="kw">for</span> each pair of rows (r1, r2):
+  c = number of columns where BOTH rows have a point;
+  rectangles += c*(c-<span class="num">1</span>)/<span class="num">2</span>; <span class="cm">// choose 2 shared columns</span></code></pre>
+  </section>
+
+  <!-- LONGEST SUBSTRING -->
+  <section id="longestsub">
+    <h2>🪟 Longest Substring Without Repetition <span class="badge">Sliding Window</span></h2>
+    <p class="lead">Find the longest run of distinct characters using an expanding/shrinking window and a last-seen map.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A no-repeats hallway:</span> extend the window's right edge one char at a time. The moment you re-enter a character already inside the window, yank the left edge just past its previous spot. The window always holds only distinct characters; track its longest length.</div>
+      <div class="steps-flow"><span class="chip">grow r</span><span class="arrow">→</span><span class="chip">repeat inside? jump l past it</span><span class="arrow">→</span><span class="chip">update best = r−l+1</span></div>
+      <div class="oneliner">🔒 Keep forever: "Grow right; on a repeat, snap left past the old copy; track the max."</div>
+    </div>
+    <div class="note">String <code>"abcabcbb"</code> → longest = <b>3</b> ("abc").</div>
+    <div class="cellrow" id="lsRow"></div>
+    <div class="hashpanel" id="lsHash"><span class="label">last seen:</span></div>
+    <div class="status" id="lsStatus">Press play. Window holds only distinct characters.</div>
+    <div class="stats" id="lsStats"></div>
+    <div class="controls"><button class="btn" id="lsPlay">▶ Slide Window</button><button class="btn ghost" id="lsReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="lsSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> left only ever moves right → each char enters/leaves once → O(n). Never move left backward.</div></div>
+    <pre><code><span class="kw">int</span> l=<span class="num">0</span>, best=<span class="num">0</span>; Map&lt;Char,Integer&gt; last=<span class="kw">new</span> HashMap&lt;&gt;();
+<span class="kw">for</span> (<span class="kw">int</span> r=<span class="num">0</span>; r&lt;n; r++) {
+  <span class="kw">if</span> (last.containsKey(s[r]) &amp;&amp; last.get(s[r]) &gt;= l) l = last.get(s[r]) + <span class="num">1</span>;
+  last.put(s[r], r);
+  best = max(best, r - l + <span class="num">1</span>);
+}</code></pre>
+  </section>
+
+  <!-- SMALLEST WINDOW -->
+  <section id="smallestwin">
+    <h2>🎯 Smallest Window with All Characters <span class="badge">Min Window</span></h2>
+    <p class="lead">Find the shortest substring of <code>s</code> that contains every character of <code>t</code> — expand to cover, then shrink to minimize.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Collecting a shopping list:</span> walk right adding items until your cart has <b>everything</b> on the list. Then walk the left edge inward, dropping anything you can spare, to make the shortest valid stretch. Record the smallest complete window seen.</div>
+      <div class="steps-flow"><span class="chip">expand r until valid</span><span class="arrow">→</span><span class="chip">shrink l while still valid</span><span class="arrow">→</span><span class="chip">record smallest</span></div>
+      <div class="oneliner">🔒 Keep forever: "Grow to satisfy, shrink to minimize — track need vs have counts."</div>
+    </div>
+    <div class="note">s = <code>"ADOBECODEBANC"</code>, t = <code>"ABC"</code> → answer "BANC".</div>
+    <div class="cellrow" id="swRow"></div>
+    <div class="status" id="swStatus">Press play. Cover all of ABC, then shrink.</div>
+    <div class="stats" id="swStats"></div>
+    <div class="controls"><button class="btn" id="swPlay">▶ Find Min Window</button><button class="btn ghost" id="swReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="swSpeed" min="250" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> track <code>formed</code> (how many required chars are fully satisfied). Window is valid when <code>formed == required</code>.</div></div>
+    <pre><code>expand r: window[s[r]]++; <span class="kw">if</span> (window[s[r]]==need[s[r]]) formed++;
+<span class="kw">while</span> (formed==required) {           <span class="cm">// valid → try to shrink</span>
+  <span class="kw">if</span> (r-l+<span class="num">1</span> &lt; best) best = r-l+<span class="num">1</span>;
+  window[s[l]]--; <span class="kw">if</span> (window[s[l]]&lt;need[s[l]]) formed--; l++;
+}</code></pre>
+  </section>
+
+  <!-- MINIMIZE EXPRESSION -->
+  <section id="minexpr">
+    <h2>🧮 Minimize the Expression <span class="badge">Sort + Greedy</span></h2>
+    <p class="lead">Split all digits into two numbers so their <b>sum is smallest</b> — sort ascending, then deal them alternately.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Fair card deal:</span> to keep two numbers small, the smallest digits must sit in the highest place values. Sort ascending, then deal digits one-to-each like cards: the two smallest become leading digits, and every place value gets the smallest available digit.</div>
+      <div class="steps-flow"><span class="chip">sort digits ↑</span><span class="arrow">→</span><span class="chip">deal alternately to A, B</span><span class="arrow">→</span><span class="chip">sum A + B is minimal</span></div>
+      <div class="oneliner">🔒 Keep forever: "Small digits into high place values → sort, then alternate to two numbers."</div>
+    </div>
+    <div class="note">Digits <code>[6, 8, 4, 5, 2, 3]</code> → minimal sum split.</div>
+    <div class="cellrow" id="meRow"></div>
+    <div class="status" id="meStatus">Press play. Sort, then deal digits into two numbers.</div>
+    <div class="stats" id="meStats"></div>
+    <div class="controls"><button class="btn" id="mePlay">▶ Minimize Sum</button><button class="btn ghost" id="meReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="meSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the greedy proof — swapping a bigger digit into a higher place only increases the sum. Sorting makes the greedy optimal.</div></div>
+    <pre><code>sort(digits);              <span class="cm">// ascending</span>
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">0</span>; i&lt;n; i++)
+  <span class="kw">if</span> (i%<span class="num">2</span>==<span class="num">0</span>) numA = numA*<span class="num">10</span> + digits[i];
+  <span class="kw">else</span>        numB = numB*<span class="num">10</span> + digits[i];
+<span class="kw">return</span> numA + numB;       <span class="cm">// minimal sum</span></code></pre>
+  </section>
+
+  <!-- PRIME FACTORIZATION -->
+  <section id="primefact">
+    <h2>🔱 Specific Prime Factorization (SPF Sieve) <span class="badge">O(log n) per query</span></h2>
+    <p class="lead">Precompute each number's <b>smallest prime factor</b>, then factorize any number by repeatedly dividing by its SPF.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">A pre-labelled toolbox:</span> a sieve stamps every number with its smallest prime factor once. To factorize N, just read its stamp, divide, and repeat on the quotient — each division peels off the next prime instantly, no trial division needed.</div>
+      <div class="steps-flow"><span class="chip">sieve: mark SPF of every number</span><span class="arrow">→</span><span class="chip">N /= SPF[N]</span><span class="arrow">→</span><span class="chip">repeat until 1</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sieve the smallest prime factor once; then factorizing is just repeated look-up-and-divide."</div>
+    </div>
+    <div class="note">SPF sieve for 2..36, then factorize <b>36</b> → 2 × 2 × 3 × 3.</div>
+    <div class="cellrow" id="pfRow"></div>
+    <div class="status" id="pfStatus">Press play. Build SPF, then peel 36 into primes.</div>
+    <div class="stats" id="pfStats"></div>
+    <div class="controls"><button class="btn" id="pfPlay">▶ Factorize 36</button><button class="btn ghost" id="pfReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="pfSpeed" min="250" max="2200" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the sieve costs O(n log log n) once; afterward each number factorizes in O(log n) look-ups — perfect for many queries.</div></div>
+    <pre><code><span class="cm">// build once</span>
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">2</span>; i&lt;=N; i++) <span class="kw">if</span> (spf[i]==<span class="num">0</span>)
+  <span class="kw">for</span> (<span class="kw">int</span> j=i; j&lt;=N; j+=i) <span class="kw">if</span> (spf[j]==<span class="num">0</span>) spf[j]=i;
+<span class="cm">// factorize any x ≤ N</span>
+<span class="kw">while</span> (x &gt; <span class="num">1</span>) { print(spf[x]); x /= spf[x]; }</code></pre>
+
+    <div class="note key">🏆 <b>Pattern mastered!</b> Hashing remembers what you've seen · two pointers converge or chase · sliding windows grow &amp; shrink · sorting unlocks k-sum &amp; greedy · sieves precompute once and query fast. Picture the pointers and the lit-up map, and these problems become muscle memory. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Two Pointers · Hashing · Windows — Animated Guide • Replay any animation, turn on 🎵 sound • Learn by watching 🔁</footer>
+
+<script>
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false;
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.1 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ---- Audio ---- */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(f=520,d=0.08,t='sine',v=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=t;o.frequency.value=f;o.connect(g);g.connect(master); const n=AC.currentTime; g.gain.setValueAtTime(0.0001,n); g.gain.linearRampToValueAtTime(v,n+0.012); g.gain.exponentialRampToValueAtTime(0.0001,n+d); o.start(n);o.stop(n+d+0.03); }
+function tickSound(){ blip(430+Math.random()*90,0.05,'triangle',0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ---- Confetti ---- */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; } sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const cs=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:cs[i%cs.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ---- Cell visualization ---- */
+function cellViz(container){
+  let cells=[];
+  function ensure(n){ if(cells.length!==n){ container.innerHTML=''; cells=[]; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='cell'; container.appendChild(c); cells.push(c);} } }
+  function render(arr,o={}){ ensure(arr.length); arr.forEach((v,i)=>{ const c=cells[i]; c.className='cell'; c.innerHTML = `${o.sub&&o.sub[i]!=null?`<span class="idx">${o.sub[i]}</span>`:''}${v}${o.ptr&&o.ptr[i]!=null?`<span class="ptr">${o.ptr[i]}</span>`:''}`; if(o.compare&&o.compare.includes(i))c.classList.add('mid'); if(o.swap&&o.swap.includes(i))c.classList.add('hi'); if(o.done&&o.done.has(i))c.classList.add('found'); if(o.active&&o.active.includes(i))c.classList.add('lo'); if(o.dead&&o.dead.has(i))c.classList.add('dead'); if(o.range&&i>=o.range[0]&&i<=o.range[1])c.classList.add('in-range'); }); }
+  return { render };
+}
+/* ---- Hash panel ---- */
+function hashPanel(container, label){
+  return { render(entries){ const lab=`<span class="label">${label}</span>`; container.innerHTML = lab + (entries.length? '' : '<span class="empty">∅ empty</span>'); entries.forEach(e=>{ const d=document.createElement('div'); d.className='hentry'+(e.state?(' '+e.state):''); d.innerHTML=`<b>${e.k}</b>${e.v!=null?`<span>${e.v}</span>`:''}`; container.appendChild(d); }); } };
+}
+function idxSub(n){ return Array.from({length:n},(_,i)=>i); }
+
+/* ================= 1. Pair Sum I (hash) ================= */
+(function(){
+  const a=[8,3,5,2,7,1], T=10; const viz=cellViz($('#ps1Row')); const hp=hashPanel($('#ps1Hash'),'seen:'); const st=$('#ps1Status'); const sp=$('#ps1Speed');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); hp.render([]); st.textContent='Press play to find a pair summing to 10.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const seen=[];
+    for(let i=0;i<a.length;i++){ const need=T-a[i];
+      viz.render(a,{sub:idxSub(a.length),compare:[i]}); hp.render(seen.map(x=>({k:x, state: x===need?'hit':''}))); st.innerHTML=`x=<span class="k">${a[i]}</span>, need ${T}−${a[i]} = <span class="k">${need}</span>. Seen it?`; tickSound(); await sleep(+sp.value);
+      const j=seen.indexOf(need);
+      if(j>=0){ const other=a.indexOf(need); viz.render(a,{sub:idxSub(a.length),done:new Set([other,i])}); hp.render(seen.map(x=>({k:x,state:x===need?'hit':''}))); st.innerHTML=`🎉 Found ${need} + ${a[i]} = ${T}!`; ANIM=false; celebrate($('#ps1Row')); return; }
+      seen.push(a[i]); hp.render(seen.map((x,k)=>({k:x,state:k===seen.length-1?'new':''}))); st.innerHTML=`Not seen → add ${a[i]} to the set.`; await sleep(+sp.value*0.6);
+    }
+    st.innerHTML='No pair found.'; ANIM=false;
+  }
+  $('#ps1Play').onclick=play; $('#ps1Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Pair Sum II (2-ptr) ================= */
+(function(){
+  const a=[1,2,3,4,6,7,8,9], T=10; const viz=cellViz($('#ps2Row')); const st=$('#ps2Status'); const sp=$('#ps2Speed'); const stats=$('#ps2Stats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); stats.innerHTML=''; st.textContent='Press play to find every pair summing to 10.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); let l=0,r=a.length-1; const pairs=[]; const show=()=>stats.innerHTML=pairs.map(p=>`<span class="pill green">${p}</span>`).join('')||'<span class="pill">searching…</span>';
+    while(l<r){ const s=a[l]+a[r]; const ptr={[l]:'l',[r]:'r'};
+      viz.render(a,{sub:idxSub(a.length),ptr,compare:[l,r]}); st.innerHTML=`${a[l]} + ${a[r]} = <span class="k">${s}</span> vs ${T}`; tickSound(); await sleep(+sp.value);
+      if(s===T){ pairs.push(`${a[l]}+${a[r]}`); viz.render(a,{sub:idxSub(a.length),ptr,done:new Set([l,r])}); show(); st.innerHTML=`✅ Pair ${a[l]} + ${a[r]} = ${T}!`; await sleep(+sp.value*0.8); l++; r--; }
+      else if(s<T){ st.innerHTML=`${s} &lt; ${T} → move l right.`; await sleep(+sp.value*0.5); l++; }
+      else { st.innerHTML=`${s} &gt; ${T} → move r left.`; await sleep(+sp.value*0.5); r--; }
+    }
+    viz.render(a,{sub:idxSub(a.length)}); show(); st.innerHTML=`🎉 All pairs found: ${pairs.join(', ')}`; ANIM=false; celebrate($('#ps2Row'));
+  }
+  $('#ps2Play').onclick=play; $('#ps2Reset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Pair difference ================= */
+(function(){
+  const a=[1,3,5,8,9,12], d=3; const viz=cellViz($('#pdRow')); const st=$('#pdStatus'); const sp=$('#pdSpeed'); const stats=$('#pdStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); stats.innerHTML=''; st.textContent='Press play to find pairs with difference 3.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); let i=0,j=1; const pairs=[]; const show=()=>stats.innerHTML=pairs.map(p=>`<span class="pill green">${p}</span>`).join('')||'<span class="pill">searching…</span>';
+    while(j<a.length){ const diff=a[j]-a[i]; const ptr={[i]:'i',[j]:'j'};
+      viz.render(a,{sub:idxSub(a.length),ptr,compare:[i,j]}); st.innerHTML=`${a[j]} − ${a[i]} = <span class="k">${diff}</span> vs d=${d}`; tickSound(); await sleep(+sp.value);
+      if(diff===d && i!==j){ pairs.push(`${a[i]},${a[j]}`); viz.render(a,{sub:idxSub(a.length),ptr,done:new Set([i,j])}); show(); st.innerHTML=`✅ Diff pair (${a[i]}, ${a[j]}) = ${d}!`; await sleep(+sp.value*0.8); i++; j++; }
+      else if(diff<d){ st.innerHTML=`${diff} &lt; ${d} → open gap, j++.`; await sleep(+sp.value*0.5); j++; }
+      else { st.innerHTML=`${diff} &gt; ${d} → close gap, i++.`; await sleep(+sp.value*0.5); i++; if(i===j) j++; }
+    }
+    viz.render(a,{sub:idxSub(a.length)}); show(); st.innerHTML=`🎉 Pairs with difference ${d}: ${pairs.join('  ')}`; ANIM=false; celebrate($('#pdRow'));
+  }
+  $('#pdPlay').onclick=play; $('#pdReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Subarray sum = K ================= */
+(function(){
+  const a=[3,4,7,2,-3,1,4,2], K=10; const viz=cellViz($('#ssRow')); const hp=hashPanel($('#ssHash'),'prefix→idx:'); const st=$('#ssStatus'); const sp=$('#ssSpeed');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); hp.render([{k:0,v:-1,state:'new'}]); st.textContent='Press play. Running total meets a seen (prefix − K).'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const map=new Map([[0,-1]]); let prefix=0;
+    for(let i=0;i<a.length;i++){ prefix+=a[i]; const need=prefix-K;
+      const entries=()=>[...map.entries()].map(([k,v])=>({k,v,state:k===need?'hit':''}));
+      viz.render(a,{sub:idxSub(a.length),compare:[i]}); hp.render(entries()); st.innerHTML=`prefix=<span class="k">${prefix}</span>. Looking for prefix−K = ${prefix}−${K} = <span class="k">${need}</span>.`; tickSound(); await sleep(+sp.value);
+      if(map.has(need)){ const start=map.get(need)+1; const done=new Set(); for(let k=start;k<=i;k++) done.add(k); viz.render(a,{sub:idxSub(a.length),done}); hp.render(entries()); st.innerHTML=`✅ Subarray [${start}..${i}] sums to ${K}!`; ANIM=false; celebrate($('#ssRow')); return; }
+      if(!map.has(prefix)) map.set(prefix,i); hp.render([...map.entries()].map(([k,v])=>({k,v,state:k===prefix?'new':''}))); await sleep(+sp.value*0.5);
+    }
+    st.innerHTML='No subarray sums to K.'; ANIM=false;
+  }
+  $('#ssPlay').onclick=play; $('#ssReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 5. Triplet sum ================= */
+(function(){
+  const a=[-4,-1,-1,0,1,2], T=0; const viz=cellViz($('#tpRow')); const st=$('#tpStatus'); const sp=$('#tpSpeed'); const stats=$('#tpStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); stats.innerHTML=''; st.textContent='Press play. Pin i (yellow); l,r chase the rest.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const trips=[]; const show=()=>stats.innerHTML=trips.map(p=>`<span class="pill green">${p}</span>`).join('')||'<span class="pill">searching…</span>';
+    for(let i=0;i<a.length-2;i++){ let l=i+1,r=a.length-1;
+      while(l<r){ const s=a[i]+a[l]+a[r]; const ptr={[i]:'i',[l]:'l',[r]:'r'};
+        viz.render(a,{sub:idxSub(a.length),active:[i],compare:[l,r],ptr}); st.innerHTML=`${a[i]} + ${a[l]} + ${a[r]} = <span class="k">${s}</span> vs ${T}`; tickSound(); await sleep(+sp.value);
+        if(s===T){ trips.push(`${a[i]},${a[l]},${a[r]}`); viz.render(a,{sub:idxSub(a.length),done:new Set([i,l,r])}); show(); st.innerHTML=`✅ Triplet (${a[i]}, ${a[l]}, ${a[r]}) = 0!`; await sleep(+sp.value); l++; r--; while(l<r&&a[l]===a[l-1])l++; }
+        else if(s<T){ st.innerHTML=`${s} &lt; ${T} → l++`; await sleep(+sp.value*0.45); l++; }
+        else { st.innerHTML=`${s} &gt; ${T} → r--`; await sleep(+sp.value*0.45); r--; }
+      }
+      while(i<a.length-2 && a[i+1]===a[i]) i++;
+    }
+    viz.render(a,{sub:idxSub(a.length)}); show(); st.innerHTML=`🎉 Triplets summing to 0: ${trips.join('  ')}`; ANIM=false; celebrate($('#tpRow'));
+  }
+  $('#tpPlay').onclick=play; $('#tpReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 6. Quadruplet sum ================= */
+(function(){
+  const a=[-2,-1,0,0,1,2], T=0; const viz=cellViz($('#qpRow')); const st=$('#qpStatus'); const sp=$('#qpSpeed'); const stats=$('#qpStats');
+  function build(){ viz.render(a,{sub:idxSub(a.length)}); stats.innerHTML=''; st.textContent='Press play. Pins i,j (yellow); l,r chase the rest.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const quads=[]; const seen=new Set(); const show=()=>stats.innerHTML=quads.map(p=>`<span class="pill green">${p}</span>`).join('')||'<span class="pill">searching…</span>';
+    for(let i=0;i<a.length-3;i++){ for(let j=i+1;j<a.length-2;j++){ let l=j+1,r=a.length-1, need=T-a[i]-a[j];
+      while(l<r){ const s=a[l]+a[r]; const ptr={[i]:'i',[j]:'j',[l]:'l',[r]:'r'};
+        viz.render(a,{sub:idxSub(a.length),active:[i,j],compare:[l,r],ptr}); st.innerHTML=`${a[i]}+${a[j]}+${a[l]}+${a[r]} = <span class="k">${a[i]+a[j]+s}</span> vs ${T}`; tickSound(); await sleep(+sp.value);
+        if(s===need){ const key=[a[i],a[j],a[l],a[r]].join(','); if(!seen.has(key)){ seen.add(key); quads.push(key); } viz.render(a,{sub:idxSub(a.length),done:new Set([i,j,l,r])}); show(); st.innerHTML=`✅ Quadruplet (${key}) = 0!`; await sleep(+sp.value); l++; r--; }
+        else if(s<need){ await sleep(+sp.value*0.4); l++; }
+        else { await sleep(+sp.value*0.4); r--; }
+      }
+    } }
+    viz.render(a,{sub:idxSub(a.length)}); show(); st.innerHTML=`🎉 Quadruplets summing to 0: ${quads.join('  ')}`; ANIM=false; celebrate($('#qpRow'));
+  }
+  $('#qpPlay').onclick=play; $('#qpReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Distinct rectangles ================= */
+(function(){
+  const rows=4, cols=4; const grid=$('#rectGrid'); const st=$('#rectStatus'); const sp=$('#rectSpeed'); const stats=$('#rectStats');
+  // rows top→bottom = 0..3; points as [row,col]
+  const rowCols={0:[0,2,3], 1:[], 2:[0,2], 3:[2,3]};
+  const map={};
+  function build(){ grid.style.gridTemplateColumns=`repeat(${cols},46px)`; grid.innerHTML=''; for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ const d=document.createElement('div'); d.className='gcell'; d.dataset.r=r; d.dataset.c=c; grid.appendChild(d); map[r+'-'+c]=d; } for(const r in rowCols) rowCols[r].forEach(c=>map[r+'-'+c].classList.add('pt')); stats.innerHTML=''; st.textContent='Press play to count distinct rectangles.'; }
+  build();
+  function clearCls(cls){ Object.values(map).forEach(d=>d.classList.remove(cls)); }
+  async function play(){ if(ANIM)return; ANIM=true; build(); let rects=0; const show=()=>stats.innerHTML=`<span class="pill blue">rectangles: ${rects}</span>`; show();
+    const rr=Object.keys(rowCols).map(Number);
+    for(let x=0;x<rr.length;x++) for(let y=x+1;y<rr.length;y++){ const r1=rr[x], r2=rr[y]; clearCls('rowA'); clearCls('col'); clearCls('corner');
+      rowCols[r1].forEach(c=>map[r1+'-'+c].classList.add('rowA')); rowCols[r2].forEach(c=>map[r2+'-'+c].classList.add('rowA'));
+      const shared=rowCols[r1].filter(c=>rowCols[r2].includes(c));
+      st.innerHTML=`Compare rows ${r1} &amp; ${r2}: shared columns = <span class="k">[${shared.join(', ')||'none'}]</span>`; tickSound(); await sleep(+sp.value);
+      if(shared.length>=2){ const add=shared.length*(shared.length-1)/2; rects+=add; shared.forEach(c=>{ map[r1+'-'+c].classList.add('corner'); map[r2+'-'+c].classList.add('corner'); }); st.innerHTML=`▭ ${shared.length} shared cols → +${add} rectangle(s)!`; show(); await sleep(+sp.value*1.1); }
+    }
+    clearCls('rowA'); st.innerHTML=`🎉 Total distinct rectangles = <span class="k">${rects}</span>!`; ANIM=false; celebrate(grid);
+  }
+  $('#rectPlay').onclick=play; $('#rectReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. Longest substring w/o repetition ================= */
+(function(){
+  const s="abcabcbb".split(''); const viz=cellViz($('#lsRow')); const hp=hashPanel($('#lsHash'),'last seen:'); const st=$('#lsStatus'); const sp=$('#lsSpeed'); const stats=$('#lsStats');
+  function build(){ viz.render(s,{sub:idxSub(s.length)}); hp.render([]); stats.innerHTML=''; st.textContent='Press play. Window holds only distinct characters.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build(); const last=new Map(); let l=0,best=0,bl=0,br=0;
+    for(let r=0;r<s.length;r++){ const ch=s[r];
+      if(last.has(ch) && last.get(ch)>=l){ l=last.get(ch)+1; }
+      last.set(ch,r);
+      const len=r-l+1; if(len>best){ best=len; bl=l; br=r; }
+      viz.render(s,{sub:idxSub(s.length),range:[l,r],ptr:{[l]:'l',[r]:'r'}}); hp.render([...last.entries()].map(([k,v])=>({k,v,state:k===ch?'new':''}))); stats.innerHTML=`<span class="pill blue">window len: ${len}</span><span class="pill green">best: ${best}</span>`; st.innerHTML=`r=${r} '${ch}' → window [${l}..${r}] (all distinct).`; tickSound(); await sleep(+sp.value);
+    }
+    const done=new Set(); for(let k=bl;k<=br;k++) done.add(k); viz.render(s,{sub:idxSub(s.length),done}); st.innerHTML=`🎉 Longest = <span class="k">${best}</span> ("${s.slice(bl,br+1).join('')}")`; ANIM=false; celebrate($('#lsRow'));
+  }
+  $('#lsPlay').onclick=play; $('#lsReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. Smallest window with all chars ================= */
+(function(){
+  const s="ADOBECODEBANC".split(''); const t="ABC"; const viz=cellViz($('#swRow')); const st=$('#swStatus'); const sp=$('#swSpeed'); const stats=$('#swStats');
+  function build(){ viz.render(s,{sub:idxSub(s.length)}); stats.innerHTML=''; st.textContent='Press play. Cover all of ABC, then shrink.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build();
+    const need={}; for(const c of t) need[c]=(need[c]||0)+1; const required=Object.keys(need).length;
+    const win={}; let formed=0, l=0, best=Infinity, bl=0, br=0;
+    const showStats=()=>stats.innerHTML=`<span class="pill blue">have ${formed}/${required} chars</span>`+(best<Infinity?`<span class="pill green">best: "${s.slice(bl,br+1).join('')}"</span>`:'');
+    for(let r=0;r<s.length;r++){ const c=s[r]; win[c]=(win[c]||0)+1; if(need[c] && win[c]===need[c]) formed++;
+      viz.render(s,{sub:idxSub(s.length),range:[l,r],ptr:{[r]:'r'},compare: need[c]?[r]:[]}); showStats(); st.innerHTML=`Expand r=${r} '${c}'. formed=${formed}/${required}.`; tickSound(); await sleep(+sp.value);
+      while(formed===required){ if(r-l+1<best){ best=r-l+1; bl=l; br=r; }
+        viz.render(s,{sub:idxSub(s.length),range:[l,r],ptr:{[l]:'l',[r]:'r'}}); showStats(); st.innerHTML=`Valid! window "${s.slice(l,r+1).join('')}" (len ${r-l+1}) → try shrinking.`; await sleep(+sp.value);
+        const lc=s[l]; win[lc]--; if(need[lc] && win[lc]<need[lc]) formed--; l++;
+      }
+    }
+    const done=new Set(); for(let k=bl;k<=br;k++) done.add(k); viz.render(s,{sub:idxSub(s.length),done}); st.innerHTML=`🎯 Smallest window = <span class="k">"${s.slice(bl,br+1).join('')}"</span> (length ${best}).`; ANIM=false; celebrate($('#swRow'));
+  }
+  $('#swPlay').onclick=play; $('#swReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. Minimize the expression ================= */
+(function(){
+  const base=[6,8,4,5,2,3]; const viz=cellViz($('#meRow')); const st=$('#meStatus'); const sp=$('#meSpeed'); const stats=$('#meStats');
+  function build(){ viz.render(base,{sub:idxSub(base.length)}); stats.innerHTML=''; st.textContent='Press play. Sort, then deal digits into two numbers.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build();
+    const a=base.slice(); const n=a.length;
+    // insertion sort with animation
+    st.innerHTML='Step 1: sort digits ascending.'; await sleep(+sp.value);
+    for(let i=1;i<n;i++){ let key=a[i], j=i-1; viz.render(a,{sub:idxSub(n),compare:[i]}); await sleep(+sp.value*0.5);
+      while(j>=0 && a[j]>key){ a[j+1]=a[j]; j--; viz.render(a,{sub:idxSub(n),compare:[j+1]}); tickSound(); await sleep(+sp.value*0.4); } a[j+1]=key; }
+    viz.render(a,{sub:idxSub(n)}); st.innerHTML='Sorted. Step 2: deal alternately → A, B.'; await sleep(+sp.value);
+    let A='',B='';
+    for(let i=0;i<n;i++){ const toA=i%2===0; if(toA) A+=a[i]; else B+=a[i];
+      viz.render(a,{sub:idxSub(n),done:new Set([i]),ptr:{[i]:toA?'→A':'→B'}}); stats.innerHTML=`<span class="pill blue">A = ${A||'_'}</span><span class="pill">B = ${B||'_'}</span>`; st.innerHTML=`Digit ${a[i]} → number ${toA?'A':'B'}.`; tickSound(); await sleep(+sp.value); }
+    const sum=parseInt(A)+parseInt(B);
+    stats.innerHTML=`<span class="pill blue">A = ${A}</span><span class="pill">B = ${B}</span><span class="pill green">A+B = ${sum}</span>`;
+    st.innerHTML=`🧮 Minimal sum = ${A} + ${B} = <span class="k">${sum}</span>!`; ANIM=false; celebrate($('#meRow'));
+  }
+  $('#mePlay').onclick=play; $('#meReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. Prime factorization (SPF) ================= */
+(function(){
+  const N=36; const viz=cellViz($('#pfRow')); const st=$('#pfStatus'); const sp=$('#pfSpeed'); const stats=$('#pfStats');
+  const nums=Array.from({length:N-1},(_,i)=>i+2); // 2..36
+  function labels(spf){ return nums.map((v,i)=> spf[v]? `${v}` : `${v}`); }
+  function build(){ viz.render(nums,{sub:nums.map(v=>'')}); stats.innerHTML=''; st.textContent='Press play. Build SPF, then peel 36 into primes.'; }
+  build();
+  async function play(){ if(ANIM)return; ANIM=true; build();
+    const spf=new Array(N+1).fill(0);
+    st.innerHTML='Step 1: sieve — stamp each number with its smallest prime factor.'; await sleep(+sp.value);
+    for(let i=2;i<=N;i++){ if(spf[i]===0){ // i is prime
+        for(let j=i;j<=N;j+=i){ if(spf[j]===0) spf[j]=i; }
+        // show subscripts (spf) so far, highlight multiples of i
+        const active=nums.map((v,idx)=> (v%i===0)?idx:-1).filter(x=>x>=0);
+        viz.render(nums,{sub:nums.map(v=>spf[v]||''),compare:active}); st.innerHTML=`Prime <span class="k">${i}</span> stamps its multiples' SPF.`; tickSound(); await sleep(+sp.value);
+      } }
+    viz.render(nums,{sub:nums.map(v=>spf[v]||'')}); st.innerHTML='SPF table ready (small number = its smallest prime factor). Step 2: factorize 36.'; await sleep(+sp.value);
+    let x=36; const factors=[];
+    while(x>1){ const p=spf[x]; factors.push(p); const idx=nums.indexOf(x); const pidx=nums.indexOf(p);
+      viz.render(nums,{sub:nums.map(v=>spf[v]||''),done:new Set([idx].filter(i=>i>=0)),compare:[pidx].filter(i=>i>=0)}); stats.innerHTML=`<span class="pill blue">36 = ${factors.join(' × ')}${x/p>1?' × …':''}</span>`; st.innerHTML=`x=${x}: divide by SPF ${p} → ${x/p}.`; tickSound(); await sleep(+sp.value); x=x/p; }
+    stats.innerHTML=`<span class="pill green">36 = ${factors.join(' × ')}</span>`; st.innerHTML=`🔱 36 = <span class="k">${factors.join(' × ')}</span>!`; ANIM=false; celebrate($('#pfRow'));
+  }
+  $('#pfPlay').onclick=play; $('#pfReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>

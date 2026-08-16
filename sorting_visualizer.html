@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sorting &amp; Comparators — Animated Visual Guide</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#121a35; --card:#16203f; --ink:#e8edff; --muted:#9fb0d8;
+    --accent:#4cc9f0; --accent2:#f72585; --lo:#4361ee; --hi:#f72585; --mid:#ffd166;
+    --found:#06d6a0; --pivot:#b5179e; --line:#26325c;
+    --shadow:0 10px 30px rgba(0,0,0,.45); --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#1a2650 0%,transparent 60%),
+               radial-gradient(1000px 700px at -10% 20%,#241241 0%,transparent 55%),var(--bg);
+    color:var(--ink); line-height:1.6; overflow-x:hidden;
+  }
+  header{text-align:center; padding:60px 20px 26px; position:relative}
+  header h1{
+    font-size:clamp(28px,5vw,52px); margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2),#b5179e);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    background-size:200% auto; animation:shimmer 6s ease-in-out infinite;
+  }
+  @keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:100% center}}
+  header p{color:var(--muted); max-width:720px; margin:14px auto 0; font-size:18px}
+  .pulse-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--found);margin-right:8px;animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(6,214,160,.6)}70%{box-shadow:0 0 0 16px rgba(6,214,160,0)}100%{box-shadow:0 0 0 0 rgba(6,214,160,0)}}
+
+  nav{position:sticky; top:0; z-index:50; display:flex; flex-wrap:wrap; gap:7px; justify-content:center;
+      padding:12px; background:rgba(11,16,32,.8); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  nav a{color:var(--ink); text-decoration:none; font-size:12.5px; font-weight:600; padding:6px 11px; border-radius:999px;
+        border:1px solid var(--line); background:var(--card); transition:.25s}
+  nav a:hover{border-color:var(--accent); color:var(--accent); transform:translateY(-2px)}
+
+  main{max-width:1000px; margin:0 auto; padding:26px 18px 100px}
+  section{background:linear-gradient(180deg,var(--card),var(--bg2)); border:1px solid var(--line); border-radius:var(--radius);
+          padding:26px; margin:26px 0; box-shadow:var(--shadow); opacity:0; transform:translateY(30px);
+          transition:opacity .7s ease, transform .7s ease}
+  section.reveal{opacity:1; transform:none}
+  h2{font-size:clamp(21px,3.4vw,30px); margin:0 0 6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  h2 .badge{font-size:12.5px; padding:4px 10px; border-radius:999px; background:rgba(76,201,240,.15); color:var(--accent); border:1px solid rgba(76,201,240,.35)}
+  h3{color:var(--accent); margin-top:22px}
+  p.lead{color:var(--muted); font-size:17px}
+
+  .explain{background:linear-gradient(180deg,rgba(76,201,240,.07),rgba(247,37,133,.05)); border:1px solid var(--line);
+           border-left:5px solid var(--accent); border-radius:14px; padding:18px 20px; margin:18px 0}
+  .explain h4{margin:0 0 10px; font-size:17px; color:var(--accent); display:flex; align-items:center; gap:8px}
+  .explain .story{background:rgba(255,209,102,.08); border:1px dashed rgba(255,209,102,.35); border-radius:10px; padding:11px 14px; margin:10px 0; color:var(--ink)}
+  .explain .story .tag{color:var(--mid); font-weight:800}
+  .explain .why{color:var(--muted)}
+  .steps-flow{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; align-items:center}
+  .steps-flow .chip{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:600}
+  .steps-flow .arrow{color:var(--accent); font-weight:800}
+  .oneliner{font-size:15.5px; font-weight:700; color:var(--found); background:rgba(6,214,160,.08); border:1px solid rgba(6,214,160,.3); border-radius:10px; padding:11px 15px; margin-top:12px}
+
+  /* bars */
+  .bars{display:flex; align-items:flex-end; justify-content:center; gap:8px; height:250px; padding:26px 10px 34px; margin:8px 0}
+  .bar{width:46px; min-width:22px; flex:0 0 auto; border-radius:8px 8px 4px 4px; position:relative;
+       background:linear-gradient(180deg,#3a4d80,#26356a); border:1px solid #2c3d6e;
+       transition:height .38s cubic-bezier(.2,.8,.2,1), background .3s, transform .3s, box-shadow .3s}
+  .bar .bval{position:absolute; top:-22px; left:0; right:0; text-align:center; font-size:12.5px; font-weight:800; color:var(--muted)}
+  .bar.compare{background:linear-gradient(180deg,var(--mid),#caa02a); box-shadow:0 0 0 3px rgba(255,209,102,.35)}
+  .bar.swap{background:linear-gradient(180deg,var(--accent2),#b5179e); transform:translateY(-8px); box-shadow:0 8px 18px rgba(247,37,133,.4)}
+  .bar.sorted{background:linear-gradient(180deg,var(--found),#04b085)}
+  .bar.pivot{background:linear-gradient(180deg,var(--pivot),#7209b7); box-shadow:0 0 0 3px rgba(181,23,158,.4)}
+  .bar.inrange{outline:2px dashed var(--accent); outline-offset:2px}
+  .bar[data-ptr]::after{content:attr(data-ptr); position:absolute; bottom:-26px; left:50%; transform:translateX(-50%);
+       font-size:11.5px; font-weight:800; color:var(--accent); white-space:nowrap; background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 7px}
+
+  /* cells */
+  .cellrow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:26px 0 30px; min-height:70px}
+  .cell{position:relative; min-width:52px; height:52px; padding:0 8px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:17px; background:#1d2a52; border:2px solid #2c3d6e; color:var(--ink);
+        transition:all .4s cubic-bezier(.2,.8,.2,1)}
+  .cell .idx{position:absolute; top:-19px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--muted); font-weight:700}
+  .cell .ptr{position:absolute; bottom:-23px; left:50%; transform:translateX(-50%); font-size:11.5px; font-weight:800; white-space:nowrap; color:var(--accent); background:var(--bg2); border:1px solid var(--line); border-radius:6px; padding:1px 6px}
+  .cell.in-range{border-color:var(--accent); background:#22345f}
+  .cell.dead{opacity:.32; filter:grayscale(.5); transform:scale(.92)}
+  .cell.lo{border-color:var(--lo); box-shadow:0 0 0 3px rgba(67,97,238,.35)}
+  .cell.hi{border-color:var(--hi); background:#3a1d2a; box-shadow:0 0 0 3px rgba(247,37,133,.35)}
+  .cell.mid{border-color:var(--mid); background:#3a3620; box-shadow:0 0 0 4px rgba(255,209,102,.45); transform:scale(1.1) translateY(-4px)}
+  .cell.found{border-color:var(--found); background:#0d3b30; box-shadow:0 0 0 4px rgba(6,214,160,.5)}
+  @keyframes cellIn{0%{opacity:0;transform:translateY(14px) scale(.8)}100%{opacity:1;transform:none}}
+
+  /* buckets (count/radix/bucket) */
+  .buckets{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:20px 0}
+  .bucket{min-width:46px; border:1px solid var(--line); border-radius:10px; background:var(--bg2); padding:6px; text-align:center}
+  .bucket .bk{font-size:11px; color:var(--muted); font-weight:700; margin-bottom:4px}
+  .bucket .items{display:flex; flex-direction:column-reverse; gap:4px; min-height:30px}
+  .bucket .it{background:#22345f; border:1px solid var(--accent); border-radius:6px; padding:2px 6px; font-weight:700; font-size:13px; animation:cellIn .3s ease}
+  .bucket.active{border-color:var(--mid); box-shadow:0 0 0 3px rgba(255,209,102,.3)}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:14px}
+  button.btn{cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:700; font-size:14px; color:#08122b;
+             background:linear-gradient(90deg,var(--accent),#48e0c0); transition:.2s; box-shadow:0 6px 16px rgba(76,201,240,.25)}
+  button.btn:hover{transform:translateY(-2px); filter:brightness(1.08)}
+  button.btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  button.btn.pink{background:linear-gradient(90deg,var(--accent2),#b5179e); color:#fff}
+  .speed{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px}
+  input[type=range]{accent-color:var(--accent)}
+  input[type=text],input[type=number]{padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:#0a1330; color:var(--ink); font-weight:700; font-size:15px}
+  input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(76,201,240,.25)}
+
+  .status{margin-top:14px; text-align:center; min-height:50px; font-size:15.5px; font-weight:600; color:var(--ink);
+          background:var(--bg2); border:1px dashed var(--line); border-radius:12px; padding:11px 15px}
+  .status .k{color:var(--mid)}
+  .stats{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px}
+  .pill{background:var(--bg2); border:1px solid var(--line); border-radius:999px; padding:5px 14px; font-size:13px; font-weight:700}
+  .pill.blue{background:rgba(76,201,240,.16); border-color:rgba(76,201,240,.4); color:var(--accent)}
+  .pill.green{background:rgba(6,214,160,.14); border-color:rgba(6,214,160,.4); color:var(--found)}
+
+  pre{background:#0a1330; border:1px solid var(--line); border-radius:12px; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.55; font-family:'Consolas','Fira Code',monospace}
+  code{font-family:'Consolas','Fira Code',monospace}
+  .kw{color:#ff8fc7}.fn{color:#4cc9f0}.num{color:#ffd166}.str{color:#95f9c3}.cm{color:#6b7aa8;font-style:italic}
+  .note{border-left:4px solid var(--accent); background:rgba(76,201,240,.08); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0}
+  .note.key{border-color:var(--found); background:rgba(6,214,160,.08)}
+  .memhook{display:flex; gap:12px; align-items:flex-start; margin:14px 0; background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .memhook .big{font-size:24px}
+  .memhook b{color:var(--mid)}
+
+  .sound-btn{position:fixed; right:18px; bottom:18px; z-index:70; cursor:pointer; border:1px solid var(--line);
+             background:var(--card); color:var(--ink); border-radius:999px; padding:10px 16px; font-weight:800; font-size:13px;
+             display:flex; align-items:center; gap:8px; box-shadow:var(--shadow)}
+  .sound-btn .bars2{display:inline-flex; gap:2px; align-items:flex-end; height:16px}
+  .sound-btn .bars2 i{width:3px; background:var(--accent); border-radius:2px; animation:eq 1s ease-in-out infinite}
+  .sound-btn .bars2 i:nth-child(1){height:6px;animation-delay:0s}
+  .sound-btn .bars2 i:nth-child(2){height:14px;animation-delay:.2s}
+  .sound-btn .bars2 i:nth-child(3){height:9px;animation-delay:.4s}
+  .sound-btn .bars2 i:nth-child(4){height:12px;animation-delay:.6s}
+  @keyframes eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .sound-btn.off .bars2 i{animation-play-state:paused; background:var(--muted)}
+  #confetti{position:fixed; inset:0; pointer-events:none; z-index:60}
+  footer{text-align:center; color:var(--muted); padding:30px; font-size:14px}
+  ::-webkit-scrollbar{height:10px;width:10px}::-webkit-scrollbar-thumb{background:#2c3d6e;border-radius:8px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<button class="sound-btn off" id="soundBtn"><span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off</button>
+
+<header>
+  <h1>Sorting &amp; Comparators — Animated Guide</h1>
+  <p><span class="pulse-dot"></span>Watch every sorting idea come alive — bars swap, pointers march, buckets fill. Built so the logic sticks for life.</p>
+</header>
+
+<nav>
+  <a href="#comparators">⚖️ Comparators &amp; Stability</a>
+  <a href="#custcomp">🧩 Custom Comparators</a>
+  <a href="#custsort">🗂️ Custom Sorting</a>
+  <a href="#insertion">📥 Insertion Sort</a>
+  <a href="#bubble">🫧 Bubble Sort</a>
+  <a href="#absolute">➖ Absolute Values</a>
+  <a href="#equations">🟰 Solve Equations</a>
+  <a href="#nextperm">🔀 Next Permutation</a>
+  <a href="#indexdiff">📏 Max Index Diff</a>
+  <a href="#smallsub">🎯 Smallest Subarray</a>
+  <a href="#rangeq">📊 Range Queries</a>
+  <a href="#election">🗳️ Special Election</a>
+  <a href="#merge">🔗 Merge Process</a>
+  <a href="#mergeapp">🤝 Merge Application</a>
+  <a href="#mergesort">🪄 Merge Sort</a>
+  <a href="#inversion">🔁 Inversions</a>
+  <a href="#invapp">💡 Inversion Uses</a>
+  <a href="#quicksort">⚡ Quick Sort</a>
+  <a href="#partition">✂️ Partition</a>
+  <a href="#partapp">🎯 Partition Uses</a>
+  <a href="#countsort">🪣 Count Sort</a>
+  <a href="#radix">🔢 Radix Sort</a>
+  <a href="#lineartime">🚀 Linear Time</a>
+</nav>
+
+<main>
+
+  <!-- COMPARATORS & STABILITY -->
+  <section id="comparators">
+    <h2>⚖️ Comparators &amp; Stability <span class="badge">Foundation</span></h2>
+    <p class="lead">A <b>comparator</b> answers one question: "should A come before B?" A sort is <b>stable</b> if equal elements keep their original order.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The queue at a bank:</span> two people arrive with the same ticket number. A <b>stable</b> teller serves them in arrival order; an <b>unstable</b> one might flip them. When you sort by a second key later, stability is what preserves the first key's order.</div>
+      <p class="why"><b>Why it matters:</b> multi-key sorting works by sorting on the least-important key first, then a <b>stable</b> sort on the next key. Without stability, earlier work is scrambled.</p>
+      <div class="oneliner">🔒 Keep forever: "Comparator = who goes first. Stable = ties never reorder."</div>
+    </div>
+    <div class="note">Sorting <code>[3a, 1a, 3b, 2a, 1b]</code> by number. Watch equal keys (letters mark original order) stay <b>a before b</b>.</div>
+    <div class="cellrow" id="stabRow"></div>
+    <div class="status" id="stabStatus">Press play to sort stably — ties keep their letters in order.</div>
+    <div class="controls"><button class="btn" id="stabPlay">▶ Stable Sort</button><button class="btn ghost" id="stabReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="stabSpeed" min="300" max="2600" value="1400" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> comparator returns negative / 0 / positive for "before / tie / after". Stability preserves input order on the 0 (tie) case.</div></div>
+    <pre><code><span class="cm">// comparator: ascending by value</span>
+<span class="fn">cmp</span>(a, b) => a - b;          <span class="cm">// &lt;0 a first, 0 tie, &gt;0 b first</span>
+<span class="cm">// stable multi-key: sort by minor key first, then stable-sort by major</span>
+list.<span class="fn">sort</span>((x,y) => x.age - y.age);      <span class="cm">// minor</span>
+list.<span class="fn">sort</span>((x,y) => x.name.compareTo(y.name)); <span class="cm">// major (stable keeps age order on ties)</span></code></pre>
+  </section>
+
+  <!-- CUSTOM COMPARATORS -->
+  <section id="custcomp">
+    <h2>🧩 Custom Comparators <span class="badge">Rules</span></h2>
+    <p class="lead">Sort by <b>any rule you invent</b> — here: by word <b>length</b>, breaking ties alphabetically.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The tie-breaker ladder:</span> compare the primary key; only if it ties do you fall to the next rule. Like ranking by score, then by name, then by ID — each rung breaks the tie above it.</div>
+      <div class="oneliner">🔒 Keep forever: "Chain rules: return the first non-zero comparison."</div>
+    </div>
+    <div class="note">Sorting <code>[pear, fig, apple, kiwi, plum]</code> by length, then A→Z.</div>
+    <div class="cellrow" id="ccRow"></div>
+    <div class="status" id="ccStatus">Press play to sort by length, ties broken alphabetically.</div>
+    <div class="controls"><button class="btn" id="ccPlay">▶ Sort</button><button class="btn ghost" id="ccReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ccSpeed" min="300" max="2600" value="1400" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> <code>a.len - b.len</code> first; if 0, fall through to <code>a.compareTo(b)</code>. First non-zero wins.</div></div>
+    <pre><code>words.<span class="fn">sort</span>((a, b) => {
+  <span class="kw">if</span> (a.length != b.length) <span class="kw">return</span> a.length - b.length; <span class="cm">// primary</span>
+  <span class="kw">return</span> a.compareTo(b);                                <span class="cm">// tie-breaker</span>
+});</code></pre>
+  </section>
+
+  <!-- CUSTOM SORTING -->
+  <section id="custsort">
+    <h2>🗂️ Custom Sorting (Objects) <span class="badge">Multi-key</span></h2>
+    <p class="lead">Sort records by <b>multiple fields</b>: here people by <b>age ascending</b>, then <b>name</b>.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sorting a class roster:</span> line students up youngest→oldest; within the same age, order by name. You're just supplying a comparator that reads object fields.</div>
+      <div class="oneliner">🔒 Keep forever: "Sort structs by returning a comparison of their fields, in priority order."</div>
+    </div>
+    <div class="note">People <code>(name,age)</code>: sort by age, then name.</div>
+    <div class="cellrow" id="csRow"></div>
+    <div class="status" id="csStatus">Press play to sort people by (age, name).</div>
+    <div class="controls"><button class="btn" id="csPlay">▶ Sort People</button><button class="btn ghost" id="csReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="csSpeed" min="300" max="2600" value="1400" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> comparators read fields — <code>by age, then name</code>. Same skill, richer data.</div></div>
+    <pre><code>people.<span class="fn">sort</span>((p, q) =>
+  p.age != q.age ? p.age - q.age : p.name.compareTo(q.name));</code></pre>
+  </section>
+
+  <!-- INSERTION SORT -->
+  <section id="insertion">
+    <h2>📥 Insertion Sort <span class="badge">O(n²)</span></h2>
+    <p class="lead">Build a sorted region one element at a time — like arranging playing cards in your hand.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sorting cards in hand:</span> pick the next card and slide it left past every bigger card until it drops into place. The left side is always sorted and grows by one each round.</div>
+      <div class="steps-flow"><span class="chip">take next key</span><span class="arrow">→</span><span class="chip">shift bigger ones right</span><span class="arrow">→</span><span class="chip">drop key in the gap</span></div>
+      <div class="oneliner">🔒 Keep forever: "Grow a sorted left side; insert each new card where it belongs."</div>
+    </div>
+    <div class="bars" id="insBars"></div>
+    <div class="status" id="insStatus">Press play. Left region stays sorted and grows.</div>
+    <div class="controls"><button class="btn" id="insPlay">▶ Sort</button><button class="btn ghost" id="insReset">↺ Reset</button><button class="btn pink" id="insShuffle">🔀 Shuffle</button><span class="speed">🐢 <input type="range" id="insSpeed" min="120" max="1400" value="600" step="40"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> best case O(n) on nearly-sorted data — that's why it's used for tiny/almost-sorted arrays. Stable.</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">1</span>; i &lt; n; i++) {
+  <span class="kw">int</span> key = a[i], j = i - <span class="num">1</span>;
+  <span class="kw">while</span> (j &gt;= <span class="num">0</span> &amp;&amp; a[j] &gt; key) { a[j+<span class="num">1</span>] = a[j]; j--; } <span class="cm">// shift right</span>
+  a[j+<span class="num">1</span>] = key;                                     <span class="cm">// drop into the gap</span>
+}</code></pre>
+  </section>
+
+  <!-- BUBBLE SORT -->
+  <section id="bubble">
+    <h2>🫧 Bubble Sort <span class="badge">O(n²)</span></h2>
+    <p class="lead">Repeatedly swap adjacent out-of-order pairs — the largest value "bubbles" to the end each pass.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Bubbles rising:</span> sweep left→right swapping neighbors when the left is bigger. After one sweep the biggest has floated to the top (end). Repeat on the shrinking rest.</div>
+      <div class="oneliner">🔒 Keep forever: "Each pass floats the next-largest to the end."</div>
+    </div>
+    <div class="bars" id="bubBars"></div>
+    <div class="status" id="bubStatus">Press play. Largest bubbles to the right each pass.</div>
+    <div class="controls"><button class="btn" id="bubPlay">▶ Sort</button><button class="btn ghost" id="bubReset">↺ Reset</button><button class="btn pink" id="bubShuffle">🔀 Shuffle</button><span class="speed">🐢 <input type="range" id="bubSpeed" min="120" max="1400" value="500" step="40"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> a pass with zero swaps → already sorted → stop early. Number of swaps equals the number of <b>inversions</b> (see below!).</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i &lt; n-<span class="num">1</span>; i++) {
+  <span class="kw">boolean</span> swapped = <span class="kw">false</span>;
+  <span class="kw">for</span> (<span class="kw">int</span> j = <span class="num">0</span>; j &lt; n-<span class="num">1</span>-i; j++)
+    <span class="kw">if</span> (a[j] &gt; a[j+<span class="num">1</span>]) { swap(a,j,j+<span class="num">1</span>); swapped = <span class="kw">true</span>; }
+  <span class="kw">if</span> (!swapped) <span class="kw">break</span>; <span class="cm">// already sorted</span>
+}</code></pre>
+  </section>
+
+  <!-- ABSOLUTE VALUES -->
+  <section id="absolute">
+    <h2>➖ Dealing with Absolute Values <span class="badge">Key trick</span></h2>
+    <p class="lead">Sort by <b>distance from zero</b> — negatives and positives interleave by magnitude.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Closest to the campfire:</span> people stand at positions like −7, +2, −3. Order them by how <b>far</b> they are from the fire (0), ignoring which side. The comparator just uses <code>|value|</code>.</div>
+      <div class="oneliner">🔒 Keep forever: "Change the key, not the algorithm — compare by |x|."</div>
+    </div>
+    <div class="note">Sorting <code>[-7, 2, -3, 5, -1, 4]</code> by absolute value.</div>
+    <div class="cellrow" id="absRow"></div>
+    <div class="status" id="absStatus">Press play to sort by |value| (closest to 0 first).</div>
+    <div class="controls"><button class="btn" id="absPlay">▶ Sort by |x|</button><button class="btn ghost" id="absReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="absSpeed" min="200" max="2000" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> most "sort by X" problems are just a new comparator key: <code>|x|</code>, <code>x%k</code>, frequency, distance… the sort stays the same.</div></div>
+    <pre><code>a.<span class="fn">sort</span>((x, y) => Math.abs(x) - Math.abs(y));</code></pre>
+  </section>
+
+  <!-- SOLVE EQUATIONS -->
+  <section id="equations">
+    <h2>🟰 Solve Equations (Sort + Two Pointers) <span class="badge">Technique</span></h2>
+    <p class="lead">Find <code>a + b = target</code> in a <b>sorted</b> array using two pointers from both ends.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The see-saw:</span> put a finger on the smallest and largest. Too heavy (sum too big)? Move the right finger in. Too light? Move the left finger out. Sorting turns a messy equation into a smooth converging search.</div>
+      <div class="steps-flow"><span class="chip">sort</span><span class="arrow">→</span><span class="chip">l=0, r=n-1</span><span class="arrow">→</span><span class="chip">sum&gt;target? r--</span><span class="arrow">/</span><span class="chip">sum&lt;target? l++</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sort first, then let two pointers squeeze toward the answer."</div>
+    </div>
+    <div class="note">Sorted <code>[1,3,4,6,8,10,13]</code>, find a pair summing to <b>14</b>.</div>
+    <div class="cellrow" id="eqRow"></div>
+    <div class="status" id="eqStatus">Press play. l and r converge to the pair.</div>
+    <div class="controls"><button class="btn" id="eqPlay">▶ Find Pair = 14</button><button class="btn ghost" id="eqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="eqSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> sorting unlocks two-pointer (and binary search). Pair sum, 3-sum, closest sum — all start with a sort.</div></div>
+    <pre><code>sort(a); <span class="kw">int</span> l=<span class="num">0</span>, r=n-<span class="num">1</span>;
+<span class="kw">while</span> (l &lt; r) {
+  <span class="kw">int</span> s = a[l] + a[r];
+  <span class="kw">if</span> (s == target) <span class="kw">return</span> {l, r};
+  <span class="kw">else if</span> (s &lt; target) l++; <span class="kw">else</span> r--;
+}</code></pre>
+  </section>
+
+  <!-- NEXT PERMUTATION -->
+  <section id="nextperm">
+    <h2>🔀 Next Greater Permutation <span class="badge">Classic</span></h2>
+    <p class="lead">Rearrange numbers into the <b>next larger</b> arrangement in lexicographic order — in place.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The odometer that must tick up minimally:</span> scan from the right to find the first "dip" (a[i] &lt; a[i+1]) — that's the digit to bump. Swap it with the <b>smallest number to its right that's still bigger</b>, then <b>reverse the tail</b> so the suffix is as small as possible.</div>
+      <div class="steps-flow"><span class="chip">1. find pivot dip from right</span><span class="arrow">→</span><span class="chip">2. swap with next-bigger successor</span><span class="arrow">→</span><span class="chip">3. reverse the suffix</span></div>
+      <div class="oneliner">🔒 Keep forever: "Find the dip, swap with its smallest bigger, reverse the rest."</div>
+    </div>
+    <div class="note">Next permutation of <code>[1, 3, 5, 4, 2]</code> → <code>[1, 4, 2, 3, 5]</code>.</div>
+    <div class="cellrow" id="npRow"></div>
+    <div class="status" id="npStatus">Press play to compute the next permutation.</div>
+    <div class="controls"><button class="btn" id="npPlay">▶ Next Permutation</button><button class="btn ghost" id="npReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="npSpeed" min="300" max="2600" value="1400" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> pivot = first i (from right) with <code>a[i]&lt;a[i+1]</code>. No dip → array is the largest → reverse whole thing to the smallest.</div></div>
+    <pre><code><span class="kw">int</span> i = n-<span class="num">2</span>; <span class="kw">while</span> (i&gt;=<span class="num">0</span> &amp;&amp; a[i]&gt;=a[i+<span class="num">1</span>]) i--;   <span class="cm">// find dip</span>
+<span class="kw">if</span> (i&gt;=<span class="num">0</span>) {
+  <span class="kw">int</span> j = n-<span class="num">1</span>; <span class="kw">while</span> (a[j]&lt;=a[i]) j--;         <span class="cm">// smallest bigger</span>
+  swap(a,i,j);
+}
+reverse(a, i+<span class="num">1</span>, n-<span class="num">1</span>);                        <span class="cm">// minimize suffix</span></code></pre>
+  </section>
+
+  <!-- MAX INDEX DIFF -->
+  <section id="indexdiff">
+    <h2>📏 Maximize the Index Difference <span class="badge">Two arrays</span></h2>
+    <p class="lead">Find the largest <code>j − i</code> such that <code>a[i] ≤ a[j]</code> — using precomputed min/max sweeps.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Longest valid bridge:</span> you want the widest span where the right end isn't smaller than the left. Precompute, for each i, the <b>smallest value up to i</b> (LMin) and for each j the <b>largest value from j on</b> (RMax). Then walk two pointers: if LMin[i] ≤ RMax[j], the span is valid — stretch it.</div>
+      <div class="oneliner">🔒 Keep forever: "Prefix-min from left, suffix-max from right, then greedily widen."</div>
+    </div>
+    <div class="note">Array <code>[34, 8, 10, 3, 2, 80, 30, 33, 1]</code> → best span shown live.</div>
+    <div class="cellrow" id="idRow"></div>
+    <div class="status" id="idStatus">Press play. LMin/RMax pointers widen the valid span.</div>
+    <div class="controls"><button class="btn" id="idPlay">▶ Find Max j−i</button><button class="btn ghost" id="idReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="idSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> if <code>LMin[i] ≤ RMax[j]</code> → record <code>j−i</code>, advance <b>j</b>; else advance <b>i</b>. O(n) after the two sweeps.</div></div>
+    <pre><code>build LMin[i] = min(a[0..i]);  build RMax[j] = max(a[j..n-1]);
+<span class="kw">int</span> i=<span class="num">0</span>, j=<span class="num">0</span>, best=<span class="num">0</span>;
+<span class="kw">while</span> (i&lt;n &amp;&amp; j&lt;n) {
+  <span class="kw">if</span> (LMin[i] &lt;= RMax[j]) { best = max(best, j-i); j++; }
+  <span class="kw">else</span> i++;
+}</code></pre>
+  </section>
+
+  <!-- SMALLEST SUBARRAY -->
+  <section id="smallsub">
+    <h2>🎯 Smallest Subarray to Sort <span class="badge">Scan</span></h2>
+    <p class="lead">Find the <b>shortest continuous subarray</b> that, if sorted, makes the whole array sorted.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The messy middle:</span> scan from the left until order first breaks, and from the right until it breaks. Inside that messy window find the true <b>min</b> and <b>max</b> — then stretch the window outward until every element left of it is ≤ min and every element right is ≥ max.</div>
+      <div class="steps-flow"><span class="chip">find left/right break points</span><span class="arrow">→</span><span class="chip">min &amp; max of the dip</span><span class="arrow">→</span><span class="chip">extend to fit them</span></div>
+      <div class="oneliner">🔒 Keep forever: "Locate the dip, then widen it until neighbors respect its min &amp; max."</div>
+    </div>
+    <div class="note">Array <code>[2, 6, 4, 8, 10, 9, 15]</code> → window <code>[6,4,8,10,9]</code>.</div>
+    <div class="cellrow" id="ssRow"></div>
+    <div class="status" id="ssStatus">Press play to find the shortest unsorted window.</div>
+    <div class="controls"><button class="btn" id="ssPlay">▶ Find Window</button><button class="btn ghost" id="ssReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ssSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the answer's left edge is the first index whose value &gt; window-min; right edge is the last index whose value &lt; window-max.</div></div>
+    <pre><code><span class="cm">// 1) find first l where a[l]&gt;a[l+1], last r where a[r]&lt;a[r-1]</span>
+<span class="cm">// 2) mn=min(a[l..r]), mx=max(a[l..r])</span>
+<span class="kw">while</span> (l&gt;<span class="num">0</span> &amp;&amp; a[l-<span class="num">1</span>]&gt;mn) l--;   <span class="cm">// extend left</span>
+<span class="kw">while</span> (r&lt;n-<span class="num">1</span> &amp;&amp; a[r+<span class="num">1</span>]&lt;mx) r++; <span class="cm">// extend right</span>
+<span class="kw">return</span> r - l + <span class="num">1</span>;</code></pre>
+  </section>
+
+  <!-- RANGE QUERIES -->
+  <section id="rangeq">
+    <h2>📊 Processing Range Queries <span class="badge">Difference Array</span></h2>
+    <p class="lead">Apply many <code>add v to [l..r]</code> updates in O(1) each, then rebuild the array with one prefix-sum sweep.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Light switches on a hallway:</span> instead of touching every bulb in a range, flip a "+v starts here" marker at <code>l</code> and a "−v stops here" marker at <code>r+1</code>. Later, walk the hallway once accumulating markers — every bulb lights to its correct total.</div>
+      <div class="steps-flow"><span class="chip">diff[l] += v</span><span class="arrow">→</span><span class="chip">diff[r+1] −= v</span><span class="arrow">→</span><span class="chip">prefix-sum = final array</span></div>
+      <div class="oneliner">🔒 Keep forever: "Mark the edges (+v at l, −v after r); one sweep pays all debts."</div>
+    </div>
+    <div class="note">Base <code>[0,0,0,0,0,0]</code>. Queries: +5 on [1..3], +3 on [2..5], +2 on [0..1].</div>
+    <div class="cellrow" id="rqRow"></div>
+    <div class="status" id="rqStatus">Press play. Mark edges, then sweep to totals.</div>
+    <div class="controls"><button class="btn" id="rqPlay">▶ Run Queries</button><button class="btn ghost" id="rqReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rqSpeed" min="300" max="2400" value="1300" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> N range-add queries in O(N + range-count) total. The prefix-sum at the end turns edge markers into real values.</div></div>
+    <pre><code><span class="kw">for</span> each (l, r, v): diff[l] += v; <span class="kw">if</span> (r+<span class="num">1</span>&lt;n) diff[r+<span class="num">1</span>] -= v;
+<span class="kw">for</span> (<span class="kw">int</span> i=<span class="num">1</span>; i&lt;n; i++) diff[i] += diff[i-<span class="num">1</span>]; <span class="cm">// prefix sum = answer</span></code></pre>
+  </section>
+
+  <!-- SPECIAL ELECTION -->
+  <section id="election">
+    <h2>🗳️ Special Election (Majority Vote) <span class="badge">Boyer–Moore</span></h2>
+    <p class="lead">Find the element appearing more than <code>n/2</code> times — the "winner" — in O(n) time, O(1) space.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Cancelling votes:</span> keep one <b>candidate</b> and a tally. A matching vote adds 1; a different vote cancels 1. Whenever the tally hits 0, the next voter becomes the new candidate. A true majority can never be fully cancelled — it survives to the end.</div>
+      <div class="steps-flow"><span class="chip">count==0 → adopt current as candidate</span><span class="arrow">→</span><span class="chip">same? count++</span><span class="arrow">/</span><span class="chip">different? count−−</span></div>
+      <div class="oneliner">🔒 Keep forever: "Pair off opposing votes; the majority is the last one standing."</div>
+    </div>
+    <div class="note">Votes <code>[2, 2, 1, 1, 1, 2, 2]</code> → winner <b>2</b>.</div>
+    <div class="cellrow" id="elRow"></div>
+    <div class="status" id="elStatus">Press play. Candidate + count survive the cancellations.</div>
+    <div class="controls"><button class="btn" id="elPlay">▶ Count Votes</button><button class="btn ghost" id="elReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="elSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> this only guarantees a candidate — verify with a second pass if a majority isn't guaranteed to exist.</div></div>
+    <pre><code><span class="kw">int</span> cand = <span class="num">0</span>, count = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">int</span> x : a) {
+  <span class="kw">if</span> (count == <span class="num">0</span>) cand = x;
+  count += (x == cand) ? <span class="num">1</span> : -<span class="num">1</span>;
+}
+<span class="kw">return</span> cand; <span class="cm">// majority candidate</span></code></pre>
+  </section>
+
+  <!-- MERGE PROCESS -->
+  <section id="merge">
+    <h2>🔗 The Merge Process <span class="badge">Core skill</span></h2>
+    <p class="lead">Combine two <b>already sorted</b> lists into one sorted list with a simple two-pointer walk.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Zipping two lines:</span> two sorted queues face a single door. Repeatedly let the <b>smaller head</b> through. Since each queue is sorted, comparing only the two fronts is enough — like a zipper closing.</div>
+      <div class="oneliner">🔒 Keep forever: "Compare the two fronts, take the smaller, repeat."</div>
+    </div>
+    <div class="note">A = <code>[1,4,7,8]</code>, B = <code>[2,3,9]</code> → merged output builds below.</div>
+    <div class="cellrow" id="mgA"></div>
+    <div class="cellrow" id="mgB"></div>
+    <div class="cellrow" id="mgOut"></div>
+    <div class="status" id="mgStatus">Press play. The smaller front always moves to output.</div>
+    <div class="controls"><button class="btn" id="mgPlay">▶ Merge</button><button class="btn ghost" id="mgReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="mgSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> O(n+m), and it's <b>stable</b> if you take from the left array on ties. This is the engine of merge sort.</div></div>
+    <pre><code><span class="kw">int</span> i=<span class="num">0</span>, j=<span class="num">0</span>, k=<span class="num">0</span>;
+<span class="kw">while</span> (i&lt;n &amp;&amp; j&lt;m) out[k++] = (A[i] &lt;= B[j]) ? A[i++] : B[j++];
+<span class="kw">while</span> (i&lt;n) out[k++] = A[i++];
+<span class="kw">while</span> (j&lt;m) out[k++] = B[j++];</code></pre>
+  </section>
+
+  <!-- MERGE APPLICATION -->
+  <section id="mergeapp">
+    <h2>🤝 Application of Merge (Union &amp; Intersection) <span class="badge">Two pointers</span></h2>
+    <p class="lead">The merge walk instantly gives the <b>union</b> and <b>intersection</b> of two sorted arrays.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Two guest lists:</span> walk both sorted lists together. Equal names → in <b>both</b> (intersection). Otherwise advance the smaller. Every name lands in the <b>union</b> exactly once.</div>
+      <div class="oneliner">🔒 Keep forever: "Same → intersection + advance both; else advance the smaller."</div>
+    </div>
+    <div class="note">A = <code>[1,3,4,6,8]</code>, B = <code>[2,3,6,7]</code>. Watch ∪ and ∩ form.</div>
+    <div class="cellrow" id="maA"></div>
+    <div class="cellrow" id="maB"></div>
+    <div class="status" id="maStatus">Press play to compute union &amp; intersection.</div>
+    <div class="controls"><button class="btn" id="maPlay">▶ Union &amp; ∩</button><button class="btn ghost" id="maReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="maSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="stats" id="maStats"></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> the merge two-pointer also powers "median of two sorted arrays", "kth element", and external sort.</div></div>
+    <pre><code><span class="kw">while</span> (i&lt;n &amp;&amp; j&lt;m) {
+  <span class="kw">if</span> (A[i]==B[j]) { both.add(A[i]); uni.add(A[i]); i++; j++; }
+  <span class="kw">else if</span> (A[i]&lt;B[j]) uni.add(A[i++]);
+  <span class="kw">else</span> uni.add(B[j++]);
+}</code></pre>
+  </section>
+
+  <!-- MERGE SORT -->
+  <section id="mergesort">
+    <h2>🪄 Merge Sort <span class="badge">O(n log n)</span></h2>
+    <p class="lead">Split until single elements, then merge sorted pieces back — shown bottom-up as widening merges.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Divide &amp; conquer:</span> a single element is already sorted. Merge pairs into sorted 2's, those into sorted 4's, and so on. Each level merges the whole array once → log n levels × n work.</div>
+      <div class="steps-flow"><span class="chip">width 1 (each sorted)</span><span class="arrow">→</span><span class="chip">merge into 2's</span><span class="arrow">→</span><span class="chip">4's</span><span class="arrow">→</span><span class="chip">whole array</span></div>
+      <div class="oneliner">🔒 Keep forever: "Sorted halves + the merge zipper = a fully sorted whole, in n log n."</div>
+    </div>
+    <div class="bars" id="msBars"></div>
+    <div class="status" id="msStatus">Press play. Watch sorted blocks double in width each level.</div>
+    <div class="controls"><button class="btn" id="msPlay">▶ Merge Sort</button><button class="btn ghost" id="msReset">↺ Reset</button><button class="btn pink" id="msShuffle">🔀 Shuffle</button><span class="speed">🐢 <input type="range" id="msSpeed" min="150" max="1600" value="700" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> guaranteed O(n log n), <b>stable</b>, but uses O(n) extra space for the merge buffer.</div></div>
+    <pre><code><span class="kw">void</span> <span class="fn">mergeSort</span>(a, lo, hi) {
+  <span class="kw">if</span> (lo &gt;= hi) <span class="kw">return</span>;
+  <span class="kw">int</span> mid = (lo+hi)/<span class="num">2</span>;
+  <span class="fn">mergeSort</span>(a, lo, mid); <span class="fn">mergeSort</span>(a, mid+<span class="num">1</span>, hi);
+  <span class="fn">merge</span>(a, lo, mid, hi); <span class="cm">// the zipper from above</span>
+}</code></pre>
+  </section>
+
+  <!-- INVERSIONS -->
+  <section id="inversion">
+    <h2>🔁 Counting Inversions <span class="badge">Merge trick</span></h2>
+    <p class="lead">An <b>inversion</b> is a pair out of order (i&lt;j but a[i]&gt;a[j]). Count them all in O(n log n) during a merge.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Measuring messiness:</span> inversions count how "unsorted" an array is (0 = sorted, max = reversed). While merging, if a right-side element is smaller than a left-side one, it jumps ahead of <b>all remaining left elements</b> — add that many inversions in one shot.</div>
+      <div class="oneliner">🔒 Keep forever: "When a right element wins the merge, it was smaller than every left leftover — count them all."</div>
+    </div>
+    <div class="note">Array <code>[8, 4, 2, 1]</code> → <b>6</b> inversions (fully reversed).</div>
+    <div class="cellrow" id="invRow"></div>
+    <div class="status" id="invStatus">Press play. Counter rises as out-of-order pairs are found.</div>
+    <div class="controls"><button class="btn" id="invPlay">▶ Count Inversions</button><button class="btn ghost" id="invReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="invSpeed" min="300" max="2400" value="1200" step="50"> 🐇</span></div>
+    <div class="stats" id="invStats"></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> brute force is O(n²); the merge-sort version counts cross-inversions per merge for O(n log n).</div></div>
+    <pre><code><span class="cm">// inside merge, when taking B[j] over A[i]:</span>
+<span class="kw">if</span> (A[i] &lt;= B[j]) out[k++]=A[i++];
+<span class="kw">else</span> { out[k++]=B[j++]; inversions += (mid - i + <span class="num">1</span>); } <span class="cm">// all left leftovers</span></code></pre>
+  </section>
+
+  <!-- INVERSION APPLICATION -->
+  <section id="invapp">
+    <h2>💡 Application of Inversions <span class="badge">Insight</span></h2>
+    <p class="lead">Inversion count = <b>minimum adjacent swaps</b> to sort — exactly the number of swaps bubble sort makes.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Untangling a line:</span> every adjacent swap fixes exactly one out-of-order pair. So the least number of neighbor-swaps to sort an array equals its inversion count. It also measures "distance from sorted" and detects global vs local disorder.</div>
+      <div class="oneliner">🔒 Keep forever: "Each adjacent swap kills one inversion → min swaps = inversion count."</div>
+    </div>
+    <div class="note">Bubble-sorting <code>[3, 1, 2]</code> (2 inversions) takes exactly <b>2</b> adjacent swaps. Watch the swap counter match.</div>
+    <div class="bars" id="iaBars"></div>
+    <div class="status" id="iaStatus">Press play. Swap counter equals the inversion count.</div>
+    <div class="controls"><button class="btn" id="iaPlay">▶ Sort &amp; Count Swaps</button><button class="btn ghost" id="iaReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="iaSpeed" min="200" max="1600" value="800" step="40"> 🐇</span></div>
+    <div class="stats" id="iaStats"></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> uses of inversions — min swaps, "how sorted is it", counting significant pairs, and array similarity.</div></div>
+    <pre><code>minAdjacentSwaps(a) == countInversions(a);
+<span class="cm">// also: array is sortable by adjacent swaps iff you can afford that many moves</span></code></pre>
+  </section>
+
+  <!-- QUICK SORT -->
+  <section id="quicksort">
+    <h2>⚡ Quick Sort <span class="badge">O(n log n) avg</span></h2>
+    <p class="lead">Pick a <b>pivot</b>, partition smaller-left / bigger-right, then recurse on each side — all in place.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sorting a bookshelf by one book:</span> grab a pivot book; shove all shorter books left, taller right. The pivot is now in its final slot. Repeat on each side. No merge buffer needed — the swaps happen in place.</div>
+      <div class="steps-flow"><span class="chip">choose pivot</span><span class="arrow">→</span><span class="chip">partition around it</span><span class="arrow">→</span><span class="chip">recurse left &amp; right</span></div>
+      <div class="oneliner">🔒 Keep forever: "Partition puts the pivot home; recurse on both sides."</div>
+    </div>
+    <div class="bars" id="qsBars"></div>
+    <div class="status" id="qsStatus">Press play. Pink = pivot landing in its final place.</div>
+    <div class="controls"><button class="btn" id="qsPlay">▶ Quick Sort</button><button class="btn ghost" id="qsReset">↺ Reset</button><button class="btn pink" id="qsShuffle">🔀 Shuffle</button><span class="speed">🐢 <input type="range" id="qsSpeed" min="150" max="1600" value="650" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> average O(n log n), worst O(n²) on bad pivots (sorted input + naive pivot). Fix with random/median pivot. Not stable.</div></div>
+    <pre><code><span class="kw">void</span> <span class="fn">quickSort</span>(a, lo, hi) {
+  <span class="kw">if</span> (lo &gt;= hi) <span class="kw">return</span>;
+  <span class="kw">int</span> p = <span class="fn">partition</span>(a, lo, hi); <span class="cm">// pivot final index</span>
+  <span class="fn">quickSort</span>(a, lo, p-<span class="num">1</span>); <span class="fn">quickSort</span>(a, p+<span class="num">1</span>, hi);
+}</code></pre>
+  </section>
+
+  <!-- PARTITION -->
+  <section id="partition">
+    <h2>✂️ Space-Efficient Partition <span class="badge">O(1) space</span></h2>
+    <p class="lead">The heart of quick sort: rearrange around a pivot <b>in place</b> with a single scan (Lomuto scheme).</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">The boundary line:</span> keep a wall <code>i</code> marking "everything left is ≤ pivot". Scan with <code>j</code>; each time you meet a small element, push it across the wall and nudge the wall right. Finally drop the pivot onto the wall — its true home.</div>
+      <div class="steps-flow"><span class="chip">i = lo−1 (wall)</span><span class="arrow">→</span><span class="chip">a[j] ≤ pivot? i++, swap(i,j)</span><span class="arrow">→</span><span class="chip">swap pivot to i+1</span></div>
+      <div class="oneliner">🔒 Keep forever: "Maintain a wall of small elements; slide the pivot onto it."</div>
+    </div>
+    <div class="bars" id="ptBars"></div>
+    <div class="status" id="ptStatus">Press play. i is the wall; pivot (last bar) lands in place.</div>
+    <div class="controls"><button class="btn" id="ptPlay">▶ Partition</button><button class="btn ghost" id="ptReset">↺ Reset</button><button class="btn pink" id="ptShuffle">🔀 Shuffle</button><span class="speed">🐢 <input type="range" id="ptSpeed" min="200" max="1800" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> in place = O(1) extra space. The returned index is the pivot's final, correct position.</div></div>
+    <pre><code><span class="kw">int</span> <span class="fn">partition</span>(a, lo, hi) {
+  <span class="kw">int</span> pivot = a[hi], i = lo - <span class="num">1</span>;
+  <span class="kw">for</span> (<span class="kw">int</span> j = lo; j &lt; hi; j++)
+    <span class="kw">if</span> (a[j] &lt;= pivot) { i++; swap(a, i, j); }
+  swap(a, i+<span class="num">1</span>, hi);
+  <span class="kw">return</span> i+<span class="num">1</span>;
+}</code></pre>
+  </section>
+
+  <!-- PARTITION APPLICATION -->
+  <section id="partapp">
+    <h2>🎯 Application of Partition (Quickselect) <span class="badge">O(n) avg</span></h2>
+    <p class="lead">Find the k-th smallest element <b>without fully sorting</b> — partition, then recurse into only one side.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Only chase the right room:</span> after a partition the pivot sits at its final rank. If that rank equals k, done. If k is smaller, the answer is entirely on the left — ignore the right half completely (and vice-versa). Discarding a whole side each time gives O(n) average.</div>
+      <div class="oneliner">🔒 Keep forever: "Partition, then recurse into only the side that contains k."</div>
+    </div>
+    <div class="bars" id="paBars"></div>
+    <div class="status" id="paStatus">Press play to find the k-th smallest (k=4).</div>
+    <div class="controls"><button class="btn" id="paPlay">▶ Quickselect k=4</button><button class="btn ghost" id="paReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="paSpeed" min="200" max="1800" value="900" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> avg O(n) since you halve the work each step (n + n/2 + n/4 + … = 2n). Worst O(n²) — use a random pivot.</div></div>
+    <pre><code><span class="kw">int</span> <span class="fn">quickselect</span>(a, lo, hi, k) {
+  <span class="kw">int</span> p = <span class="fn">partition</span>(a, lo, hi);
+  <span class="kw">if</span> (p == k) <span class="kw">return</span> a[p];
+  <span class="kw">return</span> (k &lt; p) ? <span class="fn">quickselect</span>(a, lo, p-<span class="num">1</span>, k)
+                : <span class="fn">quickselect</span>(a, p+<span class="num">1</span>, hi, k);
+}</code></pre>
+  </section>
+
+  <!-- COUNT SORT -->
+  <section id="countsort">
+    <h2>🪣 Counting Sort <span class="badge">O(n + k)</span></h2>
+    <p class="lead">No comparisons! Tally how many times each value appears, then read the tally back out in order.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sorting coins by tallying:</span> drop each coin into the bucket for its value. Then empty buckets left→right — the coins come out sorted. Works great when values live in a small known range.</div>
+      <div class="steps-flow"><span class="chip">count each value</span><span class="arrow">→</span><span class="chip">(prefix sums for positions)</span><span class="arrow">→</span><span class="chip">emit in order</span></div>
+      <div class="oneliner">🔒 Keep forever: "Count, then pour the buckets out in order — no comparisons."</div>
+    </div>
+    <div class="note">Sorting <code>[4,2,2,8,3,3,1]</code> (values 1–8) by tallying into buckets.</div>
+    <div class="cellrow" id="csrRow"></div>
+    <div class="buckets" id="csrBuckets"></div>
+    <div class="status" id="csrStatus">Press play. Fill buckets, then read them out sorted.</div>
+    <div class="controls"><button class="btn" id="csrPlay">▶ Count Sort</button><button class="btn ghost" id="csrReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="csrSpeed" min="200" max="2000" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> linear when k (value range) is small. Beats the O(n log n) comparison lower bound by not comparing. Stable with prefix sums.</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">int</span> x : a) count[x]++;              <span class="cm">// tally</span>
+<span class="kw">int</span> idx = <span class="num">0</span>;
+<span class="kw">for</span> (<span class="kw">int</span> v = <span class="num">0</span>; v &lt;= maxVal; v++)
+  <span class="kw">while</span> (count[v]-- &gt; <span class="num">0</span>) out[idx++] = v; <span class="cm">// pour out</span></code></pre>
+  </section>
+
+  <!-- RADIX SORT -->
+  <section id="radix">
+    <h2>🔢 Radix Sort <span class="badge">O(d·(n+k))</span></h2>
+    <p class="lead">Sort numbers digit by digit — least-significant first — using a <b>stable</b> counting sort each pass.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Sorting mail by ZIP digits:</span> first bucket by the last digit, gather, then by the tens digit, gather, then hundreds… Because each pass is <b>stable</b>, earlier-digit order is preserved. After the top digit, everything is sorted.</div>
+      <div class="steps-flow"><span class="chip">sort by 1's digit</span><span class="arrow">→</span><span class="chip">10's digit</span><span class="arrow">→</span><span class="chip">100's digit</span></div>
+      <div class="oneliner">🔒 Keep forever: "Stable-sort digit by digit, least significant first — order compounds."</div>
+    </div>
+    <div class="note">Sorting <code>[170,45,75,90,802,24,2,66]</code> one digit at a time.</div>
+    <div class="cellrow" id="rxRow"></div>
+    <div class="buckets" id="rxBuckets"></div>
+    <div class="status" id="rxStatus">Press play. Watch each digit pass reorder stably.</div>
+    <div class="controls"><button class="btn" id="rxPlay">▶ Radix Sort</button><button class="btn ghost" id="rxReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="rxSpeed" min="200" max="2000" value="1000" step="50"> 🐇</span></div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> stability of each digit pass is <b>essential</b> — it's what keeps earlier digits' order intact.</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">int</span> exp = <span class="num">1</span>; maxVal/exp &gt; <span class="num">0</span>; exp *= <span class="num">10</span>)
+  countingSortByDigit(a, exp); <span class="cm">// stable, on digit (x/exp)%10</span></code></pre>
+  </section>
+
+  <!-- LINEAR TIME -->
+  <section id="lineartime">
+    <h2>🚀 Sorting in Linear Time <span class="badge">Beyond n log n</span></h2>
+    <p class="lead">Comparison sorts can't beat O(n log n) — but counting, radix, and <b>bucket</b> sort dodge comparisons entirely.</p>
+    <div class="explain">
+      <h4>💡 Intuition</h4>
+      <div class="story"><span class="tag">Scatter &amp; gather:</span> spread values across buckets by range, sort each tiny bucket, then concatenate. When values are uniformly spread, buckets stay small → linear overall. Bucket sort is the idea behind sorting floats/decimals fast.</div>
+      <div class="oneliner">🔒 Keep forever: "If you can bucket by value/digit, you can sort without comparing — in linear time."</div>
+    </div>
+    <div class="note">Bucket-sorting decimals <code>[.42, .32, .75, .12, .68, .23]</code> into 6 range-buckets.</div>
+    <div class="cellrow" id="ltRow"></div>
+    <div class="buckets" id="ltBuckets"></div>
+    <div class="status" id="ltStatus">Press play. Scatter into buckets, sort each, gather.</div>
+    <div class="controls"><button class="btn" id="ltPlay">▶ Bucket Sort</button><button class="btn ghost" id="ltReset">↺ Reset</button><span class="speed">🐢 <input type="range" id="ltSpeed" min="200" max="2000" value="1000" step="50"> 🐇</span></div>
+    <div class="stats">
+      <span class="pill">Comparison sorts: Ω(n log n) lower bound</span>
+      <span class="pill blue">Counting / Radix / Bucket: O(n) when range/digits are small</span>
+    </div>
+    <div class="memhook"><span class="big">🧠</span><div><b>Never forget:</b> linear-time sorts trade generality for speed — they need extra assumptions (small integer range, fixed digits, or uniform spread).</div></div>
+    <pre><code><span class="kw">for</span> (<span class="kw">double</span> x : a) buckets[(<span class="kw">int</span>)(n*x)].add(x); <span class="cm">// scatter</span>
+<span class="kw">for</span> (bucket b : buckets) insertionSort(b);          <span class="cm">// tiny sorts</span>
+concatenate(buckets);                                <span class="cm">// gather sorted</span></code></pre>
+
+    <div class="note key">🏆 <b>You've mastered sorting!</b> Comparators decide order · O(n²) sorts teach the basics · merge &amp; quick give O(n log n) · counting/radix/bucket break the barrier · and the merge/partition/inversion tricks power dozens of real problems. If you can picture the bars swapping and pointers marching, no sorting question can surprise you. 🎯</div>
+  </section>
+
+</main>
+
+<footer>Sorting &amp; Comparators — Animated Guide • Replay any animation, shuffle the bars, turn on 🎵 sound • Learn by watching 🔁</footer>
+
+<script>
+/* ============ Utilities ============ */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const $ = s => document.querySelector(s);
+let ANIM = false; // one animation at a time
+
+/* Reveal on scroll */
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal'); }), { threshold: 0.1 });
+document.querySelectorAll('section').forEach(s => io.observe(s));
+
+/* ============ Audio (procedural, no files) ============ */
+let AC=null, master=null, soundEnabled=false, musicTimer=null, musicNodes=[];
+function ensureAudio(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=0.26; master.connect(AC.destination);} if(AC.state==='suspended')AC.resume(); }
+function blip(freq=520,dur=0.08,type='sine',vol=0.13){ if(!AC||!soundEnabled)return; const o=AC.createOscillator(),g=AC.createGain(); o.type=type;o.frequency.value=freq;o.connect(g);g.connect(master); const t=AC.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.start(t);o.stop(t+dur+0.03); }
+function tickSound(v){ blip(360 + (v||0)*6, 0.05, 'triangle', 0.06); }
+let lastChime=0;
+function chime(){ const now=performance.now(); if(now-lastChime<260){blip(880,0.14,'sine',0.07);return;} lastChime=now; [523.25,659.25,783.99,1046.5].forEach((f,i)=>setTimeout(()=>blip(f,0.32,'sine',0.12),i*80)); }
+function startMusic(){ ensureAudio(); const chord=[130.81,164.81,196.0,246.94]; chord.forEach((f,i)=>{ const o=AC.createOscillator(),g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain(); o.type='sine';o.frequency.value=f; g.gain.setValueAtTime(0.0001,AC.currentTime); g.gain.linearRampToValueAtTime(0.04,AC.currentTime+2.5); lfo.type='sine';lfo.frequency.value=0.05+i*0.015;lg.gain.value=2.5; lfo.connect(lg);lg.connect(o.frequency);o.connect(g);g.connect(master); o.start();lfo.start(); musicNodes.push(o,lfo);}); const arp=[523.25,659.25,783.99,1046.5,783.99,659.25]; let ai=0; musicTimer=setInterval(()=>{ if(soundEnabled) blip(arp[ai++%arp.length],0.5,'triangle',0.04); },1600); }
+function stopMusic(){ clearInterval(musicTimer);musicTimer=null; musicNodes.forEach(n=>{try{n.stop();}catch(e){}}); musicNodes=[]; }
+const soundBtn=$('#soundBtn');
+soundBtn.onclick=()=>{ if(!soundEnabled){ soundEnabled=true;ensureAudio();startMusic(); soundBtn.classList.remove('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🎵 Sound On'; chime(); } else { soundEnabled=false;stopMusic(); soundBtn.classList.add('off'); soundBtn.innerHTML='<span class="bars2"><i></i><i></i><i></i><i></i></span> 🔇 Sound Off'; } };
+
+/* ============ Confetti ============ */
+const cvs=$('#confetti'), cx=cvs.getContext('2d');
+function sizeCanvas(){ cvs.width=innerWidth; cvs.height=innerHeight; }
+sizeCanvas(); addEventListener('resize', sizeCanvas);
+let particles=[];
+function confettiAt(x,y){ const colors=['#4cc9f0','#f72585','#ffd166','#06d6a0','#b5179e','#fff']; for(let i=0;i<44;i++) particles.push({x,y,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-3,g:0.28,life:70+Math.random()*35,c:colors[i%colors.length],s:4+Math.random()*5,rot:Math.random()*6,vr:(Math.random()-0.5)*0.4}); }
+(function loop(){ cx.clearRect(0,0,cvs.width,cvs.height); for(const p of particles){ p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life--; cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=Math.max(0,Math.min(1,p.life/70));cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.55);cx.restore(); } particles=particles.filter(p=>p.life>0&&p.y<cvs.height+40); requestAnimationFrame(loop); })();
+function celebrate(el){ chime(); const r=el.getBoundingClientRect(); confettiAt(r.left+r.width/2, r.top+Math.min(r.height*0.4, innerHeight*0.4)); }
+
+/* ============ Bar visualization ============ */
+function barViz(container){
+  let bars=[];
+  function ensure(n){ if(bars.length!==n){ container.innerHTML=''; bars=[]; for(let i=0;i<n;i++){ const b=document.createElement('div'); b.className='bar'; const v=document.createElement('span'); v.className='bval'; b.appendChild(v); container.appendChild(b); bars.push(b);} } }
+  function render(arr,o={}){ ensure(arr.length); const max=Math.max(...arr,1); arr.forEach((val,i)=>{ const b=bars[i]; b.style.height=(24+(val/max)*180)+'px'; b.querySelector('.bval').textContent=val; b.className='bar'; if(o.sorted&&o.sorted.has(i))b.classList.add('sorted'); if(o.compare&&o.compare.includes(i))b.classList.add('compare'); if(o.swap&&o.swap.includes(i))b.classList.add('swap'); if(o.pivot===i)b.classList.add('pivot'); if(o.range&&i>=o.range[0]&&i<=o.range[1])b.classList.add('inrange'); if(o.ptr&&o.ptr[i]!=null)b.dataset.ptr=o.ptr[i]; else b.removeAttribute('data-ptr'); }); }
+  return { render };
+}
+/* ============ Cell visualization ============ */
+function cellViz(container){
+  let cells=[];
+  function ensure(n){ if(cells.length!==n){ container.innerHTML=''; cells=[]; for(let i=0;i<n;i++){ const c=document.createElement('div'); c.className='cell'; container.appendChild(c); cells.push(c);} } }
+  function render(arr,o={}){ ensure(arr.length); arr.forEach((v,i)=>{ const c=cells[i]; c.className='cell'; c.style.setProperty('--i',i); c.innerHTML = `${o.sub&&o.sub[i]!=null?`<span class="idx">${o.sub[i]}</span>`:''}${v}${o.ptr&&o.ptr[i]!=null?`<span class="ptr">${o.ptr[i]}</span>`:''}`; if(o.compare&&o.compare.includes(i))c.classList.add('mid'); if(o.swap&&o.swap.includes(i))c.classList.add('hi'); if(o.done&&o.done.has(i))c.classList.add('found'); if(o.active&&o.active.includes(i))c.classList.add('lo'); if(o.dead&&o.dead.has(i))c.classList.add('dead'); if(o.range&&i>=o.range[0]&&i<=o.range[1])c.classList.add('in-range'); }); }
+  return { render };
+}
+
+/* ============ Frame player ============ */
+async function playFrames(render, frames, speedEl, statusEl, container){
+  if(ANIM) return; ANIM=true;
+  for(const f of frames){ render(f.arr, f); if(f.msg && statusEl) statusEl.innerHTML=f.msg; if(f.compare||f.swap) tickSound(); await sleep(+speedEl.value); }
+  ANIM=false; if(container) celebrate(container);
+}
+const S=new Set();
+
+/* ================= 1. Stability ================= */
+(function(){
+  const viz=cellViz($('#stabRow')); const st=$('#stabStatus'); const sp=$('#stabSpeed');
+  const base=[{v:3,t:'a'},{v:1,t:'a'},{v:3,t:'b'},{v:2,t:'a'},{v:1,t:'b'}];
+  function labels(arr){ return arr.map(x=>x.v+x.t); }
+  function subs(arr){ return arr.map(()=>''); }
+  function build(){ viz.render(labels(base),{sub:subs(base)}); st.textContent='Press play to sort stably — ties keep their letters in order.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const n=a.length;
+    f.push({arr:labels(a),msg:'Stable insertion sort by number (letters = original order).'});
+    for(let i=1;i<n;i++){ let key=a[i], j=i-1;
+      f.push({arr:labels(a),compare:[i],msg:`Insert <span class="k">${key.v}${key.t}</span> into the sorted left.`});
+      while(j>=0 && a[j].v>key.v){ a[j+1]=a[j]; j--; f.push({arr:labels(a),compare:[j+1],msg:`Shift bigger ${a[j+1].v}${a[j+1].t} right.`}); }
+      a[j+1]=key; f.push({arr:labels(a),swap:[j+1],msg:`Placed ${key.v}${key.t}. Equal numbers keep a→b order (stable).`});
+    }
+    f.push({arr:labels(a),done:new Set(a.map((_,i)=>i)),msg:'✅ Sorted &amp; stable: 1a,1b,2a,3a,3b — ties never flipped!'});
+    return f;
+  }
+  $('#stabPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#stabRow'));
+  $('#stabReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 2. Custom comparators ================= */
+(function(){
+  const viz=cellViz($('#ccRow')); const st=$('#ccStatus'); const sp=$('#ccSpeed');
+  const base=['pear','fig','apple','kiwi','plum'];
+  const cmp=(a,b)=> a.length!==b.length ? a.length-b.length : (a<b?-1:a>b?1:0);
+  function build(){ viz.render(base,{}); st.textContent='Press play to sort by length, ties broken alphabetically.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const n=a.length;
+    f.push({arr:a.slice(),msg:'Sort by length, then A→Z.'});
+    for(let i=1;i<n;i++){ let key=a[i], j=i-1;
+      f.push({arr:a.slice(),compare:[i],msg:`Placing <span class="k">${key}</span> (len ${key.length}).`});
+      while(j>=0 && cmp(a[j],key)>0){ a[j+1]=a[j]; j--; f.push({arr:a.slice(),compare:[j+1]}); }
+      a[j+1]=key; f.push({arr:a.slice(),swap:[j+1],msg:`${key} slotted in.`});
+    }
+    f.push({arr:a.slice(),done:new Set(a.map((_,i)=>i)),msg:'✅ [fig, kiwi, pear, plum, apple] — length, then alphabetical.'});
+    return f;
+  }
+  $('#ccPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#ccRow'));
+  $('#ccReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 3. Custom sorting (objects) ================= */
+(function(){
+  const viz=cellViz($('#csRow')); const st=$('#csStatus'); const sp=$('#csSpeed');
+  const base=[{n:'Ravi',a:30},{n:'Anu',a:25},{n:'Zoe',a:25},{n:'Bo',a:30},{n:'Mel',a:22}];
+  const cmp=(p,q)=> p.a!==q.a ? p.a-q.a : (p.n<q.n?-1:p.n>q.n?1:0);
+  const lab=arr=>arr.map(x=>x.n+' ');
+  const sub=arr=>arr.map(x=>x.a);
+  function build(){ viz.render(lab(base),{sub:sub(base)}); st.textContent='Press play to sort people by (age, name).'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const n=a.length;
+    f.push({arr:lab(a),sub:sub(a),msg:'Sort by age (small number above), then name.'});
+    for(let i=1;i<n;i++){ let key=a[i], j=i-1;
+      f.push({arr:lab(a),sub:sub(a),compare:[i],msg:`Placing <span class="k">${key.n}</span> (age ${key.a}).`});
+      while(j>=0 && cmp(a[j],key)>0){ a[j+1]=a[j]; j--; f.push({arr:lab(a),sub:sub(a),compare:[j+1]}); }
+      a[j+1]=key; f.push({arr:lab(a),sub:sub(a),swap:[j+1]});
+    }
+    f.push({arr:lab(a),sub:sub(a),done:new Set(a.map((_,i)=>i)),msg:'✅ Mel22, Anu25, Zoe25, Bo30, Ravi30 — age then name.'});
+    return f;
+  }
+  $('#csPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#csRow'));
+  $('#csReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 4. Insertion sort ================= */
+(function(){
+  const viz=barViz($('#insBars')); const st=$('#insStatus'); const sp=$('#insSpeed');
+  let base=[5,2,8,1,9,3,7,4];
+  function build(){ viz.render(base,{}); st.textContent='Press play. Left region stays sorted and grows.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const n=a.length; const sorted=new Set([0]);
+    f.push({arr:a.slice(),sorted:new Set(sorted),msg:'a[0] alone is sorted.'});
+    for(let i=1;i<n;i++){ let key=a[i], j=i-1;
+      f.push({arr:a.slice(),compare:[i],sorted:new Set(sorted),msg:`Take key <span class="k">${key}</span>.`});
+      while(j>=0 && a[j]>key){ a[j+1]=a[j]; f.push({arr:a.slice(),swap:[j,j+1],sorted:new Set(sorted),msg:`Shift ${a[j+1]} right.`}); j--; }
+      a[j+1]=key; sorted.add(i); f.push({arr:a.slice(),sorted:new Set(sorted),msg:`Dropped ${key} in place.`});
+    }
+    f.push({arr:a.slice(),sorted:new Set(a.map((_,i)=>i)),msg:'✅ Sorted!'});
+    return f;
+  }
+  $('#insPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#insBars'));
+  $('#insReset').onclick=()=>{ if(!ANIM) build(); };
+  $('#insShuffle').onclick=()=>{ if(!ANIM){ base=shuffle(8); build(); } };
+})();
+
+/* ================= 5. Bubble sort ================= */
+(function(){
+  const viz=barViz($('#bubBars')); const st=$('#bubStatus'); const sp=$('#bubSpeed');
+  let base=[5,2,8,1,9,3,7,4];
+  function build(){ viz.render(base,{}); st.textContent='Press play. Largest bubbles to the right each pass.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const n=a.length; const sorted=new Set();
+    for(let i=0;i<n-1;i++){ let swapped=false;
+      for(let j=0;j<n-1-i;j++){ f.push({arr:a.slice(),compare:[j,j+1],sorted:new Set(sorted),msg:`Compare ${a[j]} &amp; ${a[j+1]}.`});
+        if(a[j]>a[j+1]){ [a[j],a[j+1]]=[a[j+1],a[j]]; swapped=true; f.push({arr:a.slice(),swap:[j,j+1],sorted:new Set(sorted),msg:`Swap → bigger floats right.`}); } }
+      sorted.add(n-1-i); if(!swapped){ for(let k=0;k<n-i;k++) sorted.add(k); break; }
+    }
+    sorted.add(0); f.push({arr:a.slice(),sorted:new Set(a.map((_,i)=>i)),msg:'✅ Sorted!'});
+    return f;
+  }
+  $('#bubPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#bubBars'));
+  $('#bubReset').onclick=()=>{ if(!ANIM) build(); };
+  $('#bubShuffle').onclick=()=>{ if(!ANIM){ base=shuffle(8); build(); } };
+})();
+
+/* ================= 6. Absolute values ================= */
+(function(){
+  const viz=cellViz($('#absRow')); const st=$('#absStatus'); const sp=$('#absSpeed');
+  const base=[-7,2,-3,5,-1,4];
+  const cmp=(x,y)=>Math.abs(x)-Math.abs(y);
+  function build(){ viz.render(base,{}); st.textContent='Press play to sort by |value| (closest to 0 first).'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const n=a.length;
+    f.push({arr:a.slice(),msg:'Compare by distance from 0 = |x|.'});
+    for(let i=1;i<n;i++){ let key=a[i], j=i-1;
+      f.push({arr:a.slice(),compare:[i],msg:`Place <span class="k">${key}</span> (|${key}|=${Math.abs(key)}).`});
+      while(j>=0 && cmp(a[j],key)>0){ a[j+1]=a[j]; j--; f.push({arr:a.slice(),compare:[j+1]}); }
+      a[j+1]=key; f.push({arr:a.slice(),swap:[j+1]});
+    }
+    f.push({arr:a.slice(),done:new Set(a.map((_,i)=>i)),msg:'✅ [-1,2,-3,4,5,-7] — sorted by magnitude.'});
+    return f;
+  }
+  $('#absPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#absRow'));
+  $('#absReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 7. Solve equations (two pointers) ================= */
+(function(){
+  const viz=cellViz($('#eqRow')); const st=$('#eqStatus'); const sp=$('#eqSpeed');
+  const a=[1,3,4,6,8,10,13]; const target=14;
+  function build(){ viz.render(a,{}); st.textContent='Press play. l and r converge to the pair.'; }
+  build();
+  function frames(){
+    const f=[]; let l=0,r=a.length-1;
+    while(l<r){ const s=a[l]+a[r]; const ptr={}; ptr[l]='l'; ptr[r]='r';
+      f.push({arr:a.slice(),ptr,compare:[l,r],msg:`a[l]+a[r] = ${a[l]}+${a[r]} = <span class="k">${s}</span> vs ${target}`});
+      if(s===target){ const done=new Set([l,r]); f.push({arr:a.slice(),ptr,done,msg:`🎉 Found ${a[l]} + ${a[r]} = ${target}!`}); return f; }
+      else if(s<target){ f.push({arr:a.slice(),ptr,msg:`${s} &lt; ${target} → move l right.`}); l++; }
+      else { f.push({arr:a.slice(),ptr,msg:`${s} &gt; ${target} → move r left.`}); r--; }
+    }
+    f.push({arr:a.slice(),msg:'No pair found.'}); return f;
+  }
+  $('#eqPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#eqRow'));
+  $('#eqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 8. Next permutation ================= */
+(function(){
+  const viz=cellViz($('#npRow')); const st=$('#npStatus'); const sp=$('#npSpeed');
+  const base=[1,3,5,4,2];
+  function build(){ viz.render(base,{}); st.textContent='Press play to compute the next permutation.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const n=a.length;
+    let i=n-2; while(i>=0 && a[i]>=a[i+1]){ f.push({arr:a.slice(),compare:[i,i+1],msg:`a[${i}]=${a[i]} ≥ a[${i+1}]=${a[i+1]} → keep scanning left.`}); i--; }
+    if(i>=0){ f.push({arr:a.slice(),active:[i],msg:`Dip found at i=${i} (value ${a[i]}). Find its smallest bigger on the right.`});
+      let j=n-1; while(a[j]<=a[i]){ f.push({arr:a.slice(),active:[i],compare:[j],msg:`a[${j}]=${a[j]} ≤ ${a[i]} → move left.`}); j--; }
+      f.push({arr:a.slice(),active:[i],compare:[j],msg:`Swap pivot ${a[i]} with successor ${a[j]}.`});
+      [a[i],a[j]]=[a[j],a[i]]; f.push({arr:a.slice(),swap:[i],msg:`Swapped. Now reverse the suffix after i.`});
+    }
+    let l=i+1,r=n-1; while(l<r){ [a[l],a[r]]=[a[r],a[l]]; f.push({arr:a.slice(),swap:[l,r],range:[i+1,n-1],msg:`Reverse suffix → make it smallest.`}); l++; r--; }
+    f.push({arr:a.slice(),done:new Set(a.map((_,k)=>k)),msg:'✅ Next permutation: [1, 4, 2, 3, 5]'});
+    return f;
+  }
+  $('#npPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#npRow'));
+  $('#npReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 9. Max index diff ================= */
+(function(){
+  const viz=cellViz($('#idRow')); const st=$('#idStatus'); const sp=$('#idSpeed');
+  const a=[34,8,10,3,2,80,30,33,1]; const n=a.length;
+  function build(){ viz.render(a,{}); st.textContent='Press play. LMin/RMax pointers widen the valid span.'; }
+  build();
+  function frames(){
+    const f=[]; const LMin=[],RMax=[];
+    LMin[0]=a[0]; for(let i=1;i<n;i++) LMin[i]=Math.min(LMin[i-1],a[i]);
+    RMax[n-1]=a[n-1]; for(let j=n-2;j>=0;j--) RMax[j]=Math.max(RMax[j+1],a[j]);
+    let i=0,j=0,best=0,bi=0,bj=0;
+    while(i<n && j<n){ const ptr={}; ptr[i]=(i===j?'i,j':'i'); if(i!==j) ptr[j]='j';
+      f.push({arr:a.slice(),ptr,range:[i,j],msg:`LMin[i]=${LMin[i]} vs RMax[j]=${RMax[j]}`});
+      if(LMin[i]<=RMax[j]){ if(j-i>best){best=j-i;bi=i;bj=j;} f.push({arr:a.slice(),ptr,range:[i,j],msg:`valid (≤) → span ${j-i}. Widen j.`}); j++; }
+      else { f.push({arr:a.slice(),ptr,msg:`LMin[i] &gt; RMax[j] → advance i.`}); i++; }
+    }
+    const done=new Set([bi,bj]); f.push({arr:a.slice(),done,msg:`🎯 Max index diff = <span class="k">${best}</span> (i=${bi}, j=${bj}).`});
+    return f;
+  }
+  $('#idPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#idRow'));
+  $('#idReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 10. Smallest subarray ================= */
+(function(){
+  const viz=cellViz($('#ssRow')); const st=$('#ssStatus'); const sp=$('#ssSpeed');
+  const a=[2,6,4,8,10,9,15]; const n=a.length;
+  function build(){ viz.render(a,{}); st.textContent='Press play to find the shortest unsorted window.'; }
+  build();
+  function frames(){
+    const f=[]; let l=0,r=n-1;
+    while(l<n-1 && a[l]<=a[l+1]){ f.push({arr:a.slice(),compare:[l,l+1],msg:`Left ok: ${a[l]}≤${a[l+1]}.`}); l++; }
+    while(r>0 && a[r]>=a[r-1]){ f.push({arr:a.slice(),compare:[r-1,r],msg:`Right ok: ${a[r-1]}≤${a[r]}.`}); r--; }
+    if(l>=r){ f.push({arr:a.slice(),done:new Set(a.map((_,i)=>i)),msg:'Already sorted — window length 0.'}); return f; }
+    let mn=Infinity,mx=-Infinity; for(let k=l;k<=r;k++){ mn=Math.min(mn,a[k]); mx=Math.max(mx,a[k]); }
+    f.push({arr:a.slice(),range:[l,r],msg:`Dip window [${l}..${r}], min=${mn}, max=${mx}. Now extend.`});
+    while(l>0 && a[l-1]>mn){ l--; f.push({arr:a.slice(),range:[l,r],msg:`a[${l}]=${a[l]} &gt; min ${mn} → extend left.`}); }
+    while(r<n-1 && a[r+1]<mx){ r++; f.push({arr:a.slice(),range:[l,r],msg:`a[${r}]=${a[r]} &lt; max ${mx} → extend right.`}); }
+    const done=new Set(); for(let k=l;k<=r;k++) done.add(k);
+    f.push({arr:a.slice(),done,msg:`🎯 Smallest window = [${l}..${r}], length <span class="k">${r-l+1}</span>.`});
+    return f;
+  }
+  $('#ssPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#ssRow'));
+  $('#ssReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 11. Range queries (difference array) ================= */
+(function(){
+  const viz=cellViz($('#rqRow')); const st=$('#rqStatus'); const sp=$('#rqSpeed');
+  const n=6; const queries=[[1,3,5],[2,5,3],[0,1,2]];
+  function build(){ viz.render(Array(n).fill(0),{}); st.textContent='Press play. Mark edges, then sweep to totals.'; }
+  build();
+  function frames(){
+    const f=[]; const diff=Array(n+1).fill(0);
+    for(const [l,r,v] of queries){
+      diff[l]+=v; f.push({arr:diff.slice(0,n),active:[l],msg:`Query +${v} on [${l}..${r}] → diff[${l}] += ${v}.`});
+      if(r+1<n){ diff[r+1]-=v; f.push({arr:diff.slice(0,n),active:[r+1],msg:`diff[${r+1}] -= ${v} (stop the add).`}); }
+      else f.push({arr:diff.slice(0,n),msg:`(range reaches the end, no −${v} needed).`});
+    }
+    const out=diff.slice(0,n);
+    f.push({arr:out.slice(),msg:'Edge markers placed. Now one prefix-sum sweep →'});
+    for(let i=1;i<n;i++){ out[i]+=out[i-1]; f.push({arr:out.slice(),compare:[i],ptr:{[i]:'+'},msg:`out[${i}] += out[${i-1}] = ${out[i]}.`}); }
+    f.push({arr:out.slice(),done:new Set(out.map((_,i)=>i)),msg:'✅ Final array = [2, 4, 5, 5, 3, 3]'});
+    return f;
+  }
+  $('#rqPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#rqRow'));
+  $('#rqReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 12. Special election (Boyer-Moore) ================= */
+(function(){
+  const viz=cellViz($('#elRow')); const st=$('#elStatus'); const sp=$('#elSpeed');
+  const a=[2,2,1,1,1,2,2];
+  function build(){ viz.render(a,{}); st.textContent='Press play. Candidate + count survive the cancellations.'; }
+  build();
+  function frames(){
+    const f=[]; let cand=null,count=0;
+    for(let i=0;i<a.length;i++){ let msg;
+      if(count===0){ cand=a[i]; count=1; msg=`count 0 → new candidate <span class="k">${cand}</span> (count=1).`; }
+      else if(a[i]===cand){ count++; msg=`${a[i]} matches ${cand} → count=${count}.`; }
+      else { count--; msg=`${a[i]} ≠ ${cand} → cancel, count=${count}.`; }
+      const done=new Set(); for(let k=0;k<=i;k++) if(a[k]===cand) done.add(k);
+      f.push({arr:a.slice(),active:[i],done,ptr:{[i]:`cand=${cand},cnt=${count}`},msg});
+    }
+    const done=new Set(); a.forEach((x,i)=>{ if(x===cand) done.add(i); });
+    f.push({arr:a.slice(),done,msg:`🗳️ Winner (majority) = <span class="k">${cand}</span>!`});
+    return f;
+  }
+  $('#elPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#elRow'));
+  $('#elReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 13. Merge process ================= */
+(function(){
+  const A=[1,4,7,8], B=[2,3,9];
+  const va=cellViz($('#mgA')), vb=cellViz($('#mgB')), vo=cellViz($('#mgOut'));
+  const st=$('#mgStatus'), sp=$('#mgSpeed');
+  function build(){ va.render(A,{}); vb.render(B,{}); vo.render([],{}); st.textContent='Press play. The smaller front always moves to output.'; }
+  build();
+  async function play(){
+    if(ANIM) return; ANIM=true; build();
+    let i=0,j=0; const out=[];
+    while(i<A.length && j<B.length){
+      va.render(A,{ptr:{[i]:'i'},compare:[i]}); vb.render(B,{ptr:{[j]:'j'},compare:[j]}); vo.render(out,{});
+      st.innerHTML=`Compare fronts ${A[i]} &amp; ${B[j]} → take smaller.`; await sleep(+sp.value);
+      if(A[i]<=B[j]){ out.push(A[i]); i++; } else { out.push(B[j]); j++; }
+      vo.render(out,{done:new Set([out.length-1])}); tickSound(); await sleep(+sp.value*0.6);
+    }
+    while(i<A.length){ out.push(A[i++]); vo.render(out,{done:new Set([out.length-1])}); await sleep(+sp.value*0.5); }
+    while(j<B.length){ out.push(B[j++]); vo.render(out,{done:new Set([out.length-1])}); await sleep(+sp.value*0.5); }
+    va.render(A,{}); vb.render(B,{}); vo.render(out,{done:new Set(out.map((_,k)=>k))});
+    st.innerHTML='✅ Merged: [1, 2, 3, 4, 7, 8, 9]'; ANIM=false; celebrate($('#mgOut'));
+  }
+  $('#mgPlay').onclick=play;
+  $('#mgReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 14. Merge application (union/intersection) ================= */
+(function(){
+  const A=[1,3,4,6,8], B=[2,3,6,7];
+  const va=cellViz($('#maA')), vb=cellViz($('#maB'));
+  const st=$('#maStatus'), sp=$('#maSpeed'), stats=$('#maStats');
+  function build(){ va.render(A,{}); vb.render(B,{}); stats.innerHTML=''; st.textContent='Press play to compute union & intersection.'; }
+  build();
+  async function play(){
+    if(ANIM) return; ANIM=true; build();
+    let i=0,j=0; const uni=[],both=[];
+    const show=()=>{ stats.innerHTML=`<span class="pill blue">∪ union: [${uni.join(', ')}]</span><span class="pill green">∩ intersection: [${both.join(', ')}]</span>`; };
+    while(i<A.length && j<B.length){
+      va.render(A,{ptr:{[i]:'i'},compare:[i]}); vb.render(B,{ptr:{[j]:'j'},compare:[j]});
+      if(A[i]===B[j]){ uni.push(A[i]); both.push(A[i]); st.innerHTML=`${A[i]} = ${B[j]} → in BOTH.`; i++; j++; }
+      else if(A[i]<B[j]){ uni.push(A[i]); st.innerHTML=`${A[i]} &lt; ${B[j]} → union, advance i.`; i++; }
+      else { uni.push(B[j]); st.innerHTML=`${B[j]} &lt; ${A[i]} → union, advance j.`; j++; }
+      show(); tickSound(); await sleep(+sp.value);
+    }
+    while(i<A.length){ uni.push(A[i++]); show(); await sleep(+sp.value*0.5); }
+    while(j<B.length){ uni.push(B[j++]); show(); await sleep(+sp.value*0.5); }
+    va.render(A,{}); vb.render(B,{}); st.innerHTML='✅ Union & intersection complete.'; ANIM=false; celebrate($('#maA'));
+  }
+  $('#maPlay').onclick=play;
+  $('#maReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 15. Merge sort (bottom-up) ================= */
+(function(){
+  const viz=barViz($('#msBars')); const st=$('#msStatus'); const sp=$('#msSpeed');
+  let base=[5,2,8,1,9,3,7,4];
+  function build(){ viz.render(base,{}); st.textContent='Press play. Watch sorted blocks double in width each level.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const n=a.length;
+    f.push({arr:a.slice(),msg:'Bottom-up: each single element is already sorted.'});
+    for(let w=1; w<n; w*=2){
+      for(let lo=0; lo<n; lo+=2*w){
+        const mid=Math.min(lo+w-1,n-1), hi=Math.min(lo+2*w-1,n-1);
+        if(mid>=hi) continue;
+        f.push({arr:a.slice(),range:[lo,hi],msg:`Merge sorted blocks [${lo}..${mid}] &amp; [${mid+1}..${hi}] (width ${w}).`});
+        const merged=[]; let i=lo,j=mid+1;
+        while(i<=mid && j<=hi) merged.push(a[i]<=a[j]?a[i++]:a[j++]);
+        while(i<=mid) merged.push(a[i++]); while(j<=hi) merged.push(a[j++]);
+        for(let k=0;k<merged.length;k++) a[lo+k]=merged[k];
+        f.push({arr:a.slice(),range:[lo,hi],compare:[...Array(hi-lo+1)].map((_,x)=>lo+x),msg:`Block [${lo}..${hi}] now sorted.`});
+      }
+    }
+    f.push({arr:a.slice(),sorted:new Set(a.map((_,i)=>i)),msg:'✅ Fully sorted in O(n log n)!'});
+    return f;
+  }
+  $('#msPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#msBars'));
+  $('#msReset').onclick=()=>{ if(!ANIM) build(); };
+  $('#msShuffle').onclick=()=>{ if(!ANIM){ base=shuffle(8); build(); } };
+})();
+
+/* ================= 16. Count inversions ================= */
+(function(){
+  const viz=cellViz($('#invRow')); const st=$('#invStatus'); const sp=$('#invSpeed'); const stats=$('#invStats');
+  const base=[8,4,2,1];
+  function build(){ viz.render(base,{}); stats.innerHTML=''; st.textContent='Press play. Counter rises as out-of-order pairs are found.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; let inv=0; const n=a.length;
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+      const bad=a[i]>a[j];
+      f.push({arr:a.slice(),compare:[i,j],ptr:{[i]:'i',[j]:'j'},msg:`(${a[i]}, ${a[j]}) → ${bad?'inversion! +1':'ok'}`,_inv:inv+(bad?1:0)});
+      if(bad) inv++;
+    }
+    f.forEach(fr=>{ if(fr._inv!=null){} });
+    const last={arr:a.slice(),done:new Set(a.map((_,i)=>i)),msg:`🔁 Total inversions = <span class="k">${inv}</span> (fully reversed → max).`,_inv:inv};
+    f.push(last);
+    // attach running counter via msg is enough; update stats through wrapper
+    return f.map(fr=>({...fr, _stats:`<span class="pill">inversions so far: ${fr._inv??0}</span>`}));
+  }
+  async function play(){
+    if(ANIM) return; ANIM=true; build();
+    for(const fr of frames()){ viz.render(fr.arr,fr); st.innerHTML=fr.msg; stats.innerHTML=fr._stats||''; if(fr.compare) tickSound(); await sleep(+sp.value); }
+    ANIM=false; celebrate($('#invRow'));
+  }
+  $('#invPlay').onclick=play;
+  $('#invReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 17. Inversion application (min adjacent swaps) ================= */
+(function(){
+  const viz=barViz($('#iaBars')); const st=$('#iaStatus'); const sp=$('#iaSpeed'); const stats=$('#iaStats');
+  const base=[3,1,2];
+  function build(){ viz.render(base,{}); stats.innerHTML=''; st.textContent='Press play. Swap counter equals the inversion count.'; }
+  build();
+  async function play(){
+    if(ANIM) return; ANIM=true; build();
+    const a=base.slice(); const n=a.length; let swaps=0; const sorted=new Set();
+    for(let i=0;i<n-1;i++){ for(let j=0;j<n-1-i;j++){
+      viz.render(a,{compare:[j,j+1],sorted:new Set(sorted)}); st.innerHTML=`Compare ${a[j]} &amp; ${a[j+1]}.`; await sleep(+sp.value);
+      if(a[j]>a[j+1]){ [a[j],a[j+1]]=[a[j+1],a[j]]; swaps++; viz.render(a,{swap:[j,j+1],sorted:new Set(sorted)}); stats.innerHTML=`<span class="pill green">adjacent swaps = ${swaps}</span>`; st.innerHTML=`Swap → kills one inversion.`; tickSound(); await sleep(+sp.value); }
+    } sorted.add(n-1-i); }
+    sorted.add(0); viz.render(a,{sorted:new Set(a.map((_,i)=>i))});
+    stats.innerHTML=`<span class="pill green">min adjacent swaps = inversions = ${swaps}</span>`;
+    st.innerHTML=`✅ Sorted with exactly <span class="k">${swaps}</span> swaps = inversion count.`; ANIM=false; celebrate($('#iaBars'));
+  }
+  $('#iaPlay').onclick=play;
+  $('#iaReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 18. Quick sort ================= */
+(function(){
+  const viz=barViz($('#qsBars')); const st=$('#qsStatus'); const sp=$('#qsSpeed');
+  let base=[5,2,8,1,9,3,7,4];
+  function build(){ viz.render(base,{}); st.textContent='Press play. Pink = pivot landing in its final place.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const sorted=new Set();
+    function part(lo,hi){ const pivot=a[hi]; let i=lo-1;
+      f.push({arr:a.slice(),pivot:hi,range:[lo,hi],sorted:new Set(sorted),msg:`Partition [${lo}..${hi}], pivot=<span class="k">${pivot}</span>.`});
+      for(let j=lo;j<hi;j++){ f.push({arr:a.slice(),pivot:hi,compare:[j],range:[lo,hi],sorted:new Set(sorted),msg:`Is ${a[j]} ≤ pivot ${pivot}?`});
+        if(a[j]<=pivot){ i++; if(i!==j){ [a[i],a[j]]=[a[j],a[i]]; f.push({arr:a.slice(),pivot:hi,swap:[i,j],range:[lo,hi],sorted:new Set(sorted),msg:`Yes → swap into small region.`}); } } }
+      [a[i+1],a[hi]]=[a[hi],a[i+1]]; f.push({arr:a.slice(),swap:[i+1,hi],sorted:new Set(sorted),msg:`Place pivot at ${i+1} (final spot).`});
+      sorted.add(i+1); return i+1;
+    }
+    function qs(lo,hi){ if(lo>hi) return; if(lo===hi){ sorted.add(lo); return; } const p=part(lo,hi); qs(lo,p-1); qs(p+1,hi); }
+    qs(0,a.length-1);
+    f.push({arr:a.slice(),sorted:new Set(a.map((_,i)=>i)),msg:'✅ Sorted in place!'});
+    return f;
+  }
+  $('#qsPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#qsBars'));
+  $('#qsReset').onclick=()=>{ if(!ANIM) build(); };
+  $('#qsShuffle').onclick=()=>{ if(!ANIM){ base=shuffle(8); build(); } };
+})();
+
+/* ================= 19. Partition (single) ================= */
+(function(){
+  const viz=barViz($('#ptBars')); const st=$('#ptStatus'); const sp=$('#ptSpeed');
+  let base=[7,2,9,4,3,8,1,6];
+  function build(){ viz.render(base,{pivot:base.length-1}); st.textContent='Press play. i is the wall; pivot (last bar) lands in place.'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; const hi=a.length-1; const pivot=a[hi]; let i=-1;
+    f.push({arr:a.slice(),pivot:hi,msg:`Pivot = <span class="k">${pivot}</span> (last). Wall i starts left of the array.`});
+    for(let j=0;j<hi;j++){ const ptr={[j]:'j'}; if(i>=0) ptr[i]='i';
+      f.push({arr:a.slice(),pivot:hi,compare:[j],ptr,msg:`a[j]=${a[j]} ≤ pivot ${pivot}?`});
+      if(a[j]<=pivot){ i++; if(i!==j){ [a[i],a[j]]=[a[j],a[i]]; } const p2={[j]:'j',[i]:'i'}; f.push({arr:a.slice(),pivot:hi,swap:[i,j],ptr:p2,msg:`Yes → push across wall, i=${i}.`}); }
+      else f.push({arr:a.slice(),pivot:hi,ptr,msg:`No → leave it, wall stays.`});
+    }
+    [a[i+1],a[hi]]=[a[hi],a[i+1]]; f.push({arr:a.slice(),swap:[i+1,hi],msg:`Drop pivot onto the wall → index ${i+1}.`});
+    const done=new Set([i+1]); f.push({arr:a.slice(),sorted:done,range:[0,i],msg:`✂️ Pivot ${pivot} is home at ${i+1}. Left ≤ pivot ≤ right.`});
+    return f;
+  }
+  $('#ptPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#ptBars'));
+  $('#ptReset').onclick=()=>{ if(!ANIM) build(); };
+  $('#ptShuffle').onclick=()=>{ if(!ANIM){ base=shuffle(8); build(); } };
+})();
+
+/* ================= 20. Partition application (quickselect) ================= */
+(function(){
+  const viz=barViz($('#paBars')); const st=$('#paStatus'); const sp=$('#paSpeed');
+  let base=[7,2,9,4,3,8,1,6]; const k=3; // 0-indexed 4th smallest
+  function build(){ viz.render(base,{}); st.textContent='Press play to find the k-th smallest (k=4).'; }
+  build();
+  function frames(){
+    const a=base.slice(); const f=[]; let lo=0,hi=a.length-1; const dead=new Set();
+    function part(lo,hi){ const pivot=a[hi]; let i=lo-1;
+      f.push({arr:a.slice(),pivot:hi,range:[lo,hi],msg:`Partition [${lo}..${hi}], pivot ${pivot}.`});
+      for(let j=lo;j<hi;j++){ if(a[j]<=pivot){ i++; if(i!==j)[a[i],a[j]]=[a[j],a[i]]; f.push({arr:a.slice(),pivot:hi,swap:[i,j],range:[lo,hi],msg:`${a[i]} ≤ pivot → move left.`}); } }
+      [a[i+1],a[hi]]=[a[hi],a[i+1]]; f.push({arr:a.slice(),swap:[i+1,hi],range:[lo,hi],msg:`Pivot lands at ${i+1}.`}); return i+1;
+    }
+    while(true){ const p=part(lo,hi);
+      if(p===k){ f.push({arr:a.slice(),sorted:new Set([p]),msg:`🎯 k-th smallest (k=${k+1}th) = <span class="k">${a[p]}</span>!`}); break; }
+      else if(k<p){ for(let x=p;x<=hi;x++) dead.add(x); f.push({arr:a.slice(),range:[lo,p-1],msg:`k &lt; ${p} → answer on LEFT, discard right.`}); hi=p-1; }
+      else { for(let x=lo;x<=p;x++) dead.add(x); f.push({arr:a.slice(),range:[p+1,hi],msg:`k &gt; ${p} → answer on RIGHT, discard left.`}); lo=p+1; }
+    }
+    return f;
+  }
+  $('#paPlay').onclick=()=>playFrames(viz.render,frames(),sp,st,$('#paBars'));
+  $('#paReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 21. Counting sort ================= */
+(function(){
+  const viz=cellViz($('#csrRow')); const bx=$('#csrBuckets'); const st=$('#csrStatus'); const sp=$('#csrSpeed');
+  const base=[4,2,2,8,3,3,1]; const maxV=8;
+  function drawBuckets(count,activeV){ bx.innerHTML=''; for(let v=1;v<=maxV;v++){ const d=document.createElement('div'); d.className='bucket'+(v===activeV?' active':''); d.innerHTML=`<div class="bk">${v}</div><div class="items">${'<div class="it">•</div>'.repeat(count[v]||0)}</div>`; bx.appendChild(d);} }
+  function build(){ viz.render(base,{}); drawBuckets({}); st.textContent='Press play. Fill buckets, then read them out sorted.'; }
+  build();
+  async function play(){
+    if(ANIM) return; ANIM=true; build();
+    const count={};
+    for(let i=0;i<base.length;i++){ const v=base[i]; count[v]=(count[v]||0)+1; viz.render(base,{compare:[i]}); drawBuckets(count,v); st.innerHTML=`Tally ${v} → bucket[${v}] = ${count[v]}.`; tickSound(); await sleep(+sp.value); }
+    st.innerHTML='Now pour buckets out left→right:'; await sleep(+sp.value);
+    const out=[]; for(let v=1;v<=maxV;v++){ while((count[v]||0)>0){ out.push(v); count[v]--; viz.render(out,{done:new Set([out.length-1])}); drawBuckets(count,v); st.innerHTML=`Emit ${v}.`; tickSound(); await sleep(+sp.value*0.7); } }
+    viz.render(out,{done:new Set(out.map((_,i)=>i))}); st.innerHTML='✅ Sorted: [1, 2, 2, 3, 3, 4, 8]'; ANIM=false; celebrate($('#csrRow'));
+  }
+  $('#csrPlay').onclick=play;
+  $('#csrReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 22. Radix sort ================= */
+(function(){
+  const viz=cellViz($('#rxRow')); const bx=$('#rxBuckets'); const st=$('#rxStatus'); const sp=$('#rxSpeed');
+  const base=[170,45,75,90,802,24,2,66];
+  function drawBuckets(buckets,active){ bx.innerHTML=''; for(let d=0;d<10;d++){ const el=document.createElement('div'); el.className='bucket'+(d===active?' active':''); el.innerHTML=`<div class="bk">${d}</div><div class="items">${buckets[d].map(x=>`<div class="it">${x}</div>`).join('')}</div>`; bx.appendChild(el);} }
+  function build(){ viz.render(base,{}); const empty=Array.from({length:10},()=>[]); drawBuckets(empty,-1); st.textContent='Press play. Watch each digit pass reorder stably.'; }
+  build();
+  async function play(){
+    if(ANIM) return; ANIM=true; build();
+    let a=base.slice(); const max=Math.max(...a);
+    for(let exp=1; Math.floor(max/exp)>0; exp*=10){
+      const buckets=Array.from({length:10},()=>[]);
+      st.innerHTML=`Pass on the ${exp===1?'1s':exp===10?'10s':'100s'} digit.`; await sleep(+sp.value);
+      for(let i=0;i<a.length;i++){ const d=Math.floor(a[i]/exp)%10; buckets[d].push(a[i]); viz.render(a,{compare:[i]}); drawBuckets(buckets,d); st.innerHTML=`${a[i]} → digit ${d} bucket.`; tickSound(); await sleep(+sp.value*0.8); }
+      a=[].concat(...buckets); viz.render(a,{}); drawBuckets(buckets,-1); st.innerHTML=`Gather buckets 0→9 (stable). Array now: [${a.join(', ')}]`; await sleep(+sp.value); }
+    viz.render(a,{done:new Set(a.map((_,i)=>i))}); st.innerHTML='✅ Sorted: [2, 24, 45, 66, 75, 90, 170, 802]'; ANIM=false; celebrate($('#rxRow'));
+  }
+  $('#rxPlay').onclick=play;
+  $('#rxReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ================= 23. Bucket sort (linear time) ================= */
+(function(){
+  const viz=cellViz($('#ltRow')); const bx=$('#ltBuckets'); const st=$('#ltStatus'); const sp=$('#ltSpeed');
+  const base=[0.42,0.32,0.75,0.12,0.68,0.23]; const n=base.length;
+  function drawBuckets(buckets,active){ bx.innerHTML=''; for(let d=0;d<n;d++){ const el=document.createElement('div'); el.className='bucket'+(d===active?' active':''); el.innerHTML=`<div class="bk">${(d/n).toFixed(2)}+</div><div class="items">${buckets[d].map(x=>`<div class="it">${x}</div>`).join('')}</div>`; bx.appendChild(el);} }
+  function build(){ viz.render(base.map(x=>x.toFixed(2)),{}); drawBuckets(Array.from({length:n},()=>[]),-1); st.textContent='Press play. Scatter into buckets, sort each, gather.'; }
+  build();
+  async function play(){
+    if(ANIM) return; ANIM=true; build();
+    const buckets=Array.from({length:n},()=>[]);
+    for(let i=0;i<n;i++){ const b=Math.min(n-1,Math.floor(n*base[i])); buckets[b].push(base[i]); viz.render(base.map(x=>x.toFixed(2)),{compare:[i]}); drawBuckets(buckets,b); st.innerHTML=`${base[i].toFixed(2)} → bucket ${b} (scatter).`; tickSound(); await sleep(+sp.value); }
+    for(let b=0;b<n;b++){ buckets[b].sort((x,y)=>x-y); drawBuckets(buckets,b); if(buckets[b].length){ st.innerHTML=`Sort bucket ${b}.`; await sleep(+sp.value*0.6); } }
+    const out=[].concat(...buckets); viz.render(out.map(x=>x.toFixed(2)),{done:new Set(out.map((_,i)=>i))}); drawBuckets(buckets,-1);
+    st.innerHTML='✅ Gathered sorted: [0.12, 0.23, 0.32, 0.42, 0.68, 0.75]'; ANIM=false; celebrate($('#ltRow'));
+  }
+  $('#ltPlay').onclick=play;
+  $('#ltReset').onclick=()=>{ if(!ANIM) build(); };
+})();
+
+/* ============ shared shuffle ============ */
+function shuffle(n){ const a=Array.from({length:n},(_,i)=>i+1); for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+</script>
+<script src="study-controls.js"></script>
+</body>
+</html>
